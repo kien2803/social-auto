@@ -1,0 +1,22 @@
+{
+  "name": "@social-auto/simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Smoke test runner for social-auto end-to-end flow",
+  "scripts": {
+    "smoke": "tsx src/runner.ts",
+    "smoke:all": "tsx src/runner.ts --all",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'no lint yet'"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/node-fetch": "^2.6.11",
+    "tsx": "^4.23.13",
+    "typescript": "^5.4.5"
+  }
+}

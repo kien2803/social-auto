@@ -1,0 +1,41 @@
+{
+  "name": "social-auto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Manage and auto-post videos across social platforms. Umbrella for core + simulator.",
+  "scripts": {
+    "dev": "pnpm core:dev",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test",
+    "test:api": "pnpm -F @social-auto/api test",
+    "core:dev": "pnpm --filter @social-auto/api --filter @social-auto/worker --filter @social-auto/web --parallel run dev",
+    "core:dev:api": "pnpm -F @social-auto/api dev",
+    "core:dev:worker": "pnpm -F @social-auto/worker dev",
+    "core:dev:web": "pnpm -F @social-auto/web dev",
+    "core:build": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run build",
+    "core:test": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run test",
+    "core:typecheck": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run typecheck",
+    "simulator": "pnpm -F @social-auto/simulator smoke",
+    "simulator:all": "pnpm -F @social-auto/simulator smoke --all",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs",
+    "pm2:reload": "pm2 reload ecosystem.config.cjs",
+    "pm2:delete": "pm2 delete ecosystem.config.cjs",
+    "pm2:logs": "pm2 logs",
+    "pm2:save": "pm2 save"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7",
+    "prettier": "^3.2.5",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.7.0",
+    "@typescript-eslint/parser": "^7.7.0"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

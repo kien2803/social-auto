@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+ecosystem.secrets.cjs
+storage/
+**/storage/
+# Legacy package-local logs / build outputs (pm2 ghosts)
+**/logs/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+logs/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Vite
+.vite/
+
+# OS
+Thumbs.db

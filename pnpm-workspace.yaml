@@ -1,0 +1,6 @@
+packages:
+  - "core/api"
+  - "core/worker"
+  - "core/web"
+  - "core/packages/*"
+  - "apps/*"

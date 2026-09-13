@@ -1,0 +1,39 @@
+{
+  "name": "@social-auto/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./types/*": {
+      "types": "./src/types/*.ts",
+      "import": "./src/types/*.ts"
+    },
+    "./db/*": {
+      "types": "./src/db/*.ts",
+      "import": "./src/db/*.ts"
+    },
+    "./utils/crypto.js": {
+      "types": "./src/utils/crypto.ts",
+      "import": "./src/utils/crypto.ts"
+    },
+    "./utils/crypto-types.js": {
+      "types": "./src/utils/crypto-types.ts",
+      "import": "./src/utils/crypto-types.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "echo 'no tests yet'"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

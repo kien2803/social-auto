@@ -1,0 +1,22 @@
+{
+  "name": "@social-auto/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "social-auto core: API + worker + web",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:api": "pnpm -F @social-auto/api dev",
+    "dev:web": "pnpm -F @social-auto/web dev",
+    "dev:worker": "pnpm -F @social-auto/worker dev",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "start:worker": "pnpm -F @social-auto/worker start",
+    "clean": "echo 'remove node_modules + storage to reset'"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

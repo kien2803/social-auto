@@ -1,0 +1,27 @@
+{
+  "name": "@social-auto/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@social-auto/shared": "workspace:*",
+    "dotenv": "^16.4.5",
+    "googleapis": "^140.0.1",
+    "pino": "^10.3.1",
+    "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "@types/sql.js": "^1.4.11",
+    "tsx": "^4.23.13",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
