@@ -8,8 +8,18 @@ export const PLATFORM_DAILY_LIMIT: Record<Platform, number> = {
   facebook: 200,
 };
 
+export const PLATFORM_QUOTA_TIERS: Record<Platform, { basic: number; pro: number; enterprise: number }> = {
+  youtube: { basic: 10_000, pro: 50_000, enterprise: 200_000 },
+  tiktok: { basic: 100, pro: 500, enterprise: 2000 },
+  instagram: { basic: 200, pro: 1000, enterprise: 5000 },
+  facebook: { basic: 200, pro: 1000, enterprise: 5000 },
+};
+
+export const QUOTA_WARNING_THRESHOLD = 0.8; // Warn at 80% usage
+export const QUOTA_CRITICAL_THRESHOLD = 0.95; // Critical at 95% usage
+
 export const UNITS_PER_UPLOAD: Record<Platform, number> = {
-  youtube: 1600,
+  youtube: 100,
   tiktok: 1,
   instagram: 1,
   facebook: 1,
@@ -98,5 +108,77 @@ export class QuotasRepo {
   hasRemaining(platform: Platform, now: number = Date.now()): boolean {
     const q = this.get(platform, now);
     return q.remaining >= UNITS_PER_UPLOAD[platform];
+  }
+  
+  /**
+   * Get detailed quota status including usage percentage and tier information
+   */
+  getQuotaStatus(platform: Platform, now: number = Date.now()): {
+    used: number;
+    limit: number;
+    remaining: number;
+    usagePercentage: number;
+    tier: string;
+    status: 'ok' | 'warning' | 'critical' | 'exceeded';
+  } {
+    const { used, limit, remaining } = this.get(platform, now);
+    const usagePercentage = limit > 0 ? (used / limit) * 100 : 0;
+    
+    let status: 'ok' | 'warning' | 'critical' | 'exceeded' = 'ok';
+    if (remaining < 0) status = 'exceeded';
+    else if (usagePercentage >= QUOTA_CRITICAL_THRESHOLD * 100) status = 'critical';
+    else if (usagePercentage >= QUOTA_WARNING_THRESHOLD * 100) status = 'warning';
+    
+    // Determine current tier based on limit
+    const tiers = PLATFORM_QUOTA_TIERS[platform];
+    let tier = 'basic';
+    if (limit >= tiers.enterprise) tier = 'enterprise';
+    else if (limit >= tiers.pro) tier = 'pro';
+    
+    return {
+      used,
+      limit,
+      remaining,
+      usagePercentage,
+      tier,
+      status,
+    };
+  }
+  
+  /**
+   * Check if upgrade is available for a platform
+   */
+  canUpgrade(platform: Platform, now: number = Date.now()): boolean {
+    const currentLimit = this.get(platform, now).limit;
+    const tiers = PLATFORM_QUOTA_TIERS[platform];
+    
+    if (currentLimit < tiers.pro) return true;
+    if (currentLimit < tiers.enterprise) return true;
+    return false;
+  }
+  
+  /**
+   * Get next available tier for a platform
+   */
+  getNextTier(platform: Platform, now: number = Date.now()): { tier: string; limit: number } | null {
+    const currentLimit = this.get(platform, now).limit;
+    const tiers = PLATFORM_QUOTA_TIERS[platform];
+    
+    if (currentLimit < tiers.pro) return { tier: 'pro', limit: tiers.pro };
+    if (currentLimit < tiers.enterprise) return { tier: 'enterprise', limit: tiers.enterprise };
+    return null;
+  }
+  
+  /**
+   * Upgrade quota to a specific tier
+   */
+  upgradeToTier(platform: Platform, tier: 'basic' | 'pro' | 'enterprise', now: number = Date.now()): void {
+    const newLimit = PLATFORM_QUOTA_TIERS[platform][tier];
+    const { windowStart } = this.rowForToday(platform, now);
+    
+    this.db.raw.run(
+      `UPDATE quotas SET "limit" = ?, updated_at = ? WHERE platform = ? AND window_start = ?`,
+      [newLimit, now, platform, windowStart],
+    );
   }
 }

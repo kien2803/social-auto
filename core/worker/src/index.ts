@@ -20,6 +20,7 @@ import { getPublisher } from './publishers/index.js';
 import { createGoogleClient } from './publishers/googleClient.js';
 import { decrypt, encrypt } from '@social-auto/shared/utils/crypto.js';
 import { env } from './env.js';
+import { initSentry } from './sentry.js';
 import type { GoogleOAuthClient } from './publishers/googleClientTypes.js';
 
 const POLL_INTERVAL_MS = 30_000;
@@ -44,6 +45,9 @@ interface PollDeps {
 }
 
 export async function runWorker(): Promise<void> {
+  // Initialize Sentry error tracking
+  initSentry();
+
   const db = await openDB(env.databaseUrl);
   const accounts = new AccountsRepo(db);
   const posts = new ScheduledPostsRepo(db);
@@ -307,6 +311,16 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
     console.log(`[worker] published ${postId} -> ${result.external_id}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    
+    // Capture error to Sentry for monitoring
+    const { captureException } = require('./sentry.js');
+    captureException(err, {
+      postId,
+      accountId: account.id,
+      platform: account.platform,
+      errorType: isRevoked(err) ? 'revoked' : isRetryable(err) ? 'retryable' : 'unknown',
+    });
+    
     if (isRevoked(err)) {
       // Upload hit an auth failure even after a fresh refresh — the token is
       // definitively dead (user revoked / OAuth app unpublished). Mark so we

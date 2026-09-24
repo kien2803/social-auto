@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd core/web && pnpm build",
+  "outputDirectory": "core/web/dist",
+  "installCommand": "pnpm install",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_TARGET": "https://kian.is-a.dev"
+  }
+}

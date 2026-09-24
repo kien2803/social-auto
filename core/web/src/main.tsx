@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Layout, PageFallback } from './components/Layout.js';
+import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { ToastProvider } from './components/ui/Toast.js';
 import { queryClient } from './lib/queryClient.js';
 import { installWindowErrorHandlers, track } from './lib/telemetry.js';
@@ -46,23 +47,25 @@ if (!root) throw new Error('root element missing');
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <BrowserRouter future={routerFuture}>
-          <Layout>
-            <Suspense fallback={<PageFallback />}>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/upload" element={<UploadPage />} />
-                <Route path="/schedule" element={<SchedulePage />} />
-                <Route path="/history" element={<HistoryPage />} />
-                <Route path="/accounts" element={<AccountsPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-              </Routes>
-            </Suspense>
-          </Layout>
-        </BrowserRouter>
-      </ToastProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <BrowserRouter future={routerFuture}>
+            <Layout>
+              <Suspense fallback={<PageFallback />}>
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/upload" element={<UploadPage />} />
+                  <Route path="/schedule" element={<SchedulePage />} />
+                  <Route path="/history" element={<HistoryPage />} />
+                  <Route path="/accounts" element={<AccountsPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                </Routes>
+              </Suspense>
+            </Layout>
+          </BrowserRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

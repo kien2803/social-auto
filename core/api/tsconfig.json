@@ -4,7 +4,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2024"],
-    "noEmit": true
+    "noEmit": true,
+    "noUncheckedIndexedAccess": false
   },
   "include": ["src/**/*"],
   "references": [{ "path": "../packages/shared" }]

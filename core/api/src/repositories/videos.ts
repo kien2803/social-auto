@@ -73,4 +73,8 @@ export class VideosRepo {
     ]);
     return (result[0]?.values ?? []).map(rowToVideo);
   }
+
+  delete(id: string): void {
+    this.db.raw.exec('DELETE FROM videos WHERE id = ?', [id]);
+  }
 }

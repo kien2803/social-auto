@@ -33,6 +33,8 @@ interface UploadResult {
 }
 
 const ACCEPTED = ['video/mp4', 'video/quicktime', 'video/webm'];
+const MAX_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
+const ACCEPTED_EXTENSIONS = ['.mp4', '.mov', '.webm', '.qt'];
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -91,6 +93,27 @@ export function UploadPage() {
     },
   });
 
+  const cancelUploadMut = useMutation({
+    mutationFn: async (videoId: string) => {
+      await api.deleteVideo(videoId);
+    },
+    onSuccess: () => {
+      setUploading(false);
+      setProgress(0);
+      setProgressTotal(0);
+      uploadMut.reset();
+      qc.invalidateQueries({ queryKey: ['videos'] });
+      toast.push({
+        tone: 'success',
+        title: 'Upload cancelled',
+        description: 'The upload has been cancelled and files cleaned up.',
+      });
+    },
+    onError: (err) => {
+      toast.push({ tone: 'error', title: 'Cancel failed', description: err.message });
+    },
+  });
+
   const scheduleMut = useMutation({
     mutationFn: (values: FormValues) =>
       api.createSchedule({
@@ -131,14 +154,40 @@ export function UploadPage() {
   );
 
   function handlePickFile(file: File) {
-    if (!ACCEPTED.includes(file.type)) {
+    // Check file size
+    if (file.size > MAX_SIZE_BYTES) {
       toast.push({
         tone: 'error',
-        title: 'Unsupported file',
-        description: `Expected mp4/mov/webm, got ${file.type || 'unknown'}.`,
+        title: 'File too large',
+        description: `Maximum file size is 2GB. Your file is ${formatBytes(file.size)}.`,
       });
       return;
     }
+    
+    // Check file size is not zero
+    if (file.size === 0) {
+      toast.push({
+        tone: 'error',
+        title: 'Empty file',
+        description: 'The selected file is empty. Please choose a valid video file.',
+      });
+      return;
+    }
+    
+    // Check MIME type
+    if (!ACCEPTED.includes(file.type)) {
+      // Also check file extension as fallback
+      const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+        toast.push({
+          tone: 'error',
+          title: 'Unsupported file type',
+          description: `Please upload a video file in MP4, MOV, or WebM format. Got: ${file.type || 'unknown type'} (${extension || 'no extension'}).`,
+        });
+        return;
+      }
+    }
+    
     uploadMut.mutate(file);
   }
 
@@ -201,7 +250,7 @@ export function UploadPage() {
             </div>
           </div>
           {(uploading || uploadMut.isPending) && (
-            <div className="mt-4">
+            <div className="mt-4 space-y-3">
               <div className="h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
                 <div
                   className="h-full bg-brand-600 transition-all"
@@ -210,9 +259,29 @@ export function UploadPage() {
                   }}
                 />
               </div>
-              <p className="mt-1 text-xs text-ink-muted dark:text-slate-400">
-                {formatProgress(progress, progressTotal)}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-ink-muted dark:text-slate-400">
+                  {formatProgress(progress, progressTotal)}
+                </p>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => {
+                    if (uploadMut.data?.video_id) {
+                      cancelUploadMut.mutate(uploadMut.data.video_id);
+                    } else {
+                      // Cancel before upload completes
+                      setUploading(false);
+                      setProgress(0);
+                      setProgressTotal(0);
+                      uploadMut.reset();
+                    }
+                  }}
+                  disabled={cancelUploadMut.isPending}
+                >
+                  {cancelUploadMut.isPending ? 'Cancelling...' : 'Cancel'}
+                </Button>
+              </div>
             </div>
           )}
           {uploadMut.data && (

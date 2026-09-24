@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@social-auto/shared": "workspace:*",
+    "@sentry/node": "^8.0.0",
     "dotenv": "^16.4.5",
     "googleapis": "^140.0.1",
     "pino": "^10.3.1",

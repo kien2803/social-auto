@@ -74,6 +74,7 @@ export const env = {
   apiPort: Number.parseInt(opt('API_PORT', '3000'), 10),
   webOrigin: opt('WEB_ORIGIN', 'http://localhost:5173'),
   storageDir: repoPath(opt('STORAGE_DIR', './storage')),
+  storageQuotaGB: Number.parseInt(opt('STORAGE_QUOTA_GB', '10'), 10),
   databaseUrl: stripFileScheme(repoPath(opt('DATABASE_URL', './storage/app.db'))),
   clientId: optGoogleCred('GOOGLE_CLIENT_ID'),
   clientSecret: optGoogleCred('GOOGLE_CLIENT_SECRET'),

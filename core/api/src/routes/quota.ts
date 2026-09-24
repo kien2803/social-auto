@@ -12,6 +12,7 @@ interface QuotaWire {
   limit: number;
   remaining: number;
   reset_at: number;
+  warning: boolean;
 }
 
 /** Next 00:00 UTC, in ms epoch. Matches the per-day window the worker uses. */
@@ -37,14 +38,34 @@ export function registerQuotaRoutes(app: FastifyInstance, deps: QuotaDeps): void
       ['youtube', 'tiktok', 'instagram', 'facebook'] as Platform[]
     ).map((platform) => {
       const q = deps.quotas.get(platform, now);
+      const warning = q.used / q.limit > 0.8; // Warning at 80% usage
       return {
         platform,
         used: q.used,
         limit: q.limit,
         remaining: q.remaining,
         reset_at: nextMidnightUtc(now),
+        warning,
       };
     });
     return { quotas: items, now };
+  });
+  
+  // YouTube-specific quota endpoint with more details
+  app.get('/quota/youtube', async () => {
+    const now = Date.now();
+    const q = deps.quotas.get('youtube', now);
+    const warning = q.used / q.limit > 0.8;
+    
+    return {
+      platform: 'youtube',
+      used: q.used,
+      limit: q.limit,
+      remaining: q.remaining,
+      reset_at: nextMidnightUtc(now),
+      warning,
+      upload_cost: 1600, // YouTube video upload cost
+      uploads_remaining: Math.floor(q.remaining / 1600)
+    };
   });
 }

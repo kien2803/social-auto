@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
+import { initSentry } from './sentry.js';
 import { env } from './env.js';
 import { openDB } from './db.js';
 import { AccountsRepo } from './repositories/accounts.js';
@@ -13,6 +14,8 @@ import { registerScheduleRoutes } from './routes/schedule.js';
 import { registerAccountRoutes } from './routes/accounts.js';
 import { registerQuotaRoutes } from './routes/quota.js';
 import { registerHealthRoutes } from './routes/health.js';
+import { registerStorageRoutes } from './routes/storage.js';
+import { StorageManager } from './services/storageManager.js';
 import { createGoogleClient } from './google/factory.js';
 import { createTiktokClient } from './tiktok/factory.js';
 import { createMetaClient } from './meta/factory.js';
@@ -22,7 +25,25 @@ import { registerPopupCloseRoute } from './auth/popupClose.js';
 import { migrateAvatars } from './migrations/avatarMigration.js';
 
 export async function buildApp() {
+  // Initialize Sentry error tracking
+  initSentry();
+
   const app = Fastify({ logger: true });
+  
+  // Add Sentry error handler if enabled
+  if (process.env['SENTRY_DSN']) {
+    app.setErrorHandler((error, request, reply) => {
+      // Capture exception with Sentry
+      const { captureException } = require('./sentry.js');
+      captureException(error, {
+        url: request.url,
+        method: request.method,
+        headers: request.headers,
+      });
+      reply.send(error);
+    });
+  }
+  
   await app.register(cors, {
     origin: env.webOrigin,
     credentials: true,
@@ -40,12 +61,11 @@ export async function buildApp() {
   app.addHook('onRequest', async () => {
     db.refreshIfChanged();
   });
-
   const accounts = new AccountsRepo(db);
   const videos = new VideosRepo(db);
   const posts = new ScheduledPostsRepo(db);
   const quotas = new QuotasRepo(db);
-
+  const storageManager = new StorageManager(env.storageDir, videos, env.storageQuotaGB || 10);
   const google = createGoogleClient({
     clientId: env.clientId,
     clientSecret: env.clientSecret,
@@ -82,6 +102,7 @@ export async function buildApp() {
   // so a stray /auth/popup-close request doesn't hit a wildcard.
   registerPopupCloseRoute(app);
   registerHealthRoutes(app, { posts, accounts });
+  registerStorageRoutes(app, { storageManager });
   registerQuotaRoutes(app, { quotas });
   // Mount the legacy IG/FB mock OAuth routes when EITHER:
   //   - USE_MOCK_PUBLISHERS=true (worker's stub publishers are in use), or
@@ -124,4 +145,3 @@ if (isMain) {
     process.exit(1);
   });
 }
-

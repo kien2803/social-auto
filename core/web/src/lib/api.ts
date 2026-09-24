@@ -211,6 +211,7 @@ function accountFilterQs(f?: AccountListFilter): string {
 export const api = {
   listVideos: () => req<{ videos: VideoWire[] }>('/videos'),
   getVideo: (id: string) => req<VideoWire>(`/videos/${id}`),
+  deleteVideo: (id: string) => req<{ success: boolean; message: string }>(`/videos/${id}`, { method: 'DELETE' }),
   uploadVideo: (file: File, onProgress?: (bytes: number) => void) =>
     uploadFile('/videos', file, onProgress),
   listSchedule: (q?: { status?: string; account_id?: string }) => {
@@ -235,6 +236,10 @@ export const api = {
   dashboardCounts: () => req<DashboardCounts>('/dashboard/counts'),
   health: () => req<HealthResponse>('/health'),
   quota: () => req<QuotaResponse>('/quota'),
+  youtubeQuota: () => req<YouTubeQuotaResponse>('/quota/youtube'),
+  getUploadProgress: (videoId: string) => req<UploadProgress>(`/videos/${videoId}/progress`),
+  uploadVideoBulk: (files: FileList, onProgress?: (current: number, total: number) => void) =>
+    uploadFilesBulk('/videos/bulk', files, onProgress),
 
   // Account list — server-side filtered, paged, and inclusive of
   // metadata + channel snapshot for the AccountsPage UI.
@@ -306,6 +311,50 @@ async function uploadFile<T>(
   xhr.send(fd);
   return promise;
 }
+async function uploadFilesBulk<T>(
+  path: string,
+  files: FileList,
+  onProgress?: (current: number, total: number) => void,
+): Promise<T> {
+  const { promise, resolve, reject } = Promise.withResolvers<T>();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${BASE}${path}`);
+  xhr.withCredentials = true;
+  
+  let loaded = 0;
+  xhr.upload.onprogress = (e) => {
+    loaded++;
+    onProgress?.(loaded, files.length);
+  };
+  
+  xhr.onload = () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        resolve(JSON.parse(xhr.responseText) as T);
+      } catch (err) {
+        reject(err);
+      }
+    } else {
+      let msg = xhr.statusText;
+      try {
+        msg = JSON.parse(xhr.responseText).error ?? msg;
+      } catch {
+        // ignore
+      }
+      reject(new ApiError(xhr.status, msg));
+    }
+  };
+  xhr.onerror = () => reject(new ApiError(0, 'network_error'));
+  
+  const fd = new FormData();
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (file) {
+      fd.append(`file${i}`, file);
+    }
+  }
+  return promise;
+}
 
 export interface CreateScheduleInput {
   video_id: string;
@@ -354,6 +403,24 @@ export interface QuotaResponse {
     limit: number;
     remaining: number;
     reset_at: number;
+    warning: boolean;
   }>;
   now: number;
+}
+
+export interface YouTubeQuotaResponse {
+  platform: 'youtube';
+  used: number;
+  limit: number;
+  remaining: number;
+  reset_at: number;
+  warning: boolean;
+  upload_cost: number;
+  uploads_remaining: number;
+}
+
+export interface UploadProgress {
+  videoId: string;
+  progress: number;
+  timestamp: number;
 }

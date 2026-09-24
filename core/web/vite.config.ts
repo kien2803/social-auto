@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
-const apiTarget = process.env['VITE_API_TARGET'] || 'http://localhost:3000';
+const apiTarget = process.env['VITE_API_TARGET'] || 'http://localhost:5182';
 
 // Proxy two path prefixes to the API server:
 //   /api/*  → API as /api/<path> with the `/api` prefix stripped. All

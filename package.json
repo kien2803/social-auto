@@ -2,6 +2,7 @@
   "name": "social-auto",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Manage and auto-post videos across social platforms. Umbrella for core + simulator.",
   "scripts": {
     "dev": "pnpm core:dev",
@@ -24,7 +25,10 @@
     "pm2:reload": "pm2 reload ecosystem.config.cjs",
     "pm2:delete": "pm2 delete ecosystem.config.cjs",
     "pm2:logs": "pm2 logs",
-    "pm2:save": "pm2 save"
+    "pm2:save": "pm2 save",
+    "backup": "node scripts/backup-db.js",
+    "backup:verify": "node scripts/backup-db.js --verify",
+    "backup:list": "node scripts/backup-db.js --list"
   },
   "devDependencies": {
     "typescript": "^5.4.5",

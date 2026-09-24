@@ -24,6 +24,7 @@ import { QuotasRepo } from './repositories/quotas.js';
 import { pollOnce } from './index.js';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
 import type { GoogleOAuthClient } from './publishers/googleClientTypes.js';
+import { QuotaManager } from './services/quotaManager.js';
 
 const TOKEN_KEY = 'a'.repeat(64);
 
@@ -60,6 +61,7 @@ interface Deps {
   videos: VideosRepo;
   quotas: QuotasRepo;
   google: GoogleOAuthClient;
+  quotaManager: QuotaManager;
 }
 
 let deps: Deps;
@@ -70,7 +72,8 @@ beforeEach(async () => {
   const posts = new ScheduledPostsRepo(db);
   const videos = new VideosRepo(db);
   const quotas = new QuotasRepo(db);
-  deps = { db, accounts, posts, videos, quotas, google: makeStubGoogle('ok') };
+  const quotaManager = new QuotaManager(quotas);
+  deps = { db, accounts, posts, videos, quotas, google: makeStubGoogle('ok'), quotaManager };
 });
 
 function makeActiveAccount(opts?: {

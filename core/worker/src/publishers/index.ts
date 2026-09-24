@@ -5,6 +5,37 @@ import { InstagramPublisher } from './instagram.js';
 import { FacebookPublisher } from './facebook.js';
 import { env } from '../env.js';
 import { createGoogleClient } from './googleClient.js';
+import { QuotasRepo } from '../repositories/quotas.js';
+
+// Quota repository instance (set during initialization)
+let quotasRepo: QuotasRepo | null = null;
+
+export function setQuotasRepo(repo: QuotasRepo): void {
+  quotasRepo = repo;
+}
+
+// Progress tracking callback registry
+const progressCallbacks = new Map<string, (progress: number) => void>();
+
+export function registerProgressCallback(videoId: string, callback: (progress: number) => void): void {
+  progressCallbacks.set(videoId, callback);
+}
+
+export function unregisterProgressCallback(videoId: string): void {
+  progressCallbacks.delete(videoId);
+}
+
+export function getProgressCallback(videoId: string): ((progress: number) => void) | undefined {
+  return progressCallbacks.get(videoId);
+}
+
+// Function to trigger progress callbacks
+export function triggerProgressCallback(videoId: string, progress: number): void {
+  const callback = progressCallbacks.get(videoId);
+  if (callback) {
+    callback(progress);
+  }
+}
 
 /**
  * Minimal stub of the YouTube publisher that satisfies the Publisher
@@ -35,6 +66,16 @@ function build(): Record<Platform, Publisher> {
     clientSecret: env.clientSecret,
     redirectUri: env.googleRedirectUri,
   });
+  
+  const checkQuota = (platform: 'youtube') => {
+    if (!quotasRepo) return { used: 0, limit: 10000, remaining: 10000 };
+    return quotasRepo.get(platform, Date.now());
+  };
+  
+  const recordQuotaUsage = (platform: 'youtube', units: number) => {
+    if (quotasRepo) quotasRepo.incrementUsage(platform, units, Date.now());
+  };
+  
   return {
     youtube:
       env.useMockPublishers || !env.clientId
@@ -44,6 +85,12 @@ function build(): Record<Platform, Publisher> {
             clientSecret: env.clientSecret,
             redirectUri: env.googleRedirectUri,
             googleClient: google,
+            checkQuota,
+            recordQuotaUsage,
+            onProgress: (identifier, progress) => {
+              // Trigger progress callback for video
+              triggerProgressCallback(identifier, progress);
+            },
           }),
     tiktok: new TiktokPublisher({
       useMock: env.useMockPublishers || !env.tiktokClientKey,

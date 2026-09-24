@@ -70,5 +70,6 @@ export const env = {
   useMockPublishers: opt('USE_MOCK_PUBLISHERS', 'false') === 'true',
   tiktokClientKey: opt('TIKTOK_CLIENT_KEY', ''),
   metaAppId: opt('META_APP_ID', ''),
+  apiPort: opt('API_PORT', '5182'),
 };
 

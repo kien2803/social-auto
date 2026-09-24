@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { ScheduledPostRow } from '@social-auto/shared';
-import { api } from '../lib/api.js';
+import { api, type UploadProgress } from '../lib/api.js';
 import { useAccounts } from '../lib/accounts.js';
 import { Card, CardBody } from '../components/ui/Card.js';
 import { Badge, statusToTone } from '../components/ui/Badge.js';
@@ -16,6 +16,76 @@ import type { AccountInfo } from '../lib/accounts.js';
 type StatusFilter = 'all' | 'pending' | 'uploading' | 'published' | 'failed' | 'dead';
 
 const STATUSES: StatusFilter[] = ['all', 'pending', 'uploading', 'published', 'failed', 'dead'];
+
+// Component to show upload progress for uploading posts
+function UploadProgressRow({ post }: { post: ScheduledPostRow }) {
+  const [progress, setProgress] = useState<number>(0);
+  const [cancelling, setCancelling] = useState<boolean>(false);
+  const toast = useToast();
+  
+  useEffect(() => {
+    // Poll for progress updates using video_id from the post
+    const interval = setInterval(async () => {
+      try {
+        const progressData = await api.getUploadProgress(post.video_id);
+        setProgress(progressData.progress);
+        if (progressData.progress >= 100) {
+          clearInterval(interval);
+        }
+      } catch (error) {
+        // Progress endpoint might not be available yet
+        console.warn('Failed to fetch progress:', error);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [post.video_id]);
+  
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      // For now, this is a placeholder - actual cancellation requires
+      // backend integration with the upload stream
+      toast.push({
+        tone: 'info',
+        title: 'Cancel upload feature coming soon',
+      });
+    } catch (error) {
+      console.error('Failed to cancel upload:', error);
+      const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+      toast.push({
+        tone: 'error',
+        title: 'Failed to cancel upload',
+        description: message,
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between text-xs text-ink-muted dark:text-slate-400">
+        <span>Uploading...</span>
+        <div className="flex items-center gap-2">
+          <span>{progress.toFixed(0)}%</span>
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="text-xs text-red-600 hover:text-red-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+          >
+            {cancelling ? 'Cancelling...' : 'Cancel'}
+          </button>
+        </div>
+      </div>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
+        <div
+          className="h-full bg-brand-600 transition-all"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function SchedulePage() {
   const qc = useQueryClient();
@@ -211,6 +281,9 @@ function ScheduleRow({
             {post.external_post_id && ` · ${post.external_post_id}`}
             {post.last_error && ` · ${post.last_error}`}
           </p>
+          {post.status === 'uploading' && (
+            <UploadProgressRow post={post} />
+          )}
         </div>
         {post.status === 'pending' && (
           <div className="flex gap-2">
