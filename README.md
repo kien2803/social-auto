@@ -1,67 +1,58 @@
 # social-auto
 
-Self-hosted tool to manage and auto-post videos across social platforms — YouTube first, then TikTok, Instagram, Facebook.
+Self-hosted tool to manage and auto-post videos across social platforms — YouTube, TikTok, Instagram, Facebook.
 
-> **See [`docs/`](./docs/) for everything: architecture, features, design decisions, and dev setup.**
->
-> Quick links: [Architecture](./docs/architecture.md) · [Feature: YouTube OAuth](./docs/features/youtube-oauth.md) · [Decisions (ADRs)](./docs/decisions/) · [Roadmap (`plans/`)](./plans/README.md)
+## Features
 
-## What works today (Phase 0)
+- 🎬 Upload and manage videos
+- 🔗 Connect social accounts via OAuth (YouTube, TikTok, Instagram, Facebook)
+- 📅 Schedule posts with automatic publishing
+- 🔒 Encrypted token storage (AES-256-GCM)
+- 🔄 Automatic token refresh
+- 💾 Quota tracking and storage management
+- 🎨 Thumbnail generation with ffmpeg
+- 🧪 Full test coverage (130+ tests)
 
-- ✅ Web UI at `http://localhost:5173` (React + Vite + Tailwind)
-- ✅ API at `http://localhost:5182` (Fastify + SQLite)
-- ✅ Worker polling service for scheduled posts
-- ✅ Connect YouTube, TikTok, Instagram, Facebook accounts via OAuth
-- ✅ Encrypted token persistence with AES-256-GCM
-- ✅ Token refresh and lifecycle management
-- ✅ Video upload with SHA256 deduplication
-- ✅ Thumbnail generation with ffmpeg
-- ✅ Quota tracking and management
-- ✅ All tests passing (130+ tests across API, Worker, Web)
-- ✅ **Production web app deployed**: https://social-auto-three.vercel.app
-- ✅ **Custom domain pending**: kian.is-a.dev (PR #52389 awaiting merge)
+## Tech Stack
 
-## Quick start
+- **Backend**: Fastify + SQLite
+- **Frontend**: React + Vite + Tailwind CSS
+- **Worker**: Background job scheduler
+- **Package Manager**: pnpm workspaces
+- **Language**: TypeScript
+
+## Quick Start
 
 ```bash
+# Install dependencies
 pnpm install
-cp .env.example .env.local       # fill in TOKEN_ENCRYPTION_KEY (and Google creds if not using mock)
-pnpm dev                          # runs api + web + worker in parallel
+
+# Setup environment
+cp .env.example .env.local
+# Edit .env.local: Set TOKEN_ENCRYPTION_KEY (required)
+# For testing: keep USE_MOCK_GOOGLE=true (no credentials needed)
+# For production: Set USE_MOCK_GOOGLE=false and add Google OAuth credentials
+
+# Start development
+pnpm dev
 ```
 
 Access the application:
 - **Web UI**: http://localhost:5173
-- **API**: http://localhost:5182
-- **Health check**: http://localhost:5182/health
+- **API**: http://localhost:3000
+- **Health check**: http://localhost:3000/health
 
-For tests, leave `USE_MOCK_GOOGLE=true` in `.env.local` — no Google credentials needed.
+## Common Commands
 
+### Development
 ```bash
-pnpm typecheck && pnpm lint && pnpm test
-```
-
-## Production Deployment
-
-### Web App (Vercel)
-- **URL**: https://social-auto-three.vercel.app
-- **Status**: ✅ Deployed and operational
-- **Custom Domain**: kian.is-a.dev (pending DNS merge)
-
-### API Backend & Worker
-- **Status**: Local development only (currently working on production deployment)
-- **Planned**: Simplified deployment strategy (see Phase 1 Production MVP plan)
-
-## Development Guide
-
-### Running locally
-```bash
-pnpm dev                    # Start API (5182), Web (5173), Worker
+pnpm dev                    # Start API + Web + Worker
 pnpm core:dev:api          # API only
-pnpm core:dev:web          # Web only  
+pnpm core:dev:web          # Web only
 pnpm core:dev:worker       # Worker only
 ```
 
-### Testing
+### Testing & Quality
 ```bash
 pnpm test                   # Run all tests
 pnpm test:api              # API tests only
@@ -69,25 +60,56 @@ pnpm typecheck             # TypeScript type checking
 pnpm lint                  # ESLint checking
 ```
 
-### Simulator
+### Build
 ```bash
-pnpm simulator             # Run multi-platform publishing tests
-pnpm simulator:all         # Test all platforms
+pnpm core:build            # Build all core packages
 ```
 
-## Repo at a glance
+## Project Structure
 
 ```
-core/api                 Fastify backend, OAuth routes, SQLite
-core/web                 React + Vite UI  
-core/worker              Scheduled-post poller
-core/packages/shared    Types, DB schema, AES-256-GCM crypto
-apps/simulator         Test harness for multi-platform publishing
-docs/                   Architecture, features, ADRs
-plans/core/            Phase-by-phase roadmap (plan.md / tests.md / fix-bugs.md per phase)
-storage/               SQLite file + uploads (gitignored)
+social-auto/
+├── core/
+│   ├── api/              # Fastify backend, OAuth routes, SQLite
+│   ├── web/              # React + Vite UI
+│   ├── worker/           # Scheduled-post poller
+│   └── packages/
+│       └── shared/       # Types, DB schema, crypto utilities
+└── storage/              # SQLite database + uploads (gitignored)
 ```
+
+## Environment Variables
+
+Required variables in `.env.local`:
+
+```bash
+# Required for all modes
+TOKEN_ENCRYPTION_KEY=your-32-byte-hex-key
+
+# Mock mode (for testing - no credentials needed)
+USE_MOCK_GOOGLE=true
+USE_MOCK_PUBLISHERS=true
+
+# Production mode (requires Google OAuth credentials)
+USE_MOCK_GOOGLE=false
+USE_MOCK_PUBLISHERS=false
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/callback
+```
+
+See [`.env.example`](./.env.example) for full configuration options.
 
 ## License
 
-Private — not yet licensed for distribution.
+MIT License - Copyright (c) 2026
+
+## Security
+
+This project follows security best practices:
+- OAuth tokens encrypted with AES-256-GCM
+- Environment variables for sensitive configuration
+- `.gitignore` excludes sensitive files
+- Pre-commit hooks to detect secrets
+
+See [SECURITY.md](./SECURITY.md) for detailed security guidelines.

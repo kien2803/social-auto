@@ -64,6 +64,34 @@ function optGoogleCred(name: string): string {
   );
 }
 
+/**
+ * Required only when USE_MOCK_TIKTOK is not 'true'. In mock mode the
+ * TikTok client is stubbed so real credentials are not needed.
+ */
+function optTiktokCred(name: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (process.env['USE_MOCK_TIKTOK'] === 'true') return '';
+  throw new Error(
+    `Missing required env var: ${name} (set USE_MOCK_TIKTOK=true for local dev without TikTok credentials, ` +
+      `or fill in ${name} per plans/real-authentication-plan.md)`,
+  );
+}
+
+/**
+ * Required only when USE_MOCK_META is not 'true'. In mock mode the
+ * Meta client is stubbed so real credentials are not needed.
+ */
+function optMetaCred(name: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (process.env['USE_MOCK_META'] === 'true') return '';
+  throw new Error(
+    `Missing required env var: ${name} (set USE_MOCK_META=true for local dev without Meta credentials, ` +
+      `or fill in ${name} per plans/real-authentication-plan.md)`,
+  );
+}
+
 /** Strip "file:" URL prefix so the result is a plain filesystem path. */
 function stripFileScheme(url: string): string {
   return url.startsWith('file:') ? url.slice('file:'.length) : url;
@@ -84,11 +112,11 @@ export const env = {
   useMockPublishers: opt('USE_MOCK_PUBLISHERS', 'false') === 'true',
   useMockTiktok: opt('USE_MOCK_TIKTOK', 'true') === 'true',
   useMockMeta: opt('USE_MOCK_META', 'true') === 'true',
-  tiktokClientKey: opt('TIKTOK_CLIENT_KEY', ''),
-  tiktokClientSecret: opt('TIKTOK_CLIENT_SECRET', ''),
+  tiktokClientKey: optTiktokCred('TIKTOK_CLIENT_KEY'),
+  tiktokClientSecret: optTiktokCred('TIKTOK_CLIENT_SECRET'),
   tiktokRedirectUri: opt('TIKTOK_REDIRECT_URI', 'http://localhost:3000/auth/tiktok/callback'),
-  metaAppId: opt('META_APP_ID', ''),
-  metaAppSecret: opt('META_APP_SECRET', ''),
+  metaAppId: optMetaCred('META_APP_ID'),
+  metaAppSecret: optMetaCred('META_APP_SECRET'),
   metaRedirectUri: opt('META_REDIRECT_URI', 'http://localhost:3000/auth/meta/callback'),
   metaApiVersion: opt('META_API_VERSION', 'v24.0'),
 };

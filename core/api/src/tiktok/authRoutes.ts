@@ -20,6 +20,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
 import type { TiktokOAuthClient } from './client.js';
 import type { AccountsRepo } from '../repositories/accounts.js';
+import type { AccountRow } from '@social-auto/shared';
 
 export interface TiktokAuthDeps {
   accounts: AccountsRepo;
@@ -142,5 +143,25 @@ export function registerTiktokAuthRoutes(app: FastifyInstance, deps: TiktokAuthD
         account_id: accountId,
       }),
     );
+  });
+
+  // TikTok status endpoint (simplified - just returns account status without API validation)
+  app.get('/auth/tiktok/status', async () => {
+    const rows = deps.accounts.listByPlatform('tiktok');
+    if (rows.length === 0) return { connected: false, accounts: [] };
+    
+    const accounts: Array<{
+      id: string;
+      platform: 'tiktok';
+      display_name: string;
+      status: AccountRow['status'];
+    }> = rows.map(row => ({
+      id: row.id,
+      platform: 'tiktok',
+      display_name: row.display_name,
+      status: row.status,
+    }));
+    
+    return { connected: true, accounts };
   });
 }

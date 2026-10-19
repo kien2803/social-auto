@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026 Kien Nguyen
+ *
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+
 import type { Platform } from '../types/platform.js';
 import type { AccountStatus, AccountChannelSnapshot } from '../types/account.js';
 

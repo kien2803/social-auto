@@ -7,27 +7,41 @@ dist/
 build/
 *.tsbuildinfo
 
-# Env
+# Environment variables and secrets
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.test
 ecosystem.secrets.cjs
+*.key
+*.pem
+*.crt
+secrets/
+**/secrets/
+
+# Storage and data
 storage/
 **/storage/
-# Legacy package-local logs / build outputs (pm2 ghosts)
-**/logs/
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 logs/
+**/logs/
 
 # Editor
 .vscode/
 .idea/
 *.swp
 .DS_Store
+*.suo
+*.user
 
 # Coverage
 coverage/
@@ -39,4 +53,17 @@ coverage/
 # OS
 Thumbs.db
 .vercel
-.env*
+
+# Backup files
+*.backup
+*.bak
+storage/backups/
+**/backups/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# IDE and tool configs
+.env.local.*

@@ -4,10 +4,15 @@ import type { AccountRow } from '@social-auto/shared';
 import { randomBytes } from 'node:crypto';
 import type { AccountsRepo } from '../repositories/accounts.js';
 import type { GoogleOAuthClient } from '../google/client.js';
+import type { TiktokOAuthClient } from '../tiktok/client.js';
+import type { MetaOAuthClient } from '../meta/client.js';
+import { generatePKCE } from '../auth/pkce.js';
 
 export interface AuthDeps {
   accounts: AccountsRepo;
   google: GoogleOAuthClient;
+  tiktok?: TiktokOAuthClient;
+  meta?: MetaOAuthClient;
   /** Where to redirect after OAuth callback (web app). */
   webOrigin: string;
   /** Encryption key for token storage. */
@@ -234,7 +239,381 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   });
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Mock-only OAuth routes for TikTok / Instagram / Facebook (Phase 2 T2.2/T2.3).
+  // Real TikTok OAuth routes (PKCE-based)
+  // ──────────────────────────────────────────────────────────────────────────
+  if (deps.tiktok) {
+    const tiktok = deps.tiktok; // Type guard for TypeScript
+
+    app.get('/auth/tiktok/start', async (req, reply) => {
+      const state = randomBytes(16).toString('hex');
+      const { verifier, challenge } = generatePKCE();
+
+      reply.setCookie('oauth_state', state, {
+        path: '/auth',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 600,
+      });
+      reply.setCookie('tiktok_code_verifier', verifier, {
+        path: '/auth',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 600,
+      });
+
+      const popupMode = readPopupQuery(req);
+      if (popupMode) {
+        reply.setCookie(POPUP_COOKIE, '1', {
+          path: '/auth',
+          httpOnly: true,
+          sameSite: 'lax',
+          maxAge: 600,
+        });
+      }
+
+      const redirectUri = `${deps.webOrigin}/auth/tiktok/callback`;
+      return reply.redirect(tiktok.buildAuthUrl(state, challenge));
+    });
+
+    app.get('/auth/tiktok/callback', async (req, reply) => {
+      const { code, state, error } = req.query as Record<string, string | undefined>;
+      const popupMode = readPopupCookie(req);
+      if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
+
+      if (error) {
+        const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
+        return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error }));
+      }
+
+      if (!code || !state) {
+        return reply.code(400).send({ error: 'missing code or state' });
+      }
+
+      const cookieState = req.cookies['oauth_state'];
+      if (!cookieState || cookieState !== state) {
+        return reply.code(400).send({ error: 'state mismatch' });
+      }
+      reply.clearCookie('oauth_state', { path: '/auth' });
+
+      const verifier = req.cookies['tiktok_code_verifier'];
+      if (!verifier) {
+        return reply.code(400).send({ error: 'missing code_verifier cookie' });
+      }
+      reply.clearCookie('tiktok_code_verifier', { path: '/auth' });
+
+      const tokens = await tiktok.exchangeCode(code, verifier);
+      req.log.info({ has_refresh: !!tokens.refresh_token, has_access: !!tokens.access_token }, 'tiktok token exchange');
+
+      const user = await tiktok.getMyUser(tokens.access_token);
+
+      const encryptedRefresh = encrypt(tokens.refresh_token, deps.tokenEncryptionKey);
+      const encryptedAccess = encrypt(tokens.access_token, deps.tokenEncryptionKey);
+
+      const existing = deps.accounts.findByPlatformExternal('tiktok', user.open_id);
+      let accountId: string;
+      if (existing) {
+        deps.accounts.updateDisplayName(existing.id, user.display_name);
+        deps.accounts.updateStatus(existing.id, 'active');
+        deps.accounts.updateTokens(existing.id, {
+          access_token: encryptedAccess,
+          expires_at: tokens.expires_at,
+        });
+        accountId = existing.id;
+      } else {
+        const row = deps.accounts.insert({
+          platform: 'tiktok',
+          external_id: user.open_id,
+          display_name: user.display_name,
+          oauth_refresh_token: encryptedRefresh,
+          oauth_access_token: encryptedAccess,
+          token_expires_at: tokens.expires_at,
+          status: 'active',
+        });
+        accountId = row.id;
+      }
+
+      const webRedirect = `${deps.webOrigin}/accounts?connected=tiktok&account=${accountId}`;
+      return reply.redirect(
+        buildAuthRedirect(popupMode, webRedirect, {
+          connected: 'tiktok',
+          account_id: accountId,
+        }),
+      );
+    });
+
+    app.get('/auth/tiktok/status', async () => {
+      const rows = deps.accounts.listByPlatform('tiktok');
+      if (rows.length === 0) return { connected: false, accounts: [] };
+      const accounts: Array<{
+        id: string;
+        platform: 'tiktok';
+        display_name: string;
+        status: AccountRow['status'];
+      }> = [];
+      for (const row of rows) {
+        if (row.status !== 'active') {
+          accounts.push({
+            id: row.id,
+            platform: 'tiktok',
+            display_name: row.display_name,
+            status: row.status,
+          });
+          continue;
+        }
+        let decryptedAccess: string | null = null;
+        try {
+          decryptedAccess = row.oauth_access_token
+            ? decrypt(row.oauth_access_token, deps.tokenEncryptionKey)
+            : null;
+        } catch {
+          accounts.push({
+            id: row.id,
+            platform: 'tiktok',
+            display_name: row.display_name,
+            status: 'expired' as AccountRow['status'],
+          });
+          continue;
+        }
+        if (!decryptedAccess) {
+          accounts.push({
+            id: row.id,
+            platform: 'tiktok',
+            display_name: row.display_name,
+            status: 'expired' as AccountRow['status'],
+          });
+          continue;
+        }
+        try {
+          const user = await tiktok.getMyUser(decryptedAccess);
+          accounts.push({
+            id: row.id,
+            platform: 'tiktok',
+            display_name: user.display_name,
+            status: row.status,
+          });
+        } catch {
+          accounts.push({
+            id: row.id,
+            platform: 'tiktok',
+            display_name: row.display_name,
+            status: 'expired' as AccountRow['status'],
+          });
+        }
+      }
+      return { connected: true, accounts };
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Real Meta OAuth routes (Instagram + Facebook with page selection)
+  // ──────────────────────────────────────────────────────────────────────────
+  if (deps.meta) {
+    const meta = deps.meta; // Type guard for TypeScript
+
+    app.get('/auth/meta/start', async (req, reply) => {
+      const state = randomBytes(16).toString('hex');
+      reply.setCookie('oauth_state', state, {
+        path: '/auth',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 600,
+      });
+
+      const popupMode = readPopupQuery(req);
+      if (popupMode) {
+        reply.setCookie(POPUP_COOKIE, '1', {
+          path: '/auth',
+          httpOnly: true,
+          sameSite: 'lax',
+          maxAge: 600,
+        });
+      }
+
+      const redirectUri = `${deps.webOrigin}/auth/meta/callback`;
+      return reply.redirect(meta.buildAuthUrl(state));
+    });
+
+    app.get('/auth/meta/callback', async (req, reply) => {
+      const { code, state, error } = req.query as Record<string, string | undefined>;
+      const popupMode = readPopupCookie(req);
+      if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
+
+      if (error) {
+        const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
+        return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error }));
+      }
+
+      if (!code || !state) {
+        return reply.code(400).send({ error: 'missing code or state' });
+      }
+
+      const cookieState = req.cookies['oauth_state'];
+      if (!cookieState || cookieState !== state) {
+        return reply.code(400).send({ error: 'state mismatch' });
+      }
+      reply.clearCookie('oauth_state', { path: '/auth' });
+
+      const tokens = await meta.exchangeCode(code);
+      req.log.info({ has_access: !!tokens.access_token }, 'meta token exchange');
+
+      // Use long-lived token if available, otherwise short-lived
+      const accessToken = tokens.long_lived_token ?? tokens.access_token;
+
+      // Get user's pages
+      const pages = await meta.listMyPages(accessToken);
+
+      // For each page, create separate account entries
+      const connectedAccounts: Array<{ platform: string; account_id: string }> = [];
+      for (const page of pages) {
+        const platform = page.instagram_username ? 'instagram' : 'facebook';
+        const encryptedAccess = encrypt(page.access_token, deps.tokenEncryptionKey);
+        const encryptedRefresh = encrypt(`meta-refresh-${page.id}`, deps.tokenEncryptionKey);
+
+        const existing = deps.accounts.findByPlatformExternal(platform, page.id);
+        let accountId: string;
+        if (existing) {
+          deps.accounts.updateDisplayName(existing.id, page.name);
+          deps.accounts.updateStatus(existing.id, 'active');
+          deps.accounts.updateTokens(existing.id, {
+            access_token: encryptedAccess,
+            expires_at: tokens.expires_at ?? null,
+          });
+          accountId = existing.id;
+        } else {
+          const row = deps.accounts.insert({
+            platform,
+            external_id: page.id,
+            display_name: page.name,
+            oauth_refresh_token: encryptedRefresh,
+            oauth_access_token: encryptedAccess,
+            token_expires_at: tokens.expires_at ?? null,
+            status: 'active',
+          });
+          accountId = row.id;
+        }
+        connectedAccounts.push({ platform, account_id: accountId });
+      }
+
+      const webRedirect = `${deps.webOrigin}/accounts?connected=meta&accounts=${connectedAccounts.map((a) => a.account_id).join(',')}`;
+      return reply.redirect(
+        buildAuthRedirect(popupMode, webRedirect, {
+          connected: 'meta',
+          accounts: connectedAccounts,
+        }),
+      );
+    });
+
+    app.get('/auth/instagram/status', async () => {
+      const rows = deps.accounts.listByPlatform('instagram');
+      if (rows.length === 0) return { connected: false, accounts: [] };
+      const accounts: Array<{
+        id: string;
+        platform: 'instagram';
+        display_name: string;
+        status: AccountRow['status'];
+      }> = [];
+      for (const row of rows) {
+        if (row.status !== 'active') {
+          accounts.push({
+            id: row.id,
+            platform: 'instagram',
+            display_name: row.display_name,
+            status: row.status,
+          });
+          continue;
+        }
+        let decryptedAccess: string | null = null;
+        try {
+          decryptedAccess = row.oauth_access_token
+            ? decrypt(row.oauth_access_token, deps.tokenEncryptionKey)
+            : null;
+        } catch {
+          accounts.push({
+            id: row.id,
+            platform: 'instagram',
+            display_name: row.display_name,
+            status: 'expired' as AccountRow['status'],
+          });
+          continue;
+        }
+        if (!decryptedAccess) {
+          accounts.push({
+            id: row.id,
+            platform: 'instagram',
+            display_name: row.display_name,
+            status: 'expired' as AccountRow['status'],
+          });
+          continue;
+        }
+        // For Instagram, we just check if the token decrypts successfully
+        // Actual API call would require Instagram Graph API
+        accounts.push({
+          id: row.id,
+          platform: 'instagram',
+          display_name: row.display_name,
+          status: row.status,
+        });
+      }
+      return { connected: true, accounts };
+    });
+
+    app.get('/auth/facebook/status', async () => {
+      const rows = deps.accounts.listByPlatform('facebook');
+      if (rows.length === 0) return { connected: false, accounts: [] };
+      const accounts: Array<{
+        id: string;
+        platform: 'facebook';
+        display_name: string;
+        status: AccountRow['status'];
+      }> = [];
+      for (const row of rows) {
+        if (row.status !== 'active') {
+          accounts.push({
+            id: row.id,
+            platform: 'facebook',
+            display_name: row.display_name,
+            status: row.status,
+          });
+          continue;
+        }
+        let decryptedAccess: string | null = null;
+        try {
+          decryptedAccess = row.oauth_access_token
+            ? decrypt(row.oauth_access_token, deps.tokenEncryptionKey)
+            : null;
+        } catch {
+          accounts.push({
+            id: row.id,
+            platform: 'facebook',
+            display_name: row.display_name,
+            status: 'expired' as AccountRow['status'],
+          });
+          continue;
+        }
+        if (!decryptedAccess) {
+          accounts.push({
+            id: row.id,
+            platform: 'facebook',
+            display_name: row.display_name,
+            status: 'expired' as AccountRow['status'],
+          });
+          continue;
+        }
+        // For Facebook, we just check if the token decrypts successfully
+        // Actual API call would require Facebook Graph API
+        accounts.push({
+          id: row.id,
+          platform: 'facebook',
+          display_name: row.display_name,
+          status: row.status,
+        });
+      }
+      return { connected: true, accounts };
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Mock-only OAuth routes for Instagram / Facebook (Phase 2 T2.3).
   //
   // Real flows require per-platform app credentials + review. The mock path
   // lets the simulator exercise the full connect → schedule → publish path
@@ -242,25 +621,11 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   // true (matches `USE_MOCK_GOOGLE` / `USE_MOCK_PUBLISHERS`).
   //
   // Token prefix mapping (matches worker stubUpload validators):
-  //   tiktok     → mock-tt-
   //   instagram  → mock-ig-
   //   facebook   → mock-fb-
   // See BUG-P2-001 in plans/core/phase-2-multi-platform/fix-bugs.md.
   // ──────────────────────────────────────────────────────────────────────────
   if (!deps.useMockPublishers) return;
-  // Mock-only OAuth routes for Instagram + Facebook (Phase 2 T2.3).
-  //
-  // Real flows require Meta App ID/Secret + app review. The mock path lets
-  // the simulator exercise the full connect → schedule → publish path
-  // without hitting a real OAuth provider. Only mounted when `deps.useMock`
-  // is true (the global `USE_MOCK_GOOGLE` flag also covers these legacy
-  // routes — see `meta/authRoutes.ts` for the real Meta implementation).
-  //
-  // Token prefix mapping (matches worker stubUpload validators):
-  //   instagram  → mock-ig-
-  //   facebook   → mock-fb-
-  // See BUG-P2-001 in plans/core/phase-2-multi-platform/fix-bugs.md.
-  // ──────────────────────────────────────────────────────────────────────────
 
   const MOCK_PLATFORMS = ['instagram', 'facebook'] as const;
   type MockPlatform = (typeof MOCK_PLATFORMS)[number];

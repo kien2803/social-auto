@@ -1,4 +1,10 @@
 /**
+ * Copyright (c) 2026 Kien Nguyen
+ *
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+
+/**
  * Worker entry. Polls scheduled_posts, claims due posts, dispatches to the right
  * publisher by account.platform.
  *

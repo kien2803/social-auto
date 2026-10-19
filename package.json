@@ -16,19 +16,7 @@
     "core:dev:web": "pnpm -F @social-auto/web dev",
     "core:build": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run build",
     "core:test": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run test",
-    "core:typecheck": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run typecheck",
-    "simulator": "pnpm -F @social-auto/simulator smoke",
-    "simulator:all": "pnpm -F @social-auto/simulator smoke --all",
-    "pm2:start": "pm2 start ecosystem.config.cjs",
-    "pm2:stop": "pm2 stop ecosystem.config.cjs",
-    "pm2:restart": "pm2 restart ecosystem.config.cjs",
-    "pm2:reload": "pm2 reload ecosystem.config.cjs",
-    "pm2:delete": "pm2 delete ecosystem.config.cjs",
-    "pm2:logs": "pm2 logs",
-    "pm2:save": "pm2 save",
-    "backup": "node scripts/backup-db.js",
-    "backup:verify": "node scripts/backup-db.js --verify",
-    "backup:list": "node scripts/backup-db.js --list"
+    "core:typecheck": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run typecheck"
   },
   "devDependencies": {
     "typescript": "^5.4.5",

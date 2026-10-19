@@ -11,7 +11,7 @@ export function initSentry(): void {
       environment: process.env['NODE_ENV'] || 'production',
       tracesSampleRate: 1.0,
       profilesSampleRate: 1.0,
-      beforeSend(event, hint) {
+      beforeSend(event, _hint) {
         // Filter out health check and static asset requests
         if (event.request) {
           const url = event.request.url;

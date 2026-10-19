@@ -21,6 +21,7 @@ import { randomBytes } from 'node:crypto';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
 import type { MetaOAuthClient } from './client.js';
 import type { AccountsRepo } from '../repositories/accounts.js';
+import type { AccountRow } from '@social-auto/shared';
 import {
   POPUP_COOKIE,
   POPUP_QUERY,
@@ -152,5 +153,45 @@ export function registerMetaAuthRoutes(app: FastifyInstance, deps: MetaAuthDeps)
         account_ids: insertedIds,
       }),
     );
+  });
+
+  // Instagram status endpoint (simplified - just returns account status without API validation)
+  app.get('/auth/instagram/status', async () => {
+    const rows = deps.accounts.listByPlatform('instagram');
+    if (rows.length === 0) return { connected: false, accounts: [] };
+    
+    const accounts: Array<{
+      id: string;
+      platform: 'instagram';
+      display_name: string;
+      status: AccountRow['status'];
+    }> = rows.map(row => ({
+      id: row.id,
+      platform: 'instagram',
+      display_name: row.display_name,
+      status: row.status,
+    }));
+    
+    return { connected: true, accounts };
+  });
+
+  // Facebook status endpoint (simplified - just returns account status without API validation)
+  app.get('/auth/facebook/status', async () => {
+    const rows = deps.accounts.listByPlatform('facebook');
+    if (rows.length === 0) return { connected: false, accounts: [] };
+    
+    const accounts: Array<{
+      id: string;
+      platform: 'facebook';
+      display_name: string;
+      status: AccountRow['status'];
+    }> = rows.map(row => ({
+      id: row.id,
+      platform: 'facebook',
+      display_name: row.display_name,
+      status: row.status,
+    }));
+    
+    return { connected: true, accounts };
   });
 }

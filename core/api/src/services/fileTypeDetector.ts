@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { open } from 'node:fs/promises';
 import { fileTypeFromBuffer } from 'file-type';
 

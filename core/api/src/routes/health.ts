@@ -19,6 +19,8 @@ interface HealthResponse {
   uptime_sec: number;
   timestamp: number;
   storage_dir: string;
+  version: string;
+  environment: string;
   worker: {
     /** Always "ok" from the API's perspective — the worker reports by writing
      * to scheduled_posts. A user can tell the worker is alive by checking
@@ -63,6 +65,8 @@ export function registerHealthRoutes(
       // the user can confirm both api + worker are pointed at the same
       // SQLite file. (Workers and the API both resolve via env.storageDir.)
       storage_dir: process.env['STORAGE_DIR'] ?? '',
+      version: process.env['APP_VERSION'] || '0.1.0',
+      environment: process.env['NODE_ENV'] || 'development',
       worker: {
         status: 'ok',
         last_publish_at: deps.posts.lastPublishedAt(),

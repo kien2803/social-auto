@@ -16,22 +16,18 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { openDB } from '../db.js';
 import { VideosRepo } from '../repositories/videos.js';
-import { detectRealFileType, detectFileTypeByMIME } from '../services/fileTypeDetector.js';
+import { detectRealFileType } from '../services/fileTypeDetector.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import crypto from 'node:crypto';
 
-const API_BASE = 'http://localhost:3000';
 const TEST_DIR = path.join(process.cwd(), 'test-fixtures');
 
 describe('File Validation Integration', () => {
   let db: any;
-  let videos: VideosRepo;
 
   beforeAll(async () => {
     const TEST_DB_PATH = path.join(process.cwd(), 'test-file-validation.db');
     db = await openDB(TEST_DB_PATH);
-    videos = new VideosRepo(db);
     await fs.mkdir(TEST_DIR, { recursive: true });
   });
 
@@ -164,7 +160,7 @@ describe('File Validation Integration', () => {
 
     it('should sanitize filenames', async () => {
       const maliciousFilename = '../../../etc/passwd';
-      const sanitized = maliciousFilename.replace(/[\/\\]/g, '_');
+      const sanitized = maliciousFilename.replace(/[/\\]/g, '_');
 
       // Only slashes are replaced; dots are preserved
       expect(sanitized).toBe('.._.._.._etc_passwd');

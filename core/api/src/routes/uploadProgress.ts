@@ -62,7 +62,7 @@ export function registerUploadProgressRoutes(app: FastifyInstance): void {
   });
   
   // Update progress (called by worker)
-  app.post<{ Params: { id: string } }>('/videos/:id/progress', async (req, reply) => {
+  app.post<{ Params: { id: string } }>('/videos/:id/progress', async (req) => {
     const { progress } = req.body as { progress: number };
     updateProgress(req.params.id, progress);
     return { success: true };
@@ -110,7 +110,7 @@ export function registerUploadProgressRoutes(app: FastifyInstance): void {
   });
   
   // Cleanup endpoint (for testing)
-  app.delete<{ Params: { id: string } }>('/videos/:id/progress', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/videos/:id/progress', async (req) => {
     progressCache.delete(req.params.id);
     return { success: true };
   });

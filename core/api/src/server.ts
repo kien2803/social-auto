@@ -1,7 +1,13 @@
+/**
+ * Copyright (c) 2026 Kien Nguyen
+ *
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
-import { initSentry } from './sentry.js';
+import { initSentry, captureException } from './sentry.js';
 import { env } from './env.js';
 import { openDB } from './db.js';
 import { AccountsRepo } from './repositories/accounts.js';
@@ -19,8 +25,6 @@ import { StorageManager } from './services/storageManager.js';
 import { createGoogleClient } from './google/factory.js';
 import { createTiktokClient } from './tiktok/factory.js';
 import { createMetaClient } from './meta/factory.js';
-import { registerTiktokAuthRoutes } from './tiktok/authRoutes.js';
-import { registerMetaAuthRoutes } from './meta/authRoutes.js';
 import { registerPopupCloseRoute } from './auth/popupClose.js';
 import { migrateAvatars } from './migrations/avatarMigration.js';
 
@@ -34,7 +38,6 @@ export async function buildApp() {
   if (process.env['SENTRY_DSN']) {
     app.setErrorHandler((error, request, reply) => {
       // Capture exception with Sentry
-      const { captureException } = require('./sentry.js');
       captureException(error, {
         url: request.url,
         method: request.method,
@@ -113,24 +116,16 @@ export async function buildApp() {
   // button out of the box (inserts a mock-ig-prefixed row that the
   // worker's stubUpload validators accept).
   const metaUseMock = !env.metaAppId || !env.metaAppSecret || !env.metaRedirectUri;
+  const tiktokUseMock = !env.tiktokClientKey || !env.tiktokClientSecret || !env.tiktokRedirectUri;
+
   registerAuthRoutes(app, {
     accounts,
     google,
+    tiktok: tiktokUseMock ? undefined : tiktok,
+    meta: metaUseMock ? undefined : meta,
     webOrigin: env.webOrigin,
     tokenEncryptionKey: env.tokenEncryptionKey,
     useMockPublishers: env.useMockPublishers || metaUseMock,
-  });
-  registerTiktokAuthRoutes(app, {
-    accounts,
-    tiktok,
-    webOrigin: env.webOrigin,
-    tokenEncryptionKey: env.tokenEncryptionKey,
-  });
-  registerMetaAuthRoutes(app, {
-    accounts,
-    meta,
-    webOrigin: env.webOrigin,
-    tokenEncryptionKey: env.tokenEncryptionKey,
   });
   registerAccountRoutes(app, { accounts, posts, google, tokenEncryptionKey: env.tokenEncryptionKey });
   registerVideoRoutes(app, { videos, storageDir: env.storageDir });
