@@ -2,7 +2,7 @@
   "name": "@social-auto/core",
   "version": "0.1.0",
   "private": true,
-  "description": "social-auto core: API + worker + web",
+  "description": "Social Media Account Management core: API + worker + web",
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
     "dev:api": "pnpm -F @social-auto/api dev",

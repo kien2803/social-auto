@@ -1,4 +1,4 @@
-# social-auto
+# Social-Media-Account-Management
 
 Self-hosted tool to manage and auto-post videos across social platforms — YouTube, TikTok, Instagram, Facebook.
 
@@ -68,7 +68,7 @@ pnpm core:build            # Build all core packages
 ## Project Structure
 
 ```
-social-auto/
+Social-Media-Account-Management/
 ├── core/
 │   ├── api/              # Fastify backend, OAuth routes, SQLite
 │   ├── web/              # React + Vite UI

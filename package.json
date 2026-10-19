@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Manage and auto-post videos across social platforms. Umbrella for core + simulator.",
+  "description": "Social Media Account Management - Self-hosted tool to manage and auto-post videos across social platforms.",
   "scripts": {
     "dev": "pnpm core:dev",
     "typecheck": "pnpm -r --if-present run typecheck",

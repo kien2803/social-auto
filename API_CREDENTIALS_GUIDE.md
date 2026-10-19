@@ -1,6 +1,6 @@
 # API Credentials Setup Guide
 
-Dự án social-auto đã có sẵn code tích hợp với YouTube, TikTok, Instagram và Facebook. Hiện tại đang chạy ở **mock mode** (giả lập). Để sử dụng thực tế, bạn cần lấy API credentials từ từng nền tảng.
+Dự án Social-Media-Account-Management đã có sẵn code tích hợp với YouTube, TikTok, Instagram và Facebook. Hiện tại đang chạy ở **mock mode** (giả lập). Để sử dụng thực tế, bạn cần lấy API credentials từ từng nền tảng.
 
 ## Trạng thái hiện tại
 
@@ -45,7 +45,7 @@ Dự án social-auto đã có sẵn code tích hợp với YouTube, TikTok, Inst
 
 1. **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID**
 2. Application type: **Web application**
-3. Name: `social-auto-web`
+3. Name: `social-media-account-management-web`
 4. **Authorized redirect URIs** → thêm:
    ```
    http://localhost:3000/auth/callback
