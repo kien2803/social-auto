@@ -11,7 +11,7 @@ Self-hosted tool to manage and auto-post videos across social platforms — YouT
 - 🔄 Automatic token refresh
 - 💾 Quota tracking and storage management
 - 🎨 Thumbnail generation with ffmpeg
-- 🧪 Full test coverage (130+ tests)
+- 🧪 Full test coverage (234 tests)
 
 ## Tech Stack
 

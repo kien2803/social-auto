@@ -4,7 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2024"],
-    "noEmit": true,
+    "noEmit": false,
     "noUncheckedIndexedAccess": false
   },
   "include": ["src/**/*"],
