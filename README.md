@@ -100,6 +100,13 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/auth/callback
 
 See [`.env.example`](./.env.example) for full configuration options.
 
+## API Credentials
+
+The app currently runs in **mock mode** (no real credentials needed). To use real social media platforms, see [API_CREDENTIALS_GUIDE.md](./API_CREDENTIALS_GUIDE.md) for setup instructions for:
+- YouTube (Google OAuth)
+- TikTok
+- Facebook & Instagram (Meta)
+
 ## License
 
 MIT License - Copyright (c) 2026
@@ -111,5 +118,3 @@ This project follows security best practices:
 - Environment variables for sensitive configuration
 - `.gitignore` excludes sensitive files
 - Pre-commit hooks to detect secrets
-
-See [SECURITY.md](./SECURITY.md) for detailed security guidelines.
