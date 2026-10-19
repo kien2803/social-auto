@@ -320,12 +320,14 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
     const msg = err instanceof Error ? err.message : String(err);
     
     // Capture error to Sentry for monitoring
-    captureException(err, {
-      postId,
-      accountId: account.id,
-      platform: account.platform,
-      errorType: isRevoked(err) ? 'revoked' : isRetryable(err) ? 'retryable' : 'unknown',
-    });
+    if (err instanceof Error) {
+      captureException(err, {
+        postId,
+        accountId: account.id,
+        platform: account.platform,
+        errorType: isRevoked(err) ? 'revoked' : isRetryable(err) ? 'retryable' : 'unknown',
+      });
+    }
     
     if (isRevoked(err)) {
       // Upload hit an auth failure even after a fresh refresh — the token is
