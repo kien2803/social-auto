@@ -322,7 +322,7 @@ async function uploadFilesBulk<T>(
   xhr.withCredentials = true;
   
   let loaded = 0;
-  xhr.upload.onprogress = (e) => {
+  xhr.upload.onprogress = () => {
     loaded++;
     onProgress?.(loaded, files.length);
   };

@@ -27,7 +27,7 @@ describe('Storage Manager Integration', () => {
   let db: any;
   let videos: VideosRepo;
   let storageManager: StorageManager;
-  let testVideoIds: string[] = [];
+  const testVideoIds: string[] = [];
 
   beforeAll(async () => {
     await fs.mkdir(TEST_STORAGE_DIR, { recursive: true });
@@ -40,13 +40,14 @@ describe('Storage Manager Integration', () => {
     // Cleanup test storage
     await fs.rm(TEST_STORAGE_DIR, { recursive: true, force: true });
     await fs.unlink(TEST_DB_PATH).catch(() => {});
-    try { await db.close(); } catch {}
+    try { await db.close(); } catch { /* ignore */ }
   });
 
   describe('File Storage', () => {
     it('should store video file information', async () => {
       const videoPath = path.join(TEST_STORAGE_DIR, 'test-video.mp4');
       await fs.writeFile(videoPath, Buffer.from('test video content'));
+      // File stored successfully
 
       const video = videos.insert({
         file_path: videoPath,

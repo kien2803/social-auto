@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { ScheduledPostRow } from '@social-auto/shared';
-import { api, type UploadProgress } from '../lib/api.js';
+import { api } from '../lib/api.js';
 import { useAccounts } from '../lib/accounts.js';
 import { Card, CardBody } from '../components/ui/Card.js';
 import { Badge, statusToTone } from '../components/ui/Badge.js';

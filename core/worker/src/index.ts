@@ -18,6 +18,7 @@
  */
 import { setTimeout as wait } from 'node:timers/promises';
 import { openDB, type DB } from './db.js';
+import { captureException } from './sentry.js';
 import { AccountsRepo } from './repositories/accounts.js';
 import { ScheduledPostsRepo, type ClaimedScheduledPost } from './repositories/scheduledPosts.js';
 import { VideosRepo } from './repositories/videos.js';
@@ -319,7 +320,6 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
     const msg = err instanceof Error ? err.message : String(err);
     
     // Capture error to Sentry for monitoring
-    const { captureException } = require('./sentry.js');
     captureException(err, {
       postId,
       accountId: account.id,

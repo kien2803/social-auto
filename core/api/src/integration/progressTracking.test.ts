@@ -15,9 +15,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { openDB } from '../db.js';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import crypto from 'node:crypto';
 
 const API_BASE = 'http://localhost:3000';
 

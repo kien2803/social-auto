@@ -271,7 +271,6 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         });
       }
 
-      const redirectUri = `${deps.webOrigin}/auth/tiktok/callback`;
       return reply.redirect(tiktok.buildAuthUrl(state, challenge));
     });
 
@@ -429,7 +428,6 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         });
       }
 
-      const redirectUri = `${deps.webOrigin}/auth/meta/callback`;
       return reply.redirect(meta.buildAuthUrl(state));
     });
 

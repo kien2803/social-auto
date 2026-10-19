@@ -15,7 +15,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { openDB } from '../db.js';
-import { VideosRepo } from '../repositories/videos.js';
 import { detectRealFileType } from '../services/fileTypeDetector.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';

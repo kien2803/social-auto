@@ -5,7 +5,7 @@ import { InstagramPublisher } from './instagram.js';
 import { FacebookPublisher } from './facebook.js';
 import { env } from '../env.js';
 import { createGoogleClient } from './googleClient.js';
-import { QuotasRepo } from '../repositories/quotas.js';
+import type { QuotasRepo } from '../repositories/quotas.js';
 
 // Quota repository instance (set during initialization)
 let quotasRepo: QuotasRepo | null = null;

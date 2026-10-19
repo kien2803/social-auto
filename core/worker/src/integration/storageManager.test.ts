@@ -25,7 +25,7 @@ const TEST_DB_PATH = path.join(process.cwd(), 'test-worker-storage.db');
 describe('Storage Manager Integration', () => {
   let db: any;
   let videos: VideosRepo;
-  let testVideoIds: string[] = [];
+  const testVideoIds: string[] = [];
 
   beforeAll(async () => {
     await fs.mkdir(TEST_STORAGE_DIR, { recursive: true });
@@ -87,17 +87,14 @@ describe('Storage Manager Integration', () => {
       const videoPath = path.join(TEST_STORAGE_DIR, 'to-delete.mp4');
       await fs.writeFile(videoPath, Buffer.from('to delete'));
 
-      const video = videos.insert({
+      videos.insert({
         file_path: videoPath,
         sha256: 'delete123',
         size_bytes: 50,
         mime: 'video/mp4',
       });
 
-      const videoId = video.id;
       // Worker VideosRepo doesn't have delete method, skip deletion test
-      // const deletedVideo = videos.findById(videoId);
-      // expect(deletedVideo).toBeNull();
       // Cleanup file
       await fs.unlink(videoPath).catch(() => {});
     });

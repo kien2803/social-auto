@@ -24,7 +24,6 @@ import { QuotasRepo } from '../repositories/quotas.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const API_BASE = 'http://localhost:3000';
 const TEST_VIDEO_PATH = path.join(process.cwd(), 'test-fixtures', 'sample-video.mp4');
 
 describe('YouTube Upload Integration', () => {
