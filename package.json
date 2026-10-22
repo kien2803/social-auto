@@ -6,6 +6,8 @@
   "description": "Social Media Account Management - Self-hosted tool to manage and auto-post videos across social platforms.",
   "scripts": {
     "dev": "pnpm core:dev",
+    "start": "pnpm -F @social-auto/api start",
+    "build": "pnpm -F @social-auto/web build",
     "typecheck": "pnpm -r --if-present run typecheck",
     "lint": "pnpm -r --if-present run lint",
     "test": "pnpm -r --if-present run test",

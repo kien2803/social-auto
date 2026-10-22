@@ -129,4 +129,10 @@ export const env = {
   metaAppSecret: optMetaCred('META_APP_SECRET'),
   metaRedirectUri: opt('META_REDIRECT_URI', 'http://localhost:3000/auth/meta/callback'),
   metaApiVersion: opt('META_API_VERSION', 'v24.0'),
+  // Single-process mode: run the publishing worker inside the API process,
+  // sharing one sql.js handle (no cross-process file race). The Docker
+  // image sets this; dev keeps the worker as its own process.
+  embeddedWorker: opt('EMBEDDED_WORKER', 'false') === 'true',
+  // Built SPA to serve when present (production single-origin deploys).
+  webDistDir: repoPath(opt('WEB_DIST_DIR', './core/web/dist')),
 };

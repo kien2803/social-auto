@@ -4,6 +4,26 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 ---
 
+## 2026-10-22 - Production packaging: single-container self-host deploy
+
+**Mục tiêu**: dự án có thể publish cho end-user tự host — một container/lệnh là chạy đủ web + API + worker.
+
+**Đã thêm**:
+- **`Dockerfile`** (multi-stage): builder `pnpm install` + `vite build`; runtime `node:20-alpine` + ffmpeg + `pnpm install --prod`; healthcheck `/health`; volume `/app/storage`; `EMBEDDED_WORKER=true`
+- **`docker-compose.yml`**: 1 service duy nhất, env qua `.env`, named volume cho DB+uploads
+- **`.dockerignore`**, **`LICENSE`** (MIT — headers đã claim nhưng file thiếu)
+- **Embedded worker** (`worker/src/index.ts` → `startEmbeddedWorker(db)`): API bật qua `EMBEDDED_WORKER=true` — chia sẻ chung DB handle nên race sql.js cross-process **triệt để hết** (1 writer duy nhất)
+- **Static SPA serving**: API đăng ký `@fastify/static@^7` (v10 trong package.json yêu cầu fastify v5 — dead dep chưa từng chạy, downgrade v7 cho fastify 4) khi `WEB_DIST_DIR` tồn tại
+- **`rewriteUrl` hook**: strip `/api` prefix (web client luôn gọi `/api/*`) + browser GET `Accept: text/html` → `/` (SPA shell). Disambiguation theo Accept: XHR `/api/accounts` → JSON 401; nav `/accounts` → index.html — cùng path, đúng response
+- **Graceful shutdown**: SIGTERM/SIGINT → `app.close()` → worker stop flag
+- `tsx` chuyển thành runtime dep (api + worker) — `start` script chạy TS source vì shared exports `.ts`; `pnpm start` ở root + README production section + `.env.example` (EMBEDDED_WORKER, WEB_DIST_DIR)
+
+**Verify live** (API_PORT=3100 EMBEDDED_WORKER=true): `/` và `/accounts` nav → 200 HTML; `/api/health` → 200 JSON; `/api/accounts` → 401; asset `/assets/*.js` → 200; unknown → 404 JSON; embedded worker log "poll loop started". 234/234 tests, typecheck sạch.
+
+**Chưa verify**: `docker build` thật (máy dev không có Docker daemon) — Dockerfile viết theo pattern chuẩn pnpm workspace; cần test trên máy có Docker trước khi release.
+
+---
+
 ## 2026-10-22 - Fix: account OAuth gán nhầm về `default-user`
 
 **Vấn đề âm thầm**: OAuth start/callback là full-page navigation → browser **không bao giờ gửi `Authorization` header** → `optionalAuthMiddleware` không set `userId` → mọi account connect qua UI rơi về `default-user` → user đăng nhập không thấy account vừa connect. Multi-user attribution của OAuth thực chất chưa từng hoạt động ngoài curl.

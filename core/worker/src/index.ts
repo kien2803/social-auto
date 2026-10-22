@@ -386,6 +386,57 @@ function parseCaption(
   return { title, description, caption, tags, visibility };
 }
 
+export interface EmbeddedWorkerHandle {
+  /** Signal the poll loop to stop after the current iteration. */
+  stop(): void;
+}
+
+/**
+ * In-process worker for single-process deployments (e.g. the Docker image).
+ * Shares the caller's DB handle instead of opening a second sql.js
+ * instance — with one in-memory snapshot there is no cross-process export
+ * race at all. The API starts this when EMBEDDED_WORKER=true.
+ */
+export function startEmbeddedWorker(db: DB): EmbeddedWorkerHandle {
+  const deps: PollDeps = {
+    db,
+    accounts: new AccountsRepo(db),
+    posts: new ScheduledPostsRepo(db),
+    videos: new VideosRepo(db),
+    quotas: new QuotasRepo(db),
+    google: createGoogleClient({
+      clientId: env.clientId,
+      clientSecret: env.clientSecret,
+      redirectUri: env.googleRedirectUri,
+    }),
+  };
+  const unstuck = deps.posts.unstickUploading(UNSTICK_AFTER_MS, Date.now());
+  if (unstuck > 0) {
+    console.log(`[worker] unstuck ${unstuck} posts from previous crash`);
+  }
+  let stopping = false;
+  void (async () => {
+    console.log('[worker] embedded poll loop started');
+    while (!stopping) {
+      let nextDue: number;
+      try {
+        nextDue = await pollOnce(deps);
+      } catch (err) {
+        console.error('[worker] poll error', err);
+        nextDue = Date.now() + POLL_INTERVAL_MS;
+      }
+      const sleepMs = Math.max(0, Math.min(nextDue - Date.now(), POLL_INTERVAL_MS));
+      await wait(Math.max(1000, sleepMs));
+    }
+    console.log('[worker] embedded poll loop stopped');
+  })();
+  return {
+    stop: () => {
+      stopping = true;
+    },
+  };
+}
+
 const isMain = import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`;
 if (isMain) {
   runWorker().catch((err) => {

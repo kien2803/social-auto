@@ -7,6 +7,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
+import fastifyStatic from '@fastify/static';
+import { existsSync } from 'node:fs';
 import { initSentry, captureException } from './sentry.js';
 import { env } from './env.js';
 import { openDB } from './db.js';
@@ -38,7 +40,28 @@ export async function buildApp() {
   // Initialize Sentry error tracking
   initSentry();
 
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger: true,
+    // Single-origin deploys serve the SPA and the API on one port. The web
+    // app always prefixes API calls with /api — strip it so the same route
+    // tree answers. Dev is unaffected: the Vite proxy strips it upstream.
+    // Browser navigations (Accept: text/html GETs outside /auth) are routed
+    // to '/' so the SPA shell is served; XHRs carry non-HTML Accept headers
+    // and continue into the API routes unchanged.
+    rewriteUrl: (req) => {
+      let url = req.url ?? '/';
+      if (/^\/api(?=\/|$)/.test(url)) url = url.slice(4) || '/';
+      const accept = req.headers?.accept ?? '';
+      if (
+        req.method === 'GET' &&
+        accept.includes('text/html') &&
+        !/^\/(auth|health)(\/|$|\?)/.test(url)
+      ) {
+        return '/';
+      }
+      return url;
+    },
+  });
   
   // Add Sentry error handler if enabled
   if (process.env['SENTRY_DSN']) {
@@ -187,11 +210,57 @@ export async function buildApp() {
   };
   const storageManager = new StorageManager(storageAdapter, videos, env.storageQuotaGB);
   registerStorageRoutes(app, { storageManager, authMiddleware });
+
+  // Production single-origin: serve the built SPA when a dist bundle exists.
+  // The rewriteUrl hook above already mapped browser navigations to '/', so
+  // the static plugin serves index.html for them; unknown non-HTML GETs fall
+  // through to the notFound handler below. In dev (no dist) nothing changes.
+  if (existsSync(env.webDistDir)) {
+    await app.register(fastifyStatic, { root: env.webDistDir });
+    app.setNotFoundHandler((req, reply) => {
+      const accept = req.headers.accept ?? '';
+      if (req.method === 'GET' && accept.includes('text/html')) {
+        return reply.sendFile('index.html');
+      }
+      return reply.code(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: `Route ${req.method} ${req.url} not found`,
+      });
+    });
+  }
+
+  // Single-process deploys (Docker image, `pnpm start` with
+  // EMBEDDED_WORKER=true) run the publisher in-process sharing this DB
+  // handle — that removes the last sql.js cross-process file race
+  // entirely. Dynamic, non-literal import so the worker's TS source stays
+  // out of this package's tsconfig program (tsx resolves it at runtime).
+  if (env.embeddedWorker) {
+    const workerEntry = new URL('../../worker/src/index.js', import.meta.url).href;
+    const { startEmbeddedWorker } = (await import(workerEntry)) as {
+      startEmbeddedWorker: (db: unknown) => { stop(): void };
+    };
+    const worker = startEmbeddedWorker(db);
+    app.addHook('onClose', async () => {
+      worker.stop();
+    });
+    app.log.info('embedded worker started (EMBEDDED_WORKER=true)');
+  }
   return app;
 }
 const isMain = import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`;
 if (isMain) {
   const app = await buildApp();
+  // Graceful shutdown: Docker / systemd send SIGTERM; closing the server
+  // runs onClose hooks (embedded worker stop flag) before exit.
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.once(signal, () => {
+      app
+        .close()
+        .then(() => process.exit(0))
+        .catch(() => process.exit(1));
+    });
+  }
   app.listen({ host: env.apiHost, port: env.apiPort }).catch((err) => {
     app.log.error(err);
     process.exit(1);

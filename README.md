@@ -64,7 +64,59 @@ pnpm lint                  # ESLint checking
 ### Build
 ```bash
 pnpm core:build            # Build all core packages
+pnpm build                 # Build the web bundle only (production artifact)
 ```
+
+## Production / Self-Hosted
+
+### Docker (recommended)
+
+One container runs everything — the API serves the built SPA and the
+publishing worker runs embedded in the same process (single DB writer, no
+cross-process file race).
+
+```bash
+# 1. Create .env with at least the two secrets (generate with:
+#    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+TOKEN_ENCRYPTION_KEY=...
+JWT_SECRET=...
+WEB_ORIGIN=http://localhost:3000   # public origin users open
+
+# 2. Build & run
+docker compose up -d --build
+# or without compose:
+#   docker build -t social-auto .
+#   docker run -d -p 3000:3000 -v social-auto-data:/app/storage \
+#     --env-file .env social-auto
+```
+
+Open http://localhost:3000 — the landing page, app, API, and OAuth
+callbacks all live on the one port. SQLite DB + uploads persist in the
+`social-auto-data` volume (host path `./storage` works too:
+`-v ./storage:/app/storage`).
+
+### Bare metal / VM
+
+```bash
+pnpm install
+pnpm build                        # produces core/web/dist
+EMBEDDED_WORKER=true pnpm start   # API + web + worker on :3000
+```
+
+Requirements: Node.js >= 20, pnpm 9, ffmpeg + ffprobe on PATH.
+`EMBEDDED_WORKER=true` is recommended for single-machine deploys; to scale
+the worker separately instead, run `pnpm -F @social-auto/api start` and
+`pnpm -F @social-auto/worker start` as two processes (note: both write to
+the same SQLite file — embedded mode avoids that race entirely).
+
+### Production checklist
+
+- Set `WEB_ORIGIN` to the public URL (also used for OAuth `redirect_uri`)
+- Set `*_REDIRECT_URI` values to `${WEB_ORIGIN}/auth/...` and register
+  them in each platform's developer console
+- Flip `USE_MOCK_*=false` and fill real credentials (see
+  [API_CREDENTIALS_GUIDE.md](./API_CREDENTIALS_GUIDE.md))
+- Put HTTPS in front (reverse proxy) before exposing publicly
 
 ## Project Structure
 

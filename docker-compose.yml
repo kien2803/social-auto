@@ -1,0 +1,40 @@
+services:
+  social-auto:
+    build: .
+    container_name: social-auto
+    ports:
+      - "3000:3000"
+    environment:
+      # Required — generate with:
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?Set TOKEN_ENCRYPTION_KEY in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      # Public origin the app is reached at — OAuth callbacks redirect here.
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      # Mock mode by default; set to false once real platform credentials
+      # are configured (see API_CREDENTIALS_GUIDE.md).
+      USE_MOCK_GOOGLE: ${USE_MOCK_GOOGLE:-true}
+      USE_MOCK_PUBLISHERS: ${USE_MOCK_PUBLISHERS:-true}
+      USE_MOCK_TIKTOK: ${USE_MOCK_TIKTOK:-true}
+      USE_MOCK_META: ${USE_MOCK_META:-true}
+      # Real platform credentials — only needed when the matching
+      # USE_MOCK_* flag above is false.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      TIKTOK_CLIENT_KEY: ${TIKTOK_CLIENT_KEY:-}
+      TIKTOK_CLIENT_SECRET: ${TIKTOK_CLIENT_SECRET:-}
+      META_APP_ID: ${META_APP_ID:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${WEB_ORIGIN:-http://localhost:3000}/auth/callback
+      TIKTOK_REDIRECT_URI: ${WEB_ORIGIN:-http://localhost:3000}/auth/tiktok/callback
+      META_REDIRECT_URI: ${WEB_ORIGIN:-http://localhost:3000}/auth/meta/callback
+      STORAGE_QUOTA_GB: ${STORAGE_QUOTA_GB:-10}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      # SQLite DB + uploaded videos + thumbnails.
+      - social-auto-data:/app/storage
+    restart: unless-stopped
+
+volumes:
+  social-auto-data:

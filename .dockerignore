@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+**/coverage
+storage
+.git
+.gitignore
+.env
+.env.*
+*.db
+*.log
+nul
+Dockerfile
+docker-compose.yml
