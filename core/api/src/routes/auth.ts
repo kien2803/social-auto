@@ -20,6 +20,9 @@ export interface AuthDeps {
   tokenEncryptionKey: string;
   /** Mounts the legacy IG/FB mock OAuth routes. Driven by `USE_MOCK_PUBLISHERS`. */
   useMockPublishers?: boolean;
+  /** Mounts mock /auth/tiktok start+callback when no real TikTok client is
+   * configured — otherwise the SPA's "Add TikTok account" 404s. */
+  mockTiktok?: boolean;
   /** Optional auth middleware for backward compatibility. */
   optionalAuthMiddleware?: (request: any, reply: any) => Promise<void>;
 }
@@ -634,14 +637,21 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   //   facebook   → mock-fb-
   // See BUG-P2-001 in plans/core/phase-2-multi-platform/fix-bugs.md.
   // ──────────────────────────────────────────────────────────────────────────
-  if (!deps.useMockPublishers) return;
-
-  const MOCK_PLATFORMS = ['instagram', 'facebook'] as const;
+  const MOCK_PLATFORMS = [
+    ...(deps.useMockPublishers ? (['instagram', 'facebook'] as const) : []),
+    // The real TikTok OAuth routes above only mount when credentials
+    // exist (deps.tiktok). mockTiktok (set when credentials are missing)
+    // gives the SPA's "Add TikTok account" button a working mock pair
+    // instead of a 404.
+    ...(deps.mockTiktok ? (['tiktok'] as const) : []),
+  ] as const;
   type MockPlatform = (typeof MOCK_PLATFORMS)[number];
+  if (MOCK_PLATFORMS.length === 0) return;
 
   const MOCK_TOKEN_PREFIX: Record<MockPlatform, string> = {
     instagram: 'mock-ig-',
     facebook: 'mock-fb-',
+    tiktok: 'mock-tt-',
   };
 
   for (const platform of MOCK_PLATFORMS) {

@@ -132,6 +132,7 @@ export async function buildApp() {
     webOrigin: env.webOrigin,
     tokenEncryptionKey: env.tokenEncryptionKey,
     useMockPublishers: env.useMockPublishers || metaUseMock,
+    mockTiktok: tiktokUseMock,
     optionalAuthMiddleware,
   });
   registerAccountRoutes(app, { accounts, posts, google, tokenEncryptionKey: env.tokenEncryptionKey, authMiddleware });
