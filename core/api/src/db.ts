@@ -31,17 +31,24 @@ export interface DB {
  * Wrap run/exec so every write persists to disk immediately and marks the DB
  * dirty. The wrappers are re-installed on the new instance after a reload.
  */
+const READ_ONLY_SQL = /^\s*select\b/i;
+
 function instrumentWrites(raw: Database, onWrite: () => void): void {
   const origRun = raw.run.bind(raw) as Database['run'];
   raw.run = ((...args: unknown[]) => {
     const r = origRun(...(args as Parameters<Database['run']>));
-    onWrite();
+    // Skip statements that touched no rows (e.g. an UPDATE matching
+    // nothing) — persisting an unchanged snapshot just churns the file
+    // and races the peer process holding this same DB file.
+    if (raw.getRowsModified() > 0) onWrite();
     return r;
   }) as Database['run'];
   const origExec = raw.exec.bind(raw);
   raw.exec = ((...args: unknown[]) => {
     const r = origExec(...(args as Parameters<Database['exec']>));
-    onWrite();
+    // Repos run every SELECT through exec — persisting after each read
+    // would rewrite the whole DB file on every GET request.
+    if (!READ_ONLY_SQL.test(args[0] as string)) onWrite();
     return r;
   }) as Database['exec'];
 }

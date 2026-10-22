@@ -37,17 +37,22 @@ export interface DB {
  * Wrap run/exec to track dirty state. We do NOT auto-persist on every write —
  * see `flush()` for the rationale.
  */
+const READ_ONLY_SQL = /^\s*select\b/i;
+
 function instrumentWrites(raw: Database, onWrite: () => void): void {
   const origRun = raw.run.bind(raw) as Database['run'];
   raw.run = ((...args: unknown[]) => {
     const r = origRun(...(args as Parameters<Database['run']>));
-    onWrite();
+    // Skip statements that touched no rows (e.g. unstickUploading matching
+    // nothing on an idle poll) — marking dirty for those would make every
+    // flush rewrite the file and race the API's writes.
+    if (raw.getRowsModified() > 0) onWrite();
     return r;
   }) as Database['run'];
   const origExec = raw.exec.bind(raw);
   raw.exec = ((...args: unknown[]) => {
     const r = origExec(...(args as Parameters<Database['exec']>));
-    onWrite();
+    if (!READ_ONLY_SQL.test(args[0] as string)) onWrite();
     return r;
   }) as Database['exec'];
 }
@@ -97,10 +102,16 @@ export async function openDB(path: string): Promise<DB> {
     get raw() {
       return raw;
     },
-    flush: persist,
+    flush() {
+      // Only export when this process actually wrote. An idle poll still
+      // runs SELECTs and a no-op unstick UPDATE — persisting an unchanged
+      // snapshot every cycle would clobber whatever the API wrote in the
+      // meantime (sql.js exports the whole in-memory DB, not a diff).
+      if (dirty) persist();
+    },
     close() {
       if (closed) return;
-      persist();
+      if (dirty) persist();
       raw.close();
       closed = true;
     },

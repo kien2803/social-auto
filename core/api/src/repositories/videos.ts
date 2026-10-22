@@ -86,10 +86,10 @@ export class VideosRepo {
   }
 
   delete(id: string): void {
-    this.db.raw.exec('DELETE FROM videos WHERE id = ?', [id]);
+    this.db.raw.run('DELETE FROM videos WHERE id = ?', [id]);
   }
 
   deleteByUserId(userId: string): void {
-    this.db.raw.exec('DELETE FROM videos WHERE user_id = ?', [userId]);
+    this.db.raw.run('DELETE FROM videos WHERE user_id = ?', [userId]);
   }
 }

@@ -129,6 +129,13 @@ export async function runWorker(): Promise<void> {
 }
 
 export async function pollOnce(deps: PollDeps): Promise<number> {
+  // Pick up writes the API process made since we last looked. Without this,
+  // sql.js's in-memory cache (per-process) would never see the API's inserts.
+  // This MUST run before any write below: persist() exports our whole
+  // in-memory snapshot, so writing from a stale snapshot would clobber
+  // whatever the API persisted in the meantime.
+  const reloaded = deps.db.refreshIfChanged();
+  if (reloaded) console.log('[worker] DB reloaded from disk (mtime changed)');
   // INFRA-004: every poll must scan for posts the previous tick left
   // 'uploading' (worker crashed mid-upload, or process was killed).
   // Without this, a permanently stuck upload is only recovered on the
@@ -138,10 +145,6 @@ export async function pollOnce(deps: PollDeps): Promise<number> {
   if (unstuck > 0) {
     console.log(`[worker] unstuck ${unstuck} post(s) from previous poll`);
   }
-  // Pick up writes the API process made since we last looked. Without this,
-  // sql.js's in-memory cache (per-process) would never see the API's inserts.
-  const reloaded = deps.db.refreshIfChanged();
-  if (reloaded) console.log('[worker] DB reloaded from disk (mtime changed)');
   const claimed = deps.posts.claimDuePosts(Date.now(), CLAIM_BATCH);
   if (claimed.length > 0) console.log(`[worker] claimed ${claimed.length} post(s)`);
   if (claimed.length > 0) {

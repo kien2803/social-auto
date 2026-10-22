@@ -4,6 +4,27 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 ---
 
+## 2026-10-22 - Hotfix: worker clobber DB của API (sql.js shared-file race)
+
+**Vấn đề phát hiện khi preview**: user đăng ký qua `/auth/register` biến mất khỏi `storage/app.db` sau vài giây → `/auth/login` trả "Invalid email or password" dù password đúng.
+
+**Root cause** (3 lỗi chồng nhau trong thiết kế sql.js multi-process):
+1. Worker `pollOnce` chạy `unstickUploading` (UPDATE) **trước** `refreshIfChanged()` → dirty=true → persist() export snapshot cũ đè lên file API vừa ghi
+2. Worker `flush()`/`close()` gọi `persist()` **vô điều kiện** — không check `dirty` → export toàn bộ DB mỗi poll kể cả khi idle
+3. `instrumentWrites` gọi persist/dirty sau **mọi** `run`/`exec` — kể cả SELECT → mỗi GET request của API cũng rewrite file
+
+**Fix**:
+- `core/worker/src/index.ts`: `refreshIfChanged()` chạy đầu pollOnce (merge writes của API trước khi worker write/persist)
+- `core/api/src/db.ts` + `core/worker/src/db.ts`: `run` chỉ mark dirty/persist khi `getRowsModified() > 0`; `exec` bỏ qua statement SELECT
+- `core/worker/src/db.ts`: `flush()`/`close()` chỉ persist khi `dirty` — idle poll không đụng file nữa (verify: mtime app.db không đổi qua >2 poll cycles)
+- `core/api/src/repositories/videos.ts`: DELETE chuyển từ `exec` sang `run` (đúng API cho statement không trả result set)
+
+**Kết quả**: register → chờ >2 poll cycles → login thành công, user tồn tại trong app.db. 234/234 tests pass, typecheck pass.
+
+**Known limitation**: sql.js export-toàn-file không thể merge 2 writer — nếu API write *giữa* lúc worker refresh và flush (trong một poll đang xử lý post), write đó vẫn có thể bị mất. Window rất hẹp sau fix, nhưng muốn triệt để cần single-writer (embedded server) hoặc chuyển sang SQLite driver có file locking thật.
+
+---
+
 ## 2026-10-22 - Phase 4: Testing & Polish (multi-user auth)
 
 ### ✅ Đã hoàn thành
