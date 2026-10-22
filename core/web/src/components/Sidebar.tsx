@@ -8,7 +8,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: '◐', end: true },
+  { to: '/dashboard', label: 'Dashboard', icon: '◐' },
   { to: '/upload', label: 'Upload & Schedule', icon: '↑' },
   { to: '/schedule', label: 'Schedule', icon: '⏱' },
   { to: '/history', label: 'History', icon: '⌛' },

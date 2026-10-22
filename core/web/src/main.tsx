@@ -2,11 +2,11 @@ import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Layout, PageFallback } from './components/Layout.js';
+import { PageFallback } from './components/Layout.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { ToastProvider } from './components/ui/Toast.js';
 import { AuthProvider } from './contexts/AuthContext.js';
-import { ProtectedRoute } from './components/ProtectedRoute.js';
+import { ProtectedShell } from './components/ProtectedShell.js';
 import { queryClient } from './lib/queryClient.js';
 import { installWindowErrorHandlers, track } from './lib/telemetry.js';
 import './index.css';
@@ -44,6 +44,9 @@ const LoginPage = lazy(() =>
 const RegisterPage = lazy(() =>
   import('./pages/RegisterPage.js').then((m) => ({ default: m.RegisterPage })),
 );
+const LandingPage = lazy(() =>
+  import('./pages/LandingPage.js').then((m) => ({ default: m.LandingPage })),
+);
 
 const routerFuture = {
   v7_startTransition: true,
@@ -60,62 +63,21 @@ ReactDOM.createRoot(root).render(
         <ToastProvider>
           <AuthProvider>
             <BrowserRouter future={routerFuture}>
-              <Layout>
-                <Suspense fallback={<PageFallback />}>
-                  <Routes>
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route
-                      path="/"
-                      element={
-                        <ProtectedRoute>
-                          <DashboardPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/upload"
-                      element={
-                        <ProtectedRoute>
-                          <UploadPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/schedule"
-                      element={
-                        <ProtectedRoute>
-                          <SchedulePage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/history"
-                      element={
-                        <ProtectedRoute>
-                          <HistoryPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/accounts"
-                      element={
-                        <ProtectedRoute>
-                          <AccountsPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/analytics"
-                      element={
-                        <ProtectedRoute>
-                          <AnalyticsPage />
-                        </ProtectedRoute>
-                      }
-                    />
-                  </Routes>
-                </Suspense>
-              </Layout>
+              <Suspense fallback={<PageFallback />}>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route element={<ProtectedShell />}>
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/upload" element={<UploadPage />} />
+                    <Route path="/schedule" element={<SchedulePage />} />
+                    <Route path="/history" element={<HistoryPage />} />
+                    <Route path="/accounts" element={<AccountsPage />} />
+                    <Route path="/analytics" element={<AnalyticsPage />} />
+                  </Route>
+                </Routes>
+              </Suspense>
             </BrowserRouter>
           </AuthProvider>
         </ToastProvider>

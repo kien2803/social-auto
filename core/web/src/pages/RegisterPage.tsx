@@ -20,7 +20,7 @@ export function RegisterPage() {
 
     try {
       await register(email, password, name);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
