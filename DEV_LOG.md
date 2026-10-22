@@ -4,6 +4,20 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 ---
 
+## 2026-10-22 - Fix: account OAuth gán nhầm về `default-user`
+
+**Vấn đề âm thầm**: OAuth start/callback là full-page navigation → browser **không bao giờ gửi `Authorization` header** → `optionalAuthMiddleware` không set `userId` → mọi account connect qua UI rơi về `default-user` → user đăng nhập không thấy account vừa connect. Multi-user attribution của OAuth thực chất chưa từng hoạt động ngoài curl.
+
+**Fix** (commit `de485a4`):
+- `web/lib/api.ts`: `stageOAuthTokenCookie()` — copy JWT sang cookie `oauth_token` (path=/auth, max-age 600, SameSite=Lax) trước khi `window.location.assign` tới `/api/auth/*/start`; `clearToken()` cũng xóa cookie khi logout
+- `api/middleware/auth.ts`: optional-auth routes chấp nhận `oauth_token` cookie làm Bearer fallback; required-auth API routes vẫn Bearer-only (cookie không mở rộng CSRF surface)
+- `api/repositories/accounts.ts`: thêm `reassignOwner(id, userId)`
+- Cả 6 OAuth upsert sites (youtube, tiktok real + mock, meta real + mock): khi row đã tồn tại dưới `user_id` khác → reassign về user vừa hoàn tất OAuth grant (connect được = chứng minh kiểm soát channel) thay vì giữ owner cũ âm thầm
+
+**Verify live**: flow cookie round-trip qua vite proxy → account youtube tạo đúng dưới user đăng nhập, xuất hiện trong `/accounts`. 145 API + 24 web tests pass, typecheck sạch.
+
+---
+
 ## 2026-10-22 - Hotfix: worker clobber DB của API (sql.js shared-file race)
 
 **Vấn đề phát hiện khi preview**: user đăng ký qua `/auth/register` biến mất khỏi `storage/app.db` sau vài giây → `/auth/login` trả "Invalid email or password" dù password đúng.
