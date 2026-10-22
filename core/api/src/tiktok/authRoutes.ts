@@ -118,6 +118,7 @@ export function registerTiktokAuthRoutes(app: FastifyInstance, deps: TiktokAuthD
     const existing = deps.accounts.findByPlatformExternal('tiktok', user.open_id);
     let accountId: string;
     if (existing) {
+      if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
       deps.accounts.updateDisplayName(existing.id, user.display_name);
       deps.accounts.updateStatus(existing.id, 'active');
       deps.accounts.updateTokens(existing.id, {

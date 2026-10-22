@@ -128,6 +128,7 @@ export function registerMetaAuthRoutes(app: FastifyInstance, deps: MetaAuthDeps)
       const avatarUrl = matchingPage?.picture_url;
       const existing = deps.accounts.findByPlatformExternal(r.platform, r.externalId);
       if (existing) {
+        if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
         deps.accounts.updateDisplayName(existing.id, r.displayName);
         deps.accounts.updateStatus(existing.id, 'active');
         deps.accounts.updateTokens(existing.id, {

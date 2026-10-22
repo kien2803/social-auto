@@ -150,6 +150,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     const existing = deps.accounts.findByPlatformExternal('youtube', channel.id);
     let accountId: string;
     if (existing) {
+      if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
       deps.accounts.updateDisplayName(existing.id, channel.title);
       deps.accounts.updateStatus(existing.id, 'active');
       deps.accounts.updateTokens(existing.id, {
@@ -321,6 +322,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       const existing = deps.accounts.findByPlatformExternal('tiktok', user.open_id);
       let accountId: string;
       if (existing) {
+        if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
         deps.accounts.updateDisplayName(existing.id, user.display_name);
         deps.accounts.updateStatus(existing.id, 'active');
         deps.accounts.updateTokens(existing.id, {
@@ -483,6 +485,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         const existing = deps.accounts.findByPlatformExternal(platform, page.id);
         let accountId: string;
         if (existing) {
+          if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
           deps.accounts.updateDisplayName(existing.id, page.name);
           deps.accounts.updateStatus(existing.id, 'active');
           deps.accounts.updateTokens(existing.id, {
@@ -692,6 +695,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       const existing = deps.accounts.findByPlatformExternal(platform, code);
       let accountId: string;
       if (existing) {
+        if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
         deps.accounts.updateDisplayName(existing.id, displayName);
         deps.accounts.updateStatus(existing.id, 'active');
         deps.accounts.updateTokens(existing.id, {

@@ -11,6 +11,7 @@ import {
   ACCOUNT_CONTENT_CATEGORIES,
   ACCOUNT_LANGUAGE_CODES,
   api,
+  stageOAuthTokenCookie,
   type AccountContentCategory,
   type AccountLanguageCode,
   type AccountListFilter,
@@ -57,6 +58,7 @@ const SearchInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
  */
 function startConnect(platform: Platform): void {
   track('click Connect', { platform, surface: 'header' });
+  stageOAuthTokenCookie();
   window.location.assign(`/api/auth/${encodeURIComponent(platform)}/start`);
 }
 /** "UC_2K2J...xyz" — truncate opaque platform channel ids for display. */

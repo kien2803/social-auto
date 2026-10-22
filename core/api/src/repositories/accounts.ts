@@ -337,6 +337,16 @@ export class AccountsRepo {
     this.db.raw.run('UPDATE accounts SET status = ? WHERE id = ?', [status, id]);
   }
 
+  /**
+   * Transfer an account row to a different user. OAuth callbacks call this
+   * when the connected channel/page is already claimed under another
+   * user_id — completing the OAuth grant proves control of the channel, so
+   * the row follows the most recent connector.
+   */
+  reassignOwner(id: string, userId: string): void {
+    this.db.raw.run('UPDATE accounts SET user_id = ? WHERE id = ?', [userId, id]);
+  }
+
   /** Update the human-readable label (e.g. after the user renames their channel). */
   updateDisplayName(id: string, displayName: string): void {
     this.db.raw.run('UPDATE accounts SET display_name = ? WHERE id = ?', [displayName, id]);

@@ -162,6 +162,19 @@ function setToken(token: string): void {
 function clearToken(): void {
   if (typeof window === 'undefined' || !window.localStorage) return;
   localStorage.removeItem('auth_token');
+  if (typeof document !== 'undefined') {
+    document.cookie = 'oauth_token=; path=/auth; max-age=0';
+  }
+}
+
+// OAuth connect is a full-page navigation, so the API never sees the
+// Authorization header. Copy the JWT into a short-lived cookie scoped to
+// /auth so the optional-auth callback can attribute the connected account
+// to the logged-in user instead of falling back to 'default-user'.
+export function stageOAuthTokenCookie(): void {
+  const token = getToken();
+  if (!token || typeof document === 'undefined') return;
+  document.cookie = `oauth_token=${encodeURIComponent(token)}; path=/auth; max-age=600; SameSite=Lax`;
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
