@@ -194,9 +194,14 @@ function probeDuration(filePath: string): Promise<number | null> {
 
 function generateThumbnail(srcPath: string, outPath: string, seekSec: number): Promise<void> {
   const { promise, resolve, reject } = Promise.withResolvers<void>();
+  // Seeking to exactly `duration` (the caller passes video length as
+  // seekSec) lands past the last frame — ffmpeg then emits zero packets
+  // and no thumbnail is written, silently disabling thumbnails for every
+  // video shorter than ~10s. Pull the seek point half a second inside.
+  const seek = Math.max(0, Math.min(seekSec, 10) - 0.5);
   const proc = spawn('ffmpeg', [
     '-y',
-    '-ss', String(Math.max(0, Math.min(seekSec, 10))),
+    '-ss', String(seek),
     '-i', srcPath,
     '-frames:v', '1',
     '-q:v', '3',

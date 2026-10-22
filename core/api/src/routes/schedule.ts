@@ -54,7 +54,7 @@ function validateBase(body: ScheduleBody | MultiScheduleBody): string | null {
 
 export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps): void {
   app.post('/schedule', { preHandler: deps.authMiddleware }, async (req, reply) => {
-    const body = req.body as MultiScheduleBody;
+    const body = req.body as MultiScheduleBody | ScheduleBody;
     const err = validateBase(body);
     if (err) return reply.code(400).send({ error: err });
 
@@ -68,12 +68,20 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
       return reply.code(403).send({ error: 'video_not_owned' });
     }
 
-    const accountIds = body.account_ids;
+    // Clients may send either account_ids[] (multi) or account_id
+    // (single). validateBase accepts both — normalize here so the
+    // single form doesn't crash on undefined.length.
+    const accountIds =
+      'account_ids' in body && Array.isArray(body.account_ids)
+        ? body.account_ids
+        : 'account_id' in body && body.account_id
+          ? [body.account_id]
+          : [];
     if (accountIds.length > MAX_ACCOUNTS_PER_SCHEDULE) {
       return reply.code(400).send({ error: `too_many_accounts: maximum ${MAX_ACCOUNTS_PER_SCHEDULE} accounts per schedule` });
     }
 
-    const perPlatform = body.per_platform_caption ?? {};
+    const perPlatform = ('per_platform_caption' in body ? body.per_platform_caption : undefined) ?? {};
     const created = [];
     for (const accId of accountIds) {
       const acc = deps.accounts.findById(accId);
