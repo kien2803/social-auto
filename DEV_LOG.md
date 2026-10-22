@@ -27,6 +27,17 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 `vite.config.ts` đọc `process.env['VITE_API_TARGET']` nhưng Vite **không auto-load `.env.local` vào process.env** trong config file → proxy `/api`+`/auth` luôn trỏ `http://localhost:5182` (không có gì chạy) → mọi request từ UI trả Internal Server Error. Fix bằng `loadEnv()` trong config. Verify: `/api/health`, login, `/api/accounts` qua proxy đều 200.
 
+### Fix phụ 2: audit backend toàn bộ endpoint (feature smoke test)
+
+Test thật từng route (33 endpoints) phát hiện 4 vấn đề:
+
+1. **`POST /schedule` crash 500 với single `account_id`** — `validateBase` chấp nhận cả 2 forms nhưng handler chỉ đọc `account_ids` → `undefined.length`. Fix: normalize `account_ids ?? [account_id]` trong `routes/schedule.ts`.
+2. **`GET /schedule?account_id=` 500 "datatype mismatch"** — `listSlim` push `account_id = ?` vào WHERE nhưng quên `params.push` → unbound param. Silent bug: SchedulePage filter theo account chết hoàn toàn. Fix trong `repositories/scheduledPosts.ts`.
+3. **Thumbnail luôn `null` cho video <10s** — `generateThumbnail` được gọi với `duration` làm `-ss` seek point → seek vượt frame cuối → ffmpeg emit 0 packet, `.catch(()=>null)` nuốt lỗi. Fix: clamp `min(duration,10)-0.5`.
+4. **Dead routes**: `/storage/usage|cleanup|enforce-quota` và `/videos/:id/progress|cancel` tồn tại trong code nhưng **không bao giờ được mount** trong `server.ts` (imports bị gỡ trong lint cleanup). Đã mount + thêm `authMiddleware` (storage/cancel là destructive ops — trước đó mount cũng không auth). StorageManager dùng interface `get/put` cũ → adapter sang shared backend `download/upload`, forward `baseDir`/`markFile*`/`checkDiskSpace`.
+
+**E2E verify live**: upload mp4 → duration probed + thumbnail generated → schedule (cả 2 forms) → worker claim & publish → `published` + `mock-tt-*` external_id → quota `tiktok used=2`. 145/145 tests, typecheck pass.
+
 ---
 
 ## 2026-10-22 - Phase 4: Testing & Polish (multi-user auth)

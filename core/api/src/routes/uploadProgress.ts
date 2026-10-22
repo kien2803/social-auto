@@ -49,9 +49,13 @@ export function cleanupOldProgress(): void {
   }
 }
 
-export function registerUploadProgressRoutes(app: FastifyInstance): void {
+export function registerUploadProgressRoutes(
+  app: FastifyInstance,
+  deps?: { authMiddleware?: any },
+): void {
+  const auth = deps?.authMiddleware ? { preHandler: deps.authMiddleware } : {};
   // Get current progress for a video
-  app.get<{ Params: { id: string } }>('/videos/:id/progress', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req, reply) => {
     const progress = getProgress(req.params.id);
     
     if (!progress) {
@@ -62,14 +66,14 @@ export function registerUploadProgressRoutes(app: FastifyInstance): void {
   });
   
   // Update progress (called by worker)
-  app.post<{ Params: { id: string } }>('/videos/:id/progress', async (req) => {
+  app.post<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req) => {
     const { progress } = req.body as { progress: number };
     updateProgress(req.params.id, progress);
     return { success: true };
   });
   
   // Server-Sent Events endpoint for real-time progress
-  app.get<{ Params: { id: string } }>('/videos/:id/progress/stream', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/videos/:id/progress/stream', auth, async (req, reply) => {
     const videoId = req.params.id;
     
     // Set up SSE
@@ -110,13 +114,13 @@ export function registerUploadProgressRoutes(app: FastifyInstance): void {
   });
   
   // Cleanup endpoint (for testing)
-  app.delete<{ Params: { id: string } }>('/videos/:id/progress', async (req) => {
+  app.delete<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req) => {
     progressCache.delete(req.params.id);
     return { success: true };
   });
   
   // Cancel active upload
-  app.post<{ Params: { id: string } }>('/videos/:id/cancel', async (req, reply) => {
+  app.post<{ Params: { id: string } }>('/videos/:id/cancel', auth, async (req, reply) => {
     const { id } = req.params;
     const activeUpload = activeUploads.get(id);
     

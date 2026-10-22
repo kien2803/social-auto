@@ -250,6 +250,7 @@ export class ScheduledPostsRepo {
     }
     if (filters?.accountId) {
       where.push('account_id = ?');
+      params.push(filters.accountId);
     }
     if (filters?.userId) {
       where.push('user_id = ?');

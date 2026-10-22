@@ -22,6 +22,10 @@ import { registerScheduleRoutes } from './routes/schedule.js';
 import { registerAccountRoutes } from './routes/accounts.js';
 import { registerQuotaRoutes } from './routes/quota.js';
 import { registerHealthRoutes } from './routes/health.js';
+import { registerStorageRoutes } from './routes/storage.js';
+import { registerUploadProgressRoutes } from './routes/uploadProgress.js';
+import { StorageManager } from './services/storageManager.js';
+import { createStorageBackend } from '@social-auto/shared/storage';
 import { AuthService } from './services/authService.js';
 import { createGoogleClient } from './google/factory.js';
 import { createTiktokClient } from './tiktok/factory.js';
@@ -138,6 +142,51 @@ export async function buildApp() {
   registerAccountRoutes(app, { accounts, posts, google, tokenEncryptionKey: env.tokenEncryptionKey, authMiddleware });
   registerVideoRoutes(app, { videos, storageDir: env.storageDir, authMiddleware });
   registerScheduleRoutes(app, { posts, videos, accounts, authMiddleware });
+  registerUploadProgressRoutes(app, { authMiddleware });
+  const backend = createStorageBackend({
+    type: env.storageType,
+    local: env.storageType === 'local' ? { baseDir: env.storageDir } : undefined,
+    s3:
+      env.storageType === 'local'
+        ? undefined
+        : {
+            region: env.awsRegion,
+            endpoint: env.awsEndpoint || undefined,
+            accessKeyId: env.awsAccessKeyId,
+            secretAccessKey: env.awsSecretAccessKey,
+            bucket: env.awsS3Bucket,
+            prefix: env.awsS3Prefix,
+            forcePathStyle: env.awsForcePathStyle || env.storageType === 'r2',
+          },
+    quota: {
+      maxBytes: env.storageQuotaGB * 1024 * 1024 * 1024,
+      enforceQuota: env.storageEnforceQuota,
+    },
+  });
+  // StorageManager speaks an older get/put-style backend interface; adapt
+  // the shared backend (upload/download) and forward the optional helpers
+  // it probes via `as any` (baseDir, markFile*, checkDiskSpace).
+  const storageAdapter = {
+      type: backend.type,
+      baseDir: env.storageDir,
+      initialize: () => backend.initialize(),
+      getUsage: (p: string) => backend.getUsage(p),
+      list: async (p: string, limit: number) =>
+        (await backend.list(p, limit)).map((i) => ({
+          key: i.key,
+          isDirectory: i.isDirectory,
+        })),
+      get: (key: string) => backend.download(key),
+      put: async (key: string, data: Buffer) => {
+        await backend.upload(data, key);
+      },
+      delete: (key: string) => backend.delete(key),
+      markFileUploading: (backend as any).markFileUploading?.bind(backend),
+      markFileComplete: (backend as any).markFileComplete?.bind(backend),
+      checkDiskSpace: (backend as any).checkDiskSpace?.bind(backend),
+  };
+  const storageManager = new StorageManager(storageAdapter, videos, env.storageQuotaGB);
+  registerStorageRoutes(app, { storageManager, authMiddleware });
   return app;
 }
 const isMain = import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`;
