@@ -82,7 +82,7 @@ export function RegisterPage() {
 
           <p className="mt-6 text-center text-sm text-ink-muted">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary hover:underline">
+            <Link to="/login" className="text-brand-600 hover:underline">
               Sign in
             </Link>
           </p>
