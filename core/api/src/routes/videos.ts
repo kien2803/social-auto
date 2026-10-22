@@ -107,6 +107,7 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
           code: err.status === 413 ? 'FILE_TOO_LARGE' : err.status === 507 ? 'INSUFFICIENT_STORAGE' : 'UPLOAD_ERROR'
         });
       }
+      req.log.error(err, 'video upload failed');
       return reply.code(500).send({
         error: 'Upload failed',
         message: 'An unexpected error occurred. Please try again',

@@ -9,6 +9,7 @@ storage
 .env.*
 *.db
 *.log
+**/*.tsbuildinfo
 nul
 Dockerfile
 docker-compose.yml

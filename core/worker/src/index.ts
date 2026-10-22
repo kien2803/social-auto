@@ -17,6 +17,8 @@
  *         and the post 'dead' so the user sees a clear "reconnect" signal.
  */
 import { setTimeout as wait } from 'node:timers/promises';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { openDB, type DB } from './db.js';
 import { captureException } from './sentry.js';
 import { AccountsRepo } from './repositories/accounts.js';
@@ -437,7 +439,9 @@ export function startEmbeddedWorker(db: DB): EmbeddedWorkerHandle {
   };
 }
 
-const isMain = import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`;
+const isMain =
+  !!process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
 if (isMain) {
   runWorker().catch((err) => {
     console.error('[worker] fatal', err);

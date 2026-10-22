@@ -7,7 +7,7 @@
 # cross-process DB race).
 
 # ---------- build ----------
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 WORKDIR /app
 
@@ -16,10 +16,15 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY core ./core
 
 RUN pnpm install --frozen-lockfile
-RUN pnpm -F @social-auto/web run build
+# web's tsconfig project-references @social-auto/shared (composite) — its
+# dist/*.d.ts must exist before tsc runs; .dockerignore excludes dist so
+# it can never come from the build context.
+RUN pnpm -F @social-auto/shared run build \
+ && pnpm -F @social-auto/web run build
 
 # ---------- runtime ----------
-FROM node:20-alpine AS runtime
+# Node >= 22 required: Promise.withResolvers (Node 20 is EOL anyway).
+FROM node:22-alpine AS runtime
 # ffmpeg/ffprobe are required for duration probing + thumbnails.
 RUN apk add --no-cache ffmpeg \
  && corepack enable && corepack prepare pnpm@9.0.0 --activate

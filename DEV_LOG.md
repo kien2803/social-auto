@@ -22,6 +22,16 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 **Chưa verify**: `docker build` thật (máy dev không có Docker daemon) — Dockerfile viết theo pattern chuẩn pnpm workspace; cần test trên máy có Docker trước khi release.
 
+**Follow-up cùng ngày — Docker build verify + 3 bug tìm được khi chạy container thật**:
+
+1. **`.dockerignore` thiếu `**/*.tsbuildinfo`** — stale `tsconfig.tsbuildinfo` trong context khiến `tsc -b shared` nghĩ up-to-date → không emit `shared/dist` → web build fail `TS6305`. Pattern `*.tsbuildinfo` chỉ match root; cần `**/`.
+2. **`isMain` check fail với relative argv[1]** — `import.meta.url === 'file://' + argv[1]` không khớp khi `pnpm run` truyền `src/server.ts` → process exit 0 im lặng, container không listen. Fix: `pathToFileURL(resolve(process.argv[1])).href` (api + worker).
+3. **`Promise.withResolvers` cần Node ≥22** — container `node:20-alpine` → upload 500 sau khi ghi file (probeDuration throw). Bump `node:22-alpine` + `engines >=22` + thêm `req.log.error` vào upload catch (lỗi trước đó bị nuốt hoàn toàn).
+
+4. **BUG NGHIÊM TRỌNG — embedded worker claim post nhưng không bao giờ publish**: post kẹt `status='uploading'` vĩnh viễn, zero log `[worker]`. Root cause: API `db.ts` `instrumentWrites` gọi `persist()` → `raw.export()` **ngay trong `raw.run` wrapper** — mà `export()` reset `sqlite3_changes()` → `claimDuePosts` đọc `getRowsModified()` sau đó luôn = 0 → `won=[]` → `claimed=[]` → im lặng skip. Standalone worker không bị vì `db.ts` của nó defer export tới `flush()`. Mọi test pass vì `:memory:` không bao giờ persist. Fix: capture `origGetRowsModified()` trước `onWrite` trong cả run/exec wrapper + override `raw.getRowsModified` trả giá trị đã capture (api + worker db.ts). Regression test mới dùng file-backed DB (`repositories.test.ts`).
+
+**Verify container E2E đầy đủ** (`social-auto:test`, port 3101, named volume): build OK (bcrypt prebuild trên alpine OK, không cần toolchain) → boot (không exit lặng) → `/` 200 HTML, `/health` 200, register/login, mock OAuth start+callback, upload `duration_sec:3` + thumbnail, schedule → **worker claim → publish `mock-tt-*`** → status `published`. ffmpeg+ffprobe trong image.
+
 ---
 
 ## 2026-10-22 - Fix: account OAuth gán nhầm về `default-user`

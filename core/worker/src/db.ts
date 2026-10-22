@@ -40,21 +40,33 @@ export interface DB {
 const READ_ONLY_SQL = /^\s*select\b/i;
 
 function instrumentWrites(raw: Database, onWrite: () => void): void {
+  // Capture the changes count before onWrite: if it ever persists (exports
+  // the DB) it resets sqlite3_changes(), and repos reading getRowsModified()
+  // afterwards would see 0. Today onWrite only sets `dirty`, but the
+  // defensive capture keeps the run/exec wrapper contract identical to the
+  // API's db.ts where persist() runs inside the write path.
+  let lastModified = 0;
+  const origGetRowsModified = raw.getRowsModified.bind(raw);
   const origRun = raw.run.bind(raw) as Database['run'];
   raw.run = ((...args: unknown[]) => {
     const r = origRun(...(args as Parameters<Database['run']>));
+    lastModified = origGetRowsModified();
     // Skip statements that touched no rows (e.g. unstickUploading matching
     // nothing on an idle poll) — marking dirty for those would make every
     // flush rewrite the file and race the API's writes.
-    if (raw.getRowsModified() > 0) onWrite();
+    if (lastModified > 0) onWrite();
     return r;
   }) as Database['run'];
   const origExec = raw.exec.bind(raw);
   raw.exec = ((...args: unknown[]) => {
     const r = origExec(...(args as Parameters<Database['exec']>));
-    if (!READ_ONLY_SQL.test(args[0] as string)) onWrite();
+    if (!READ_ONLY_SQL.test(args[0] as string)) {
+      lastModified = origGetRowsModified();
+      onWrite();
+    }
     return r;
   }) as Database['exec'];
+  raw.getRowsModified = () => lastModified;
 }
 
 export async function openDB(path: string): Promise<DB> {

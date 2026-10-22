@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'sql.js';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { openDB, type DB } from '../db.js';
 import { VideosRepo } from '../repositories/videos.js';
 import { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
@@ -73,6 +76,48 @@ describe('ScheduledPostsRepo + QuotasRepo', () => {
     const first = claimed[0]!;
     expect(first.id).toBe(past.id);
     expect(first.status).toBe('uploading');
+  });
+
+  it('claimDuePosts works on a file-backed DB (persist/export must not erase the claim)', async () => {
+    // Regression: instrumentWrites persists on every write for file-backed
+    // DBs, and sql.js export() resets sqlite3_changes(). If the claim UPDATE's
+    // rowsModified check reads the counter after export, it sees 0 and the
+    // claim is silently dropped — leaving the post 'uploading' forever.
+    const dir = mkdtempSync(join(tmpdir(), 'social-auto-test-'));
+    const fileDb = await openDB(join(dir, 'app.db'));
+    try {
+      const u2 = new UsersRepo(fileDb);
+      const v2 = new VideosRepo(fileDb);
+      const a2 = new AccountsRepo(fileDb);
+      const p2 = new ScheduledPostsRepo(fileDb);
+      u2.insert({ id: 'u2', email: 'u2@x.com', password_hash: 'h', name: 'u' });
+      const v = v2.insert({
+        user_id: 'u2',
+        file_path: '/tmp/x.mp4',
+        sha256: 'b'.repeat(64),
+        size_bytes: 1,
+        mime: 'video/mp4',
+      });
+      const a = a2.insert({
+        user_id: 'u2',
+        platform: 'tiktok',
+        display_name: 't',
+        oauth_refresh_token: encrypt('rt', TOKEN_KEY),
+        status: 'active',
+      });
+      const post = p2.insert({
+        video_id: v.id,
+        account_id: a.id,
+        scheduled_at: Date.now() - 1000,
+        caption: 'c',
+      });
+      const claimed = p2.claimDuePosts(Date.now());
+      expect(claimed).toHaveLength(1);
+      expect(claimed[0]!.id).toBe(post.id);
+    } finally {
+      fileDb.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('claimDuePosts skips posts in retry backoff', async () => {

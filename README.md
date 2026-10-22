@@ -103,7 +103,7 @@ pnpm build                        # produces core/web/dist
 EMBEDDED_WORKER=true pnpm start   # API + web + worker on :3000
 ```
 
-Requirements: Node.js >= 20, pnpm 9, ffmpeg + ffprobe on PATH.
+Requirements: Node.js >= 22, pnpm 9, ffmpeg + ffprobe on PATH.
 `EMBEDDED_WORKER=true` is recommended for single-machine deploys; to scale
 the worker separately instead, run `pnpm -F @social-auto/api start` and
 `pnpm -F @social-auto/worker start` as two processes (note: both write to

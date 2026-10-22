@@ -9,6 +9,8 @@ import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { initSentry, captureException } from './sentry.js';
 import { env } from './env.js';
 import { openDB } from './db.js';
@@ -248,7 +250,9 @@ export async function buildApp() {
   }
   return app;
 }
-const isMain = import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`;
+const isMain =
+  !!process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
 if (isMain) {
   const app = await buildApp();
   // Graceful shutdown: Docker / systemd send SIGTERM; closing the server
