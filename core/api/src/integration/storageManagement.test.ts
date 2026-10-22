@@ -23,6 +23,42 @@ import path from 'node:path';
 const TEST_STORAGE_DIR = path.join(process.cwd(), 'test-worker-storage');
 const TEST_DB_PATH = path.join(process.cwd(), 'test-worker-storage.db');
 
+// StorageBackend backed by the real TEST_STORAGE_DIR so cleanup tests can
+// observe files written to disk. `baseDir` is required by
+// StorageManager.extractKey to map absolute file_path values to keys.
+function makeFsMockBackend() {
+  return {
+    type: 'local' as const,
+    baseDir: TEST_STORAGE_DIR,
+    initialize: async () => {},
+    getUsage: async (): Promise<number> => {
+      let total = 0;
+      try {
+        for (const name of await fs.readdir(TEST_STORAGE_DIR)) {
+          const st = await fs.stat(path.join(TEST_STORAGE_DIR, name));
+          if (st.isFile()) total += st.size;
+        }
+      } catch {
+        // directory may not exist yet
+      }
+      return total;
+    },
+    list: async (): Promise<Array<{ key: string; isDirectory: boolean }>> => {
+      try {
+        const entries = await fs.readdir(TEST_STORAGE_DIR, { withFileTypes: true });
+        return entries.map((e) => ({ key: e.name, isDirectory: e.isDirectory() }));
+      } catch {
+        return [];
+      }
+    },
+    get: async (key: string) => fs.readFile(path.join(TEST_STORAGE_DIR, key)),
+    put: async () => {},
+    delete: async (key: string) => {
+      await fs.unlink(path.join(TEST_STORAGE_DIR, key));
+    },
+  };
+}
+
 describe('Storage Manager Integration', () => {
   let db: any;
   let videos: VideosRepo;
@@ -33,7 +69,7 @@ describe('Storage Manager Integration', () => {
     await fs.mkdir(TEST_STORAGE_DIR, { recursive: true });
     db = await openDB(TEST_DB_PATH);
     videos = new VideosRepo(db);
-    storageManager = new StorageManager(TEST_STORAGE_DIR, videos, 1); // 1GB quota
+    storageManager = new StorageManager(makeFsMockBackend(), videos, 1); // 1GB quota
   });
 
   afterAll(async () => {
@@ -118,7 +154,7 @@ describe('Storage Manager Integration', () => {
 
   describe('Storage Quota Enforcement', () => {
     it('should enforce storage quota', async () => {
-      const testManager = new StorageManager(TEST_STORAGE_DIR, videos, 0.001); // 1MB
+      const testManager = new StorageManager(makeFsMockBackend(), videos, 0.001); // 1MB
 
       const fileCount = 5;
       for (let i = 0; i < fileCount; i++) {

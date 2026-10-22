@@ -28,12 +28,14 @@ import {
   buildAuthRedirect,
   clearOrphanOAuthCookies,
 } from '../auth/popupClose.js';
+import { getUserId } from '../utils/authHelpers.js';
 
 export interface MetaAuthDeps {
   accounts: AccountsRepo;
   meta: MetaOAuthClient;
   webOrigin: string;
   tokenEncryptionKey: string;
+  optionalAuthMiddleware?: (request: any, reply: any) => Promise<void>;
 }
 export function registerMetaAuthRoutes(app: FastifyInstance, deps: MetaAuthDeps): void {
   // Wipe oauth_state / oauth_popup on any 4xx/5xx so a failed Meta
@@ -70,10 +72,13 @@ export function registerMetaAuthRoutes(app: FastifyInstance, deps: MetaAuthDeps)
 
   // Wipe oauth_state / oauth_popup on any 4xx/5xx so a failed Meta
 
-  app.get('/auth/meta/callback', async (req, reply) => {
+  app.get('/auth/meta/callback', { preHandler: deps.optionalAuthMiddleware }, async (req, reply) => {
     const { code, state, error } = req.query as Record<string, string | undefined>;
     const popupMode = req.cookies[POPUP_COOKIE] === '1';
     if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
+
+    const userId = getUserId(req);
+
     if (error) {
       const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
       return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error }));
@@ -134,6 +139,7 @@ export function registerMetaAuthRoutes(app: FastifyInstance, deps: MetaAuthDeps)
         continue;
       }
       const row = deps.accounts.insert({
+        user_id: userId,
         platform: r.platform,
         external_id: r.externalId,
         display_name: r.displayName,

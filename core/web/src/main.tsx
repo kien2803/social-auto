@@ -5,6 +5,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Layout, PageFallback } from './components/Layout.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { ToastProvider } from './components/ui/Toast.js';
+import { AuthProvider } from './contexts/AuthContext.js';
+import { ProtectedRoute } from './components/ProtectedRoute.js';
 import { queryClient } from './lib/queryClient.js';
 import { installWindowErrorHandlers, track } from './lib/telemetry.js';
 import './index.css';
@@ -36,6 +38,12 @@ const AccountsPage = lazy(() =>
 const AnalyticsPage = lazy(() =>
   import('./pages/AnalyticsPage.js').then((m) => ({ default: m.AnalyticsPage })),
 );
+const LoginPage = lazy(() =>
+  import('./pages/LoginPage.js').then((m) => ({ default: m.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import('./pages/RegisterPage.js').then((m) => ({ default: m.RegisterPage })),
+);
 
 const routerFuture = {
   v7_startTransition: true,
@@ -50,20 +58,66 @@ ReactDOM.createRoot(root).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <BrowserRouter future={routerFuture}>
-            <Layout>
-              <Suspense fallback={<PageFallback />}>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/upload" element={<UploadPage />} />
-                  <Route path="/schedule" element={<SchedulePage />} />
-                  <Route path="/history" element={<HistoryPage />} />
-                  <Route path="/accounts" element={<AccountsPage />} />
-                  <Route path="/analytics" element={<AnalyticsPage />} />
-                </Routes>
-              </Suspense>
-            </Layout>
-          </BrowserRouter>
+          <AuthProvider>
+            <BrowserRouter future={routerFuture}>
+              <Layout>
+                <Suspense fallback={<PageFallback />}>
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <DashboardPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/upload"
+                      element={
+                        <ProtectedRoute>
+                          <UploadPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/schedule"
+                      element={
+                        <ProtectedRoute>
+                          <SchedulePage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/history"
+                      element={
+                        <ProtectedRoute>
+                          <HistoryPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/accounts"
+                      element={
+                        <ProtectedRoute>
+                          <AccountsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/analytics"
+                      element={
+                        <ProtectedRoute>
+                          <AnalyticsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+                  </Routes>
+                </Suspense>
+              </Layout>
+            </BrowserRouter>
+          </AuthProvider>
         </ToastProvider>
       </QueryClientProvider>
     </ErrorBoundary>

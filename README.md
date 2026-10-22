@@ -4,6 +4,7 @@ Self-hosted tool to manage and auto-post videos across social platforms — YouT
 
 ## Features
 
+- 👤 Multi-user authentication (register/login, JWT, per-user data isolation)
 - 🎬 Upload and manage videos
 - 🔗 Connect social accounts via OAuth (YouTube, TikTok, Instagram, Facebook)
 - 📅 Schedule posts with automatic publishing
@@ -85,6 +86,7 @@ Required variables in `.env.local`:
 ```bash
 # Required for all modes
 TOKEN_ENCRYPTION_KEY=your-32-byte-hex-key
+JWT_SECRET=your-jwt-secret
 
 # Mock mode (for testing - no credentials needed)
 USE_MOCK_GOOGLE=true

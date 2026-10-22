@@ -25,6 +25,10 @@
     "./utils/crypto-types.js": {
       "types": "./src/utils/crypto-types.ts",
       "import": "./src/utils/crypto-types.ts"
+    },
+    "./storage": {
+      "types": "./src/storage/index.ts",
+      "import": "./src/storage/index.ts"
     }
   },
   "scripts": {
@@ -35,5 +39,8 @@
   },
   "devDependencies": {
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1153.0"
   }
 }

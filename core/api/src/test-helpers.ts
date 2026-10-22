@@ -34,6 +34,8 @@ export async function buildTestAppWithMock(mockCfg: MockGoogleConfig = {}): Prom
   const db = await openDB(':memory:');
   const accounts = new AccountsRepo(db);
   const google = createMockGoogleClient(mockCfg);
+  // 'default-user' is seeded by migration 0011 — the OAuth callback's
+  // getUserId fallback references it when no auth middleware ran.
 
   app.get('/health', async () => ({ status: 'ok' }));
   registerAuthRoutes(app, {

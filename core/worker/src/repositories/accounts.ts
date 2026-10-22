@@ -3,6 +3,7 @@ import type { DB } from '../db.js';
 import { randomUUID } from 'node:crypto';
 
 export interface NewAccount {
+  user_id?: string;
   platform: Platform;
   /** Stable identifier returned by the platform (YouTube channel id, IG user id, …). Unique per platform. Optional for back-compat with fixtures and for platforms whose stable id is not yet wired; defaults to ''. */
   external_id?: string;
@@ -16,55 +17,49 @@ export interface NewAccount {
 /**
  * Convert a sql.js row (array of values) to a typed object by column order.
  * The schema's CREATE TABLE for `accounts` lists columns in this order:
- *   id, platform, external_id, display_name, oauth_refresh_token,
+ *   id, user_id, platform, external_id, display_name, oauth_refresh_token,
  *   oauth_access_token, token_expires_at, status, created_at,
  *   content_category, language_code, purpose, link,
  *   channel_handle, avatar_url, subscribers, views, video_count,
  *   like_count, avg_watch_seconds, drop_off_pct, last_sync_at
- * `SELECT *` returns columns in that same order, so position 2 is
- * `external_id`, not `display_name`. The previous version of this mapper
- * was off-by-19 for several fields, which made `display_name` come back
- * as the number 1788… (a Unix-ms timestamp written by `created_at` at
- * position 7) and `status` come back as the string 'active' (from
- * position 7 in the old layout). The mismatch was only visible in tests
- * that round-trip through the same DB — production reads via
- * `findById` would have hit the same bug. THIS must stay in sync with
+ * `SELECT *` returns columns in that same order. THIS must stay in sync with
  * core/api/src/repositories/accounts.ts since the API may have written
  * the row and the worker reads it back.
  */
 function rowToAccount(row: unknown[]): AccountRow {
   return {
     id: row[0] as string,
-    platform: row[1] as Platform,
-    external_id: (row[2] as string | null) ?? '',
-    display_name: row[3] as string,
-    oauth_refresh_token: row[4] as string,
-    oauth_access_token: (row[5] as string | null) ?? null,
-    token_expires_at: (row[6] as number | null) ?? null,
-    status: row[7] as AccountRow['status'],
-    created_at: row[8] as number,
-    content_category: (row[9] as string | null) ?? '',
-    language_code: (row[10] as string | null) ?? '',
-    purpose: (row[11] as string | null) ?? '',
-    link: (row[12] as string | null) ?? '',
-    channel_handle: (row[13] as string | null) ?? '',
-    avatar_url: (row[14] as string | null) ?? '',
-    subscribers: (row[15] as number | null) ?? null,
-    views: (row[16] as number | null) ?? null,
-    video_count: (row[17] as number | null) ?? null,
-    like_count: (row[18] as number | null) ?? null,
-    avg_watch_seconds: (row[19] as number | null) ?? null,
-    drop_off_pct: (row[20] as number | null) ?? null,
-    last_sync_at: (row[21] as number | null) ?? null,
+    user_id: row[1] as string,
+    platform: row[2] as Platform,
+    external_id: (row[3] as string | null) ?? '',
+    display_name: row[4] as string,
+    oauth_refresh_token: row[5] as string,
+    oauth_access_token: (row[6] as string | null) ?? null,
+    token_expires_at: (row[7] as number | null) ?? null,
+    status: row[8] as AccountRow['status'],
+    created_at: row[9] as number,
+    content_category: (row[10] as string | null) ?? '',
+    language_code: (row[11] as string | null) ?? '',
+    purpose: (row[12] as string | null) ?? '',
+    link: (row[13] as string | null) ?? '',
+    channel_handle: (row[14] as string | null) ?? '',
+    avatar_url: (row[15] as string | null) ?? '',
+    subscribers: (row[16] as number | null) ?? null,
+    views: (row[17] as number | null) ?? null,
+    video_count: (row[18] as number | null) ?? null,
+    like_count: (row[19] as number | null) ?? null,
+    avg_watch_seconds: (row[20] as number | null) ?? null,
+    drop_off_pct: (row[21] as number | null) ?? null,
+    last_sync_at: (row[22] as number | null) ?? null,
   };
 }
 
 const INSERT_SQL = `INSERT INTO accounts
- (id, platform, external_id, display_name, oauth_refresh_token, oauth_access_token, token_expires_at, status, created_at,
+ (id, user_id, platform, external_id, display_name, oauth_refresh_token, oauth_access_token, token_expires_at, status, created_at,
   content_category, language_code, purpose, link,
   channel_handle, avatar_url, subscribers, views, video_count,
   like_count, avg_watch_seconds, drop_off_pct, last_sync_at)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 export class AccountsRepo {
   constructor(private db: DB) {}
@@ -72,6 +67,7 @@ export class AccountsRepo {
   insert(input: NewAccount): AccountRow {
     const row: AccountRow = {
       id: randomUUID(),
+      user_id: input.user_id ?? 'default-user',
       platform: input.platform,
       // external_id is the platform-stable id. OAuth callbacks always supply
       // it; fixtures and tests may not. Empty string is a safe placeholder —
@@ -99,6 +95,7 @@ export class AccountsRepo {
     };
     this.db.raw.run(INSERT_SQL, [
       row.id,
+      row.user_id,
       row.platform,
       row.external_id,
       row.display_name,

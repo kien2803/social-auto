@@ -7,6 +7,7 @@ import type { GoogleOAuthClient } from '../google/client.js';
 import type { TiktokOAuthClient } from '../tiktok/client.js';
 import type { MetaOAuthClient } from '../meta/client.js';
 import { generatePKCE } from '../auth/pkce.js';
+import { getUserId } from '../utils/authHelpers.js';
 
 export interface AuthDeps {
   accounts: AccountsRepo;
@@ -19,6 +20,8 @@ export interface AuthDeps {
   tokenEncryptionKey: string;
   /** Mounts the legacy IG/FB mock OAuth routes. Driven by `USE_MOCK_PUBLISHERS`. */
   useMockPublishers?: boolean;
+  /** Optional auth middleware for backward compatibility. */
+  optionalAuthMiddleware?: (request: any, reply: any) => Promise<void>;
 }
 /**
  * Mount OAuth routes for YouTube (Phase 0).
@@ -88,7 +91,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
   // Wipe oauth_state / oauth_popup on any 4xx/5xx from this route group
 
-  app.get('/auth/callback', async (req, reply) => {
+  app.get('/auth/callback', { preHandler: deps.optionalAuthMiddleware }, async (req, reply) => {
     const { code, state, error } = req.query as Record<string, string | undefined>;
     req.log.info({ code: !!code, state: !!state, error, popup: readPopupCookie(req) }, 'oauth callback start');
     const popupMode = readPopupCookie(req);
@@ -110,6 +113,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     }
     reply.clearCookie('oauth_state', { path: '/auth' });
 
+    const userId = getUserId(req);
     const tokens = await deps.google.exchangeCode(code);
     req.log.info({ has_refresh: !!tokens.refresh_token, has_access: !!tokens.access_token }, 'oauth token exchange');
     if (!tokens.refresh_token) {
@@ -153,6 +157,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       accountId = existing.id;
     } else {
       const row = deps.accounts.insert({
+        user_id: userId,
         platform: 'youtube',
         external_id: channel.id,
         display_name: channel.title,
@@ -274,10 +279,12 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       return reply.redirect(tiktok.buildAuthUrl(state, challenge));
     });
 
-    app.get('/auth/tiktok/callback', async (req, reply) => {
+    app.get('/auth/tiktok/callback', { preHandler: deps.optionalAuthMiddleware }, async (req, reply) => {
       const { code, state, error } = req.query as Record<string, string | undefined>;
       const popupMode = readPopupCookie(req);
       if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
+
+      const userId = getUserId(req);
 
       if (error) {
         const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
@@ -320,6 +327,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         accountId = existing.id;
       } else {
         const row = deps.accounts.insert({
+          user_id: userId,
           platform: 'tiktok',
           external_id: user.open_id,
           display_name: user.display_name,
@@ -431,10 +439,12 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       return reply.redirect(meta.buildAuthUrl(state));
     });
 
-    app.get('/auth/meta/callback', async (req, reply) => {
+    app.get('/auth/meta/callback', { preHandler: deps.optionalAuthMiddleware }, async (req, reply) => {
       const { code, state, error } = req.query as Record<string, string | undefined>;
       const popupMode = readPopupCookie(req);
       if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
+
+      const userId = getUserId(req);
 
       if (error) {
         const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
@@ -479,6 +489,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
           accountId = existing.id;
         } else {
           const row = deps.accounts.insert({
+            user_id: userId,
             platform,
             external_id: page.id,
             display_name: page.name,
@@ -650,7 +661,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       return reply.redirect(`/auth/${platform}/callback?code=${code}`);
     });
     // 2 / Phase 3 and the regression test asserted the wrong thing. See
-    app.get(`/auth/${platform}/callback`, async (req, reply) => {
+    app.get(`/auth/${platform}/callback`, { preHandler: deps.optionalAuthMiddleware }, async (req, reply) => {
       const { code, error } = req.query as Record<string, string | undefined>;
       const popupMode = readPopupCookie(req);
       if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
@@ -662,6 +673,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         return reply.code(400).send({ error: 'missing code' });
       }
 
+      const userId = getUserId(req);
       const accessToken = `${MOCK_TOKEN_PREFIX[platform]}${code}`;
       const encryptedAccess = encrypt(accessToken, deps.tokenEncryptionKey);
       const encryptedRefresh = encrypt(`mock-refresh-${code}`, deps.tokenEncryptionKey);
@@ -679,6 +691,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         accountId = existing.id;
       } else {
         const row = deps.accounts.insert({
+          user_id: userId,
           platform,
           external_id: code,
           display_name: displayName,

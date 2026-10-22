@@ -20,6 +20,7 @@ export type { AccountChannelSnapshot };
 
 export interface AccountRow {
   id: string;
+  user_id: string;
   platform: Platform;
   /** Stable identifier returned by the platform (YouTube channel id, IG user id, …). Unique per platform. */
   external_id: string;
@@ -50,6 +51,7 @@ export interface AccountRow {
 
 export interface VideoRow {
   id: string;
+  user_id: string;
   file_path: string;
   sha256: string;
   size_bytes: number;
@@ -70,6 +72,7 @@ export type Visibility = 'public' | 'unlisted' | 'private';
 
 export interface ScheduledPostRow {
   id: string;
+  user_id: string;
   video_id: string;
   account_id: string;
   scheduled_at: number;
@@ -86,6 +89,14 @@ export interface ScheduledPostRow {
   updated_at: number;
 }
 
+export interface UserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  name: string;
+  created_at: number;
+}
+
 export interface QuotaRow {
   id: number;
   platform: Platform;
@@ -99,8 +110,17 @@ export interface QuotaRow {
 }
 
 export const SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS accounts (
   id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   platform TEXT NOT NULL,
   external_id TEXT NOT NULL DEFAULT '',
   display_name TEXT NOT NULL,
@@ -126,6 +146,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS videos (
   id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   file_path TEXT NOT NULL,
   sha256 TEXT NOT NULL,
   size_bytes INTEGER NOT NULL,
@@ -137,6 +158,7 @@ CREATE TABLE IF NOT EXISTS videos (
 
 CREATE TABLE IF NOT EXISTS scheduled_posts (
   id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   video_id TEXT NOT NULL REFERENCES videos(id),
   -- CASCADE on account delete so removing a connected account also
   -- removes its scheduled posts. Without this, a DELETE /accounts/:id
@@ -284,6 +306,48 @@ export const MIGRATIONS: readonly Migration[] = [
       // Re-create the partial index that 0007 added — DROP TABLE on the
       // old table removed its index.
       "CREATE INDEX IF NOT EXISTS idx_scheduled_posts_pending_due ON scheduled_posts(scheduled_at, next_retry_at) WHERE status='pending'",
+    ],
+  },
+  {
+    // User authentication - add users table and user_id foreign keys
+    // Since SQLite doesn't support ALTER TABLE ADD COLUMN with NOT NULL and FK,
+    // we need to rebuild all tables that need user_id
+    id: '0010-user-authentication',
+    phase: 'user-auth',
+    statements: [
+      // Create users table
+      'CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, name TEXT NOT NULL, created_at INTEGER NOT NULL)',
+      // Seed the placeholder user that legacy rows are assigned to below.
+      // Without this row the INSERT ... SELECT 'default-user' statements
+      // violate the new user_id foreign key on any DB that already has data.
+      "INSERT OR IGNORE INTO users (id, email, password_hash, name, created_at) VALUES ('default-user', 'default@localhost', '', 'Default User', CAST(strftime('%s','now') AS INTEGER) * 1000)",
+      // Rebuild accounts table with user_id
+      'CREATE TABLE IF NOT EXISTS accounts_new (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, platform TEXT NOT NULL, external_id TEXT NOT NULL DEFAULT \'\', display_name TEXT NOT NULL, oauth_refresh_token TEXT NOT NULL, oauth_access_token TEXT, token_expires_at INTEGER, status TEXT NOT NULL DEFAULT \'active\', created_at INTEGER NOT NULL, content_category TEXT NOT NULL DEFAULT \'\', language_code TEXT NOT NULL DEFAULT \'\', purpose TEXT NOT NULL DEFAULT \'\', link TEXT NOT NULL DEFAULT \'\', channel_handle TEXT NOT NULL DEFAULT \'\', avatar_url TEXT NOT NULL DEFAULT \'\', subscribers INTEGER, views INTEGER, video_count INTEGER, like_count INTEGER, avg_watch_seconds INTEGER, drop_off_pct REAL, last_sync_at INTEGER)',
+      "INSERT INTO accounts_new (id, user_id, platform, external_id, display_name, oauth_refresh_token, oauth_access_token, token_expires_at, status, created_at, content_category, language_code, purpose, link, channel_handle, avatar_url, subscribers, views, video_count, like_count, avg_watch_seconds, drop_off_pct, last_sync_at) SELECT id, 'default-user' as user_id, platform, external_id, display_name, oauth_refresh_token, oauth_access_token, token_expires_at, status, created_at, content_category, language_code, purpose, link, channel_handle, avatar_url, subscribers, views, video_count, like_count, avg_watch_seconds, drop_off_pct, last_sync_at FROM accounts",
+      'DROP TABLE accounts',
+      'ALTER TABLE accounts_new RENAME TO accounts',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_platform_external ON accounts (platform, external_id)',
+      // Rebuild videos table with user_id
+      'CREATE TABLE IF NOT EXISTS videos_new (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, file_path TEXT NOT NULL, sha256 TEXT NOT NULL, size_bytes INTEGER NOT NULL, duration_sec INTEGER, mime TEXT NOT NULL, thumbnail_path TEXT, created_at INTEGER NOT NULL)',
+      "INSERT INTO videos_new (id, user_id, file_path, sha256, size_bytes, duration_sec, mime, thumbnail_path, created_at) SELECT id, 'default-user' as user_id, file_path, sha256, size_bytes, duration_sec, mime, thumbnail_path, created_at FROM videos",
+      'DROP TABLE videos',
+      'ALTER TABLE videos_new RENAME TO videos',
+      // Rebuild scheduled_posts table with user_id
+      'CREATE TABLE IF NOT EXISTS scheduled_posts_new (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, video_id TEXT NOT NULL REFERENCES videos(id), account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, scheduled_at INTEGER NOT NULL, caption TEXT NOT NULL, per_platform_caption TEXT, visibility TEXT NOT NULL DEFAULT "private", status TEXT NOT NULL DEFAULT "pending", external_post_id TEXT, last_error TEXT, retry_count INTEGER NOT NULL DEFAULT 0, next_retry_at INTEGER, is_dead INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)',
+      "INSERT INTO scheduled_posts_new (id, user_id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, created_at, updated_at) SELECT id, 'default-user' as user_id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, created_at, updated_at FROM scheduled_posts",
+      'DROP TABLE scheduled_posts',
+      'ALTER TABLE scheduled_posts_new RENAME TO scheduled_posts',
+      "CREATE INDEX IF NOT EXISTS idx_scheduled_posts_pending_due ON scheduled_posts(scheduled_at, next_retry_at) WHERE status='pending'",
+    ],
+  },
+  {
+    // Databases that applied 0010 before the seed statement was added never
+    // got the 'default-user' row that migrated rows and repository fallbacks
+    // reference — create it so the user_id foreign key is satisfied.
+    id: '0011-seed-default-user',
+    phase: 'user-auth',
+    statements: [
+      "INSERT OR IGNORE INTO users (id, email, password_hash, name, created_at) VALUES ('default-user', 'default@localhost', '', 'Default User', CAST(strftime('%s','now') AS INTEGER) * 1000)",
     ],
   },
 ];

@@ -21,12 +21,14 @@ import { encrypt } from '@social-auto/shared/utils/crypto.js';
 import type { TiktokOAuthClient } from './client.js';
 import type { AccountsRepo } from '../repositories/accounts.js';
 import type { AccountRow } from '@social-auto/shared';
+import { getUserId } from '../utils/authHelpers.js';
 
 export interface TiktokAuthDeps {
   accounts: AccountsRepo;
   tiktok: TiktokOAuthClient;
   webOrigin: string;
   tokenEncryptionKey: string;
+  optionalAuthMiddleware?: (request: any, reply: any) => Promise<void>;
 }
 
 /** Generate a 43-character URL-safe PKCE verifier + its S256 challenge. */
@@ -79,10 +81,13 @@ export function registerTiktokAuthRoutes(app: FastifyInstance, deps: TiktokAuthD
 
   // Wipe oauth_state / oauth_popup / oauth_pkce_verifier on any 4xx/5xx
 
-  app.get('/auth/tiktok/callback', async (req, reply) => {
+  app.get('/auth/tiktok/callback', { preHandler: deps.optionalAuthMiddleware }, async (req, reply) => {
     const { code, state, error } = req.query as Record<string, string | undefined>;
     const popupMode = req.cookies[POPUP_COOKIE] === '1';
     if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
+
+    const userId = getUserId(req);
+
     if (error) {
       const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
       return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error }));
@@ -122,6 +127,7 @@ export function registerTiktokAuthRoutes(app: FastifyInstance, deps: TiktokAuthD
       accountId = existing.id;
     } else {
       const row = deps.accounts.insert({
+        user_id: userId,
         platform: 'tiktok',
         external_id: user.open_id,
         display_name: user.display_name,

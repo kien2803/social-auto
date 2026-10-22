@@ -11,12 +11,14 @@ import { decrypt, encrypt } from '@social-auto/shared/utils/crypto.js';
 import type { ChannelInfo, GoogleOAuthClient } from '../google/client.js';
 import type { AccountsRepo } from '../repositories/accounts.js';
 import type { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export interface AccountsDeps {
   accounts: AccountsRepo;
   posts: ScheduledPostsRepo;
   google?: GoogleOAuthClient;
   tokenEncryptionKey?: string;
+  authMiddleware: any;
 }
 
 /** Wire shape for an account row returned by the API. Never includes tokens. */
@@ -167,7 +169,7 @@ export function registerAccountRoutes(
       content_category?: string;
       language_code?: string;
     };
-  }>('/accounts', async (req, reply) => {
+  }>('/accounts', { preHandler: deps.authMiddleware }, async (req, reply) => {
     const q = req.query;
     if (q.platform && !isPlatform(q.platform)) {
       return reply.code(400).send({ error: 'invalid_platform' });
@@ -182,7 +184,9 @@ export function registerAccountRoutes(
     ) {
       return reply.code(400).send({ error: 'invalid_language_code' });
     }
+    const userId = (req as AuthenticatedRequest).userId;
     const rows = deps.accounts.listSlim({
+      userId,
       search: q.search,
       platform: q.platform as Platform | undefined,
       status: q.status as AccountRow['status'] | undefined,
@@ -195,12 +199,14 @@ export function registerAccountRoutes(
   // GET /analytics — unchanged.
   app.get<{ Querystring: { account_id?: string } }>(
     '/analytics',
+    { preHandler: deps.authMiddleware },
     async (req) => {
       const accountId =
         typeof req.query.account_id === 'string' && req.query.account_id
           ? req.query.account_id
           : undefined;
-      const rows = deps.posts.analyticsByAccount(accountId);
+      const userId = (req as AuthenticatedRequest).userId;
+      const rows = deps.posts.analyticsByAccount(accountId, userId);
       return { rows };
     },
   );
@@ -212,7 +218,7 @@ export function registerAccountRoutes(
       display_name?: string;
       metadata?: Partial<AccountMetadata>;
     };
-  }>('/accounts/:id', async (req, reply) => {
+  }>('/accounts/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
     const body = req.body ?? {};
@@ -250,7 +256,7 @@ export function registerAccountRoutes(
   });
 
   // DELETE /accounts/:id — unchanged.
-  app.delete<{ Params: { id: string } }>('/accounts/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/accounts/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
     deps.accounts.deleteById(req.params.id);
@@ -258,7 +264,7 @@ export function registerAccountRoutes(
   });
 
   // GET /accounts/:id/stats — per-account scheduled-post counts.
-  app.get<{ Params: { id: string } }>('/accounts/:id/stats', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/accounts/:id/stats', { preHandler: deps.authMiddleware }, async (req, reply) => {
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
     return deps.posts.countByStatusForAccount(req.params.id);
@@ -268,14 +274,14 @@ export function registerAccountRoutes(
   // for now; TikTok / IG / FB return an empty list because the worker stubs
   // don't persist a video history. The route exists so the Analytics page
   // single-account view has a uniform surface across platforms.
-  app.get<{ Params: { id: string } }>('/accounts/:id/videos', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/accounts/:id/videos', { preHandler: deps.authMiddleware }, async (req, reply) => {
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
     return { videos: listVideosForPlatform(existing.platform, existing.external_id) };
   });
 
   // POST /accounts/:id/sync — refresh the YouTube channel snapshot.
-  app.post<{ Params: { id: string } }>('/accounts/:id/sync', async (req, reply) => {
+  app.post<{ Params: { id: string } }>('/accounts/:id/sync', { preHandler: deps.authMiddleware }, async (req, reply) => {
     if (!deps.google || !deps.tokenEncryptionKey) {
       return reply.code(503).send({ error: 'sync_unavailable' });
     }

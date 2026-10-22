@@ -3,11 +3,13 @@ import type { Visibility } from '@social-auto/shared';
 import type { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
 import type { VideosRepo } from '../repositories/videos.js';
 import type { AccountsRepo } from '../repositories/accounts.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export interface ScheduleDeps {
   posts: ScheduledPostsRepo;
   videos: VideosRepo;
   accounts: AccountsRepo;
+  authMiddleware: any;
 }
 
 interface ScheduleBody {
@@ -51,13 +53,20 @@ function validateBase(body: ScheduleBody | MultiScheduleBody): string | null {
 }
 
 export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps): void {
-  app.post('/schedule', async (req, reply) => {
+  app.post('/schedule', { preHandler: deps.authMiddleware }, async (req, reply) => {
     const body = req.body as MultiScheduleBody;
     const err = validateBase(body);
     if (err) return reply.code(400).send({ error: err });
 
     const video = deps.videos.findById(body.video_id);
     if (!video) return reply.code(404).send({ error: 'video_not_found' });
+
+    const userId = (req as AuthenticatedRequest).userId ?? 'default-user';
+
+    // Check video ownership
+    if (video.user_id !== userId) {
+      return reply.code(403).send({ error: 'video_not_owned' });
+    }
 
     const accountIds = body.account_ids;
     if (accountIds.length > MAX_ACCOUNTS_PER_SCHEDULE) {
@@ -69,6 +78,9 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
     for (const accId of accountIds) {
       const acc = deps.accounts.findById(accId);
       if (!acc) return reply.code(404).send({ error: `account_not_found: ${accId}` });
+      if (acc.user_id !== userId) {
+        return reply.code(403).send({ error: `account_not_owned: ${accId}` });
+      }
       if (acc.status !== 'active') {
         return reply.code(400).send({ error: `account_not_active: ${accId}` });
       }
@@ -77,6 +89,7 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
         return reply.code(400).send({ error: `caption_too_long: ${accId}` });
       }
       const row = deps.posts.insert({
+        user_id: userId,
         video_id: body.video_id,
         account_id: accId,
         scheduled_at: body.scheduled_at,
@@ -89,25 +102,35 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
     return reply.code(201).send({ posts: created });
   });
 
-  app.get('/schedule', async (req) => {
+  app.get('/schedule', { preHandler: deps.authMiddleware }, async (req) => {
     const q = req.query as { status?: string; account_id?: string };
+    const userId = (req as AuthenticatedRequest).userId;
     return {
       posts: deps.posts.listSlim({
         status: q.status as never,
         accountId: q.account_id,
+        userId,
       }),
     };
   });
 
-  app.get<{ Params: { id: string } }>('/schedule/:id', async (req, reply) => {
+  app.get<{ Params: { id: string } }>('/schedule/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const post = deps.posts.findById(req.params.id);
     if (!post) return reply.code(404).send({ error: 'not_found' });
+    if (post.user_id !== userId) {
+      return reply.code(403).send({ error: 'access_denied' });
+    }
     return post;
   });
 
-  app.patch<{ Params: { id: string } }>('/schedule/:id', async (req, reply) => {
+  app.patch<{ Params: { id: string } }>('/schedule/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const post = deps.posts.findById(req.params.id);
     if (!post) return reply.code(404).send({ error: 'not_found' });
+    if (post.user_id !== userId) {
+      return reply.code(403).send({ error: 'access_denied' });
+    }
     if (post.status !== 'pending') {
       return reply.code(400).send({ error: `cannot_edit_post_in_status_${post.status}` });
     }
@@ -126,9 +149,13 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
     return deps.posts.findById(req.params.id);
   });
 
-  app.delete<{ Params: { id: string } }>('/schedule/:id', async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/schedule/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const post = deps.posts.findById(req.params.id);
     if (!post) return reply.code(404).send({ error: 'not_found' });
+    if (post.user_id !== userId) {
+      return reply.code(403).send({ error: 'access_denied' });
+    }
     if (post.status !== 'pending') {
       return reply.code(400).send({ error: `cannot_delete_post_in_status_${post.status}` });
     }
@@ -141,12 +168,22 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
   // counters in a single fetch. Kept on /schedule.ts (rather than /health.ts)
   // because the underlying data is posts-only; /health mixes in account
   // rollup which would otherwise need a second DB pass here.
-  app.get('/dashboard/counts', async () => {
+  app.get('/dashboard/counts', { preHandler: deps.authMiddleware }, async (req) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const now = Date.now();
     const since = now - 7 * 24 * 60 * 60 * 1000;
+    const posts = deps.posts.list({ userId });
+    const byStatus = { pending: 0, uploading: 0, published: 0, failed: 0, dead: 0 };
+    let publishedLast7d = 0;
+    for (const p of posts) {
+      byStatus[p.status]++;
+      if (p.status === 'published' && p.updated_at >= since) {
+        publishedLast7d++;
+      }
+    }
     return {
-      by_status: deps.posts.countByStatus(),
-      published_last_7d: deps.posts.countPublishedSince(since),
+      by_status: byStatus,
+      published_last_7d: publishedLast7d,
       generated_at: now,
     };
   });
@@ -154,19 +191,20 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
 
 
 
-  app.get('/history', async (req) => {
+  app.get('/history', { preHandler: deps.authMiddleware }, async (req) => {
     const q = req.query as {
       platform?: string;
       status?: string;
       account_id?: string;
       date_from?: string;
     };
-    let posts = deps.posts.list({ status: q.status as never });
+    const userId = (req as AuthenticatedRequest).userId;
+    let posts = deps.posts.list({ status: q.status as never, userId });
     if (q.platform) {
       // Use SQL JOIN for platform filtering instead of JavaScript filtering
       // to avoid N+1 query and loading all accounts into memory
       const accountIdsByPlatform = deps.accounts
-        .listSlim({ platform: q.platform as never })
+        .listSlim({ platform: q.platform as never, userId })
         .map((a) => a.id);
       posts = posts.filter((p) => accountIdsByPlatform.includes(p.account_id));
     }

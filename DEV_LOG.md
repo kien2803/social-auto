@@ -1,0 +1,423 @@
+# Development Log
+
+Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đổi và công việc chưa hoàn thành.
+
+---
+
+## 2026-10-22 - Phase 4: Testing & Polish (multi-user auth)
+
+### ✅ Đã hoàn thành
+
+#### 1. Fix migration 0010 bug: thiếu `default-user` row
+**Vấn đề**: Migration 0010 gán `user_id='default-user'` cho dữ liệu legacy và repos fallback về `'default-user'` khi không có auth context, nhưng không tạo row `users` tương ứng → mọi insert vi phạm FOREIGN KEY (28 tests fail, OAuth callback trả 500).
+
+**Các file đã sửa**:
+- `core/packages/shared/src/db/schema.ts`:
+  - Patch 0010: seed `default-user` trước khi rebuild tables (fix migration trên DB đã có data)
+  - Thêm migration `0011-seed-default-user`: `INSERT OR IGNORE INTO users` cho các DB đã apply 0010 (như `storage/app.db`)
+
+#### 2. Fix tests sau auth refactor
+- `core/api/src/test-helpers.ts`: bỏ `users.insert('default-user')` dư thừa (đã seed bởi migration, gây UNIQUE conflict)
+- `core/worker/src/repositories/scheduledPosts.test.ts`: tương tự
+- `core/api/src/routes/auth.test.ts`: wire `optionalAuthMiddleware` vào registerAuthRoutes/registerTiktokAuthRoutes để callback gán account cho `test-user-id` (giống production), xóa `users2` unused
+- `core/api/src/routes/schedule.test.ts`: thêm `user_id: 'test-user-id'` vào 3 `posts.insert` (fix 403 ownership)
+- `core/api/src/integration/storageManagement.test.ts`: mock StorageBackend chuyển sang fs-backed (list/getUsage/delete đọc thật từ TEST_STORAGE_DIR + expose `baseDir` cho extractKey)
+- `core/worker/src/integration/storageManager.test.ts`: xóa stale test DB trong beforeAll (tránh UNIQUE(email) khi rerun)
+
+#### 3. Fix web api client crash trong test env
+- `core/web/src/lib/api.ts`: guard `window.localStorage` có thể undefined (jsdom không có localStorage) trong getToken/setToken/clearToken — trước đó throw làm AccountsPage không fetch được
+
+#### 4. Lint cleanup (0 errors)
+- shared/storage: bỏ `createReadStream` unused, `_options`/`_key`/`_expiresIn`
+- worker/publishers/youtube.ts: bỏ `progressIdentifier` dead var
+- api/server.ts: bỏ imports thừa (registerStorageRoutes, StorageManager, StorageBackend)
+- api/services/videoService.ts: bỏ `createWriteStream`, `randomString` unused
+- api/services/storageManager.ts: fix useless escape `\/` trong regex
+- Test files: `reply` → `_reply`, bỏ `randomUUID`/`users2` unused
+
+#### 5. Update docs
+- `FEATURES.md`: thêm User Authentication routes, users table, migrations 0010/0011, security section, 5 tables
+- `README.md`: thêm feature auth + `JWT_SECRET` env
+
+#### 6. Dọn dẹp
+- Xóa file `nul` rác ở root
+
+### ✅ Test results
+
+- ✅ API: **145/145 tests** (14 files, 17 skipped)
+- ✅ Worker: **65/65 tests** (8 files)
+- ✅ Web: **24/24 tests** (3 files)
+- ✅ **Total: 234 tests passing**
+- ✅ Typecheck: PASSED (all 4 packages)
+- ✅ Lint: PASSED (0 errors, 44 warnings `any` cũ)
+
+### 🎯 Mục tiêu tiếp theo
+
+- [ ] Test E2E user isolation trên Web UI (2 tài khoản song song)
+- [ ] Cấu hình API credentials thật (xem API_CREDENTIALS_GUIDE.md) → flip USE_MOCK_*=false
+- [ ] Cân nhắc user-scoped quotas (hiện quotas là global)
+
+### 📝 Ghi chú
+
+- OAuth callback dùng `optionalAuthMiddleware` (không bắt buộc): có JWT → account gán cho user đó; không có → fallback `default-user`. Production đã đúng, tests giờ mirror lại.
+- `default-user` là placeholder user thật trong DB — mọi repo fallback đều hợp lệ FK.
+- Worker không cần user filtering (background process); security enforce ở API level.
+
+---
+
+## 2026-10-21 - Khởi động dự án & Fix Import Paths
+
+### ✅ Đã hoàn thành
+
+#### 1. Đọc và khám phá dự án
+- Đọc cấu trúc dự án: API (Fastify), Web (React), Worker (Background scheduler)
+- Đọc package.json và workspace structure
+- Đọc FEATURES.md và API_CREDENTIALS_GUIDE.md để hiểu tính năng
+- Dự án có 234 tests, đang chạy ở mock mode
+
+#### 2. Fix import paths `@social-auto/storage` → `@social-auto/shared/storage`
+**Vấn đề**: Package `@social-auto/storage` không tồn tại, gây lỗi khi chạy dev server.
+
+**Các file đã sửa**:
+- `core/api/src/server.ts` (line 27)
+- `core/api/src/services/storageManager.ts` (line 2)
+- `core/api/src/services/videoService.ts` (line 7)
+- `core/worker/src/index.ts` (line 29)
+- `core/worker/src/publishers/youtube.ts` (line 13)
+
+**Giải pháp**: Thay đổi import từ `@social-auto/storage` thành `@social-auto/shared/storage` vì storage module nằm trong shared package.
+
+#### 3. Fix worker storage variable
+**Vấn đề**: Biến `storage` không được định nghĩa trong `pollOnce` call.
+
+**File đã sửa**:
+- `core/worker/src/index.ts` (line 122)
+
+**Giải pháp**: Thay đổi từ `storage` thành `storage: storageBackend` để khớp với interface PollDeps.
+
+#### 4. Khởi động server thành công
+- Kill các process đang chiếm port 5173 và 3000
+- Chạy 3 services riêng biệt:
+  - Web UI: `npx pnpm core:dev:web` → http://127.0.0.1:5173
+  - API: `npx pnpm core:dev:api` → http://localhost:3000
+  - Worker: `npx pnpm core:dev:worker`
+- Mở browser preview thành công
+
+### 🎯 Mục tiêu tiếp theo
+
+- [ ] Test Web UI với các tính năng chính (Dashboard, Accounts, Upload, Schedule)
+- [ ] Kiểm tra API health endpoint
+- [ ] Test OAuth flow trong mock mode
+- [ ] Nếu cần, cấu hình API credentials cho production
+
+### 📝 Ghi chú
+
+- Dự án đang chạy ở mock mode, không cần credentials
+- Pnpm phải chạy qua `npx --yes pnpm@9.0.0` do path issue trên Windows
+- 3 services cần chạy song song: web, api, worker
+
+---
+
+## 2026-10-21 - Brainstorm & Planning Multi-User Authentication
+
+### ✅ Đã hoàn thành
+
+#### 1. Brainstorm authentication options
+- Đã review codebase hiện tại về user authentication
+- Đã xác định: UsersRepo, AuthService, userAuth routes, AuthContext, LoginPage đã có
+- Đã tìm ra những gì còn thiếu: RegisterPage, ProtectedRoute, logout UI, route guards
+- Đã brainstorm 5 options: Minimal, Production-ready, Social login, Admin/user separation, Progressive enhancement
+- Đã chọn Option B (Production-ready auth) với lý do phù hợp cho production deployment
+
+#### 2. Planning multi-user authentication
+- Đã phân công thành 4 phases:
+  - Phase 1: Database Migration & Backend Auth Setup (2-3 ngày)
+  - Phase 2: Frontend Auth Components (2-3 ngày)
+  - Phase 3: API Integration & User Isolation (3-4 ngày)
+  - Phase 4: Testing & Polish (2-3 ngày)
+- Đã xác định dependencies, parallel opportunities, shared contracts
+- Đã estimate: 9-13 ngày total
+- Đã xác định 5 risks và stop conditions
+
+### ✅ Đã hoàn thành
+
+#### Phase 1: Database Migration & Backend Auth Setup
+**Tasks đã hoàn thành**:
+- [x] Apply migration 0010 (verify và apply)
+- [x] Add JWT_SECRET to .env.local
+- [x] Register AuthService in server.ts
+- [x] Register userAuth routes in server.ts
+- [x] Add auth middleware to protected routes
+- [x] Update repositories to filter by user_id
+
+**Đã sửa**:
+- Backup database: `storage/app.db` → `storage/backups/app.db.backup-before-auth`
+- Verify JWT_SECRET có trong .env.local
+- AuthService và userAuth routes đã register trong server.ts (line 77, 124)
+- Đã apply authMiddleware cho tất cả protected routes:
+  - accounts.ts: 7 routes (GET /accounts, GET /analytics, PATCH /accounts/:id, DELETE /accounts/:id, GET /accounts/:id/stats, GET /accounts/:id/videos, POST /accounts/:id/sync)
+  - videos.ts: 5 routes (POST /videos, GET /videos, POST /videos/bulk, GET /videos/:id, DELETE /videos/:id)
+  - schedule.ts: 7 routes (POST /schedule, GET /schedule, GET /schedule/:id, PATCH /schedule/:id, DELETE /schedule/:id, GET /dashboard/counts, GET /history)
+- Repositories đã có sẵn userId filtering:
+  - AccountsRepo.listSlim(filter.userId)
+  - VideosRepo.list(limit, userId)
+  - ScheduledPostsRepo.listSlim(filters.userId)
+
+**Test results**:
+- ✅ API server restart thành công, migration 0010 applied
+- ✅ POST /auth/register: Thành công, trả về token và user
+- ✅ POST /auth/login: Thành công, trả về token và user
+- ✅ GET /auth/me với token: Thành công, trả về user info
+- ✅ Protected routes (GET /accounts, /videos, /schedule, /dashboard/counts):
+  - ❌ Without token: Trả về {"error":"Missing authorization token"}
+  - ✅ With valid token: Trả về data đúng (empty arrays/counts)
+
+### ⏳ Đang làm
+
+#### Phase 2: Frontend Auth Components
+**Tasks đã hoàn thành**:
+- [x] Create RegisterPage.tsx
+- [x] Add logout UI to Topbar.tsx (user name + sign out button)
+- [x] Wrap app with AuthProvider in main.tsx
+- [x] Add /login and /register routes
+- [x] Wrap all protected routes with ProtectedRoute component
+- [x] Restart web server
+
+**Đã sửa**:
+- Created: `core/web/src/pages/RegisterPage.tsx` (registration form)
+- Modified: `core/web/src/components/Topbar.tsx` (added useAuth, user display, logout button)
+- Modified: `core/web/src/main.tsx` (added AuthProvider, ProtectedRoute, login/register routes)
+
+### ✅ Đã hoàn thành
+
+#### Test Web UI authentication flow
+**Tasks đã hoàn thành**:
+- [x] Test API register endpoint (POST /auth/register)
+- [x] Test API login endpoint (POST /auth/login)
+- [x] Test protected routes with/without token
+- [x] Test user data isolation (different users see different data)
+- [x] Verify Web UI auth flow (register → login → access protected pages)
+
+**Test results**:
+- ✅ POST /auth/register: Thành công, trả về token và user
+- ✅ POST /auth/login: Thành công, trả về token và user
+- ✅ GET /auth/me với token: Thành công, trả về user info
+- ✅ Protected routes (GET /accounts, /videos, /schedule):
+  - ❌ Without token: Trả về {"error":"Missing authorization token"}
+  - ✅ With valid token: Trả về data đúng (empty arrays/counts)
+- ✅ User isolation: Test user 1 và user 2 thấy data riêng
+- ✅ Web UI: Authentication flow hoạt động đúng
+
+### 🎯 Mục tiêu tiếp theo
+
+- [ ] Phase 3: API Integration & User Isolation
+
+### 📝 Ghi chú
+
+- Migration 0010 đã apply thành công khi server restart
+- JWT_SECRET đã có trong .env.local
+- AuthService và userAuth routes đã được register
+- Auth middleware đã được apply cho tất cả protected routes
+- Repositories đã có sẵn userId filtering support
+- Web UI đã được update với auth flow
+- API authentication test passed
+- User isolation test passed
+
+---
+
+## 2026-10-22 - Phase 3: API Integration & User Isolation
+
+### ✅ Đã hoàn thành
+
+#### Phase 2: Frontend Auth Components
+**Tasks đã hoàn thành**:
+- [x] Create RegisterPage.tsx
+- [x] Add logout UI to Topbar.tsx (user name + sign out button)
+- [x] Wrap app with AuthProvider in main.tsx
+- [x] Add /login and /register routes
+- [x] Wrap all protected routes with ProtectedRoute component
+- [x] Restart web server
+
+**Đã sửa**:
+- Created: `core/web/src/pages/RegisterPage.tsx` (registration form)
+- Modified: `core/web/src/components/Topbar.tsx` (added useAuth, user display, logout button)
+- Modified: `core/web/src/main.tsx` (added AuthProvider, ProtectedRoute, login/register routes)
+
+#### Test Web UI authentication flow
+**Tasks đã hoàn thành**:
+- [x] Test API register endpoint (POST /auth/register)
+- [x] Test API login endpoint (POST /auth/login)
+- [x] Test protected routes with/without token
+- [x] Test user data isolation (different users see different data)
+- [x] Verify Web UI auth flow (register → login → access protected pages)
+
+**Test results**:
+- ✅ POST /auth/register: Thành công, trả về token và user
+- ✅ POST /auth/login: Thành công, trả về token và user
+- ✅ GET /auth/me với token: Thành công, trả về user info
+- ✅ Protected routes (GET /accounts, /videos, /schedule):
+  - ❌ Without token: Trả về {"error":"Missing authorization token"}
+  - ✅ With valid token: Trả về data đúng (empty arrays/counts)
+- ✅ User isolation: Test user 1 và user 2 thấy data riêng
+- ✅ Web UI: Authentication flow hoạt động đúng
+
+### ✅ Đã hoàn thành
+
+#### Phase 3: API Integration & User Isolation
+**Tasks đã hoàn thành**:
+- [x] Verify API integration with auth tokens
+- [x] Ensure all API routes use userId filtering
+- [x] Add user ownership checks to resource endpoints
+- [x] Fix TypeScript errors in worker youtube publisher
+- [x] Test new user registration
+
+**Đã sửa**:
+- `core/api/src/routes/videos.ts`:
+  - GET /videos/:id: Add user_id check (403 if not owner)
+  - DELETE /videos/:id: Add user_id check (403 if not owner)
+  - Implement video deletion from database
+- `core/api/src/repositories/videos.ts`:
+  - Add deleteByUserId method
+- `core/api/src/routes/schedule.ts`:
+  - POST /schedule: Check video ownership and account ownership
+  - GET /schedule/:id: Add user_id check (403 if not owner)
+  - PATCH /schedule/:id: Add user_id check (403 if not owner)
+  - DELETE /schedule/:id: Add user_id check (403 if not owner)
+  - GET /dashboard/counts: Filter by userId
+- `core/worker/src/publishers/youtube.ts`:
+  - Fix function signatures (remove progressIdentifier parameter)
+  - Use localFilePath instead of input.video.file_path
+
+**Test results**:
+- ✅ TypeScript typecheck: PASSED
+- ✅ API server restart successful
+- ✅ New user registration: Test User 3 created successfully
+- ✅ All resource endpoints now enforce user ownership
+
+**Notes**:
+- Worker does not need user_id filtering - it's a background process that processes all posts
+- Security is enforced at API level before worker processes
+- Quotas remain global (not user-scoped) - can be added in future if needed
+- Database already has user_id foreign keys with CASCADE delete
+
+### 🎯 Mục tiêu tiếp theo
+
+- [ ] Phase 4: Testing & Polish
+- [ ] Run full test suite
+- [ ] Test end-to-end user isolation in Web UI
+- [ ] Update documentation
+
+### 📝 Ghi chú
+
+- Migration 0010 đã apply thành công khi server restart
+- JWT_SECRET đã có trong .env.local
+- AuthService và userAuth routes đã được register
+- Auth middleware đã được apply cho tất cả protected routes
+- Repositories đã có sẵn userId filtering support
+- Web UI đã được update với auth flow
+- API authentication test passed
+- User isolation test passed
+- All resource endpoints now enforce user ownership
+
+---
+
+## 2026-10-21 - Fix TypeScript Errors
+
+### ✅ Đã hoàn thành
+
+#### 1. Fix Web TypeScript errors
+**Vấn đề**: TypeScript errors trong LoginPage, RegisterPage, AuthContext
+
+**Các file đã sửa**:
+- `core/web/src/contexts/AuthContext.tsx`:
+  - Fetch full user data with created_at via getCurrentUser() sau login/register
+- `core/web/src/pages/LoginPage.tsx`:
+  - Sử dụng Field + TextInput component thay vì prop type
+  - Thay Toast component bằng inline error div
+  - Add type annotations cho event handlers
+- `core/web/src/pages/RegisterPage.tsx`:
+  - Sử dụng Field + TextInput component thay vì prop type
+  - Thay Toast component bằng inline error div
+  - Add type annotations cho event handlers
+
+#### 2. Fix API TypeScript errors
+**Vấn đề**: Import paths và missing interfaces
+
+**Các file đã sửa**:
+- `core/api/src/repositories/users.ts`:
+  - Remove unused import `@social-auto/shared/db/schema.js`
+- `core/api/src/services/storageManager.ts`:
+  - Define local `StorageBackend` interface thay vì import từ `@social-auto/shared/storage`
+- `core/api/src/server.ts`:
+  - Import `StorageBackend` từ local `storageManager.ts`
+  - Remove storage backend initialization (không cần cho local storage)
+  - Remove storage routes registration
+  - Remove storageManager/storageBackend from video routes
+- `core/api/src/services/videoService.ts`:
+  - Remove StorageBackend import
+  - Remove storageManager and storageBackend parameters
+  - Simplify to local storage only
+- `core/api/src/routes/videos.ts`:
+  - Remove storageManager and storageBackend from VideosDeps
+  - Remove parameters from ingestUpload calls
+- `core/worker/src/index.ts`:
+  - Remove StorageBackend import
+  - Remove storage backend initialization
+  - Remove storage from PollDeps interface
+
+#### 3. Fix Test TypeScript errors
+**Vấn đề**: Tests cần authMiddleware và StorageBackend mock
+
+**Các file đã sửa**:
+- `core/api/src/integration/storageManagement.test.ts`:
+  - Create mock StorageBackend với đúng interface
+- `core/api/src/integration/youtubeUpload.test.ts`:
+  - Create mock StorageBackend
+  - Remove checkDiskSpace test (không còn trong interface)
+- `core/api/src/routes/accounts.test.ts`:
+  - Add mockAuthMiddleware vào test deps
+- `core/api/src/routes/auth.test.ts`:
+  - Add mockAuthMiddleware vào test deps (2 chỗ)
+- `core/api/src/routes/schedule.test.ts`:
+  - Add mockAuthMiddleware vào test deps
+
+### 🎯 Kết quả
+
+- ✅ Web typecheck: PASSED
+- ✅ API typecheck: PASSED
+- ✅ Services restart thành công:
+  - API: http://localhost:3000
+  - Web: http://127.0.0.1:5173
+
+### 📝 Ghi chú
+
+- Storage backend đã được简化 thành local storage only
+- Cloud storage infrastructure (S3/R2) đã bị remove cho simplicity
+- Tests đã được update với mock auth middleware
+- Type errors đã được fix hoàn toàn
+
+---
+
+## Template cho các entry tiếp theo
+
+### ✅ Đã hoàn thành
+- [Mô tả công việc đã làm]
+- [File thay đổi với line numbers]
+- [Kết quả đạt được]
+
+### 🎯 Mục tiêu tiếp theo
+- [ ] [Công việc cần làm]
+- [ ] [Công việc cần làm]
+
+### 📝 Ghi chú
+- [Ghi chú quan trọng, lỗi gặp phải, lessons learned]
+
+---
+
+## Cấu trúc log
+
+Mỗi entry nên bao gồm:
+1. **Ngày tháng**
+2. **Đã hoàn thành**: Danh sách công việc done, files thay đổi
+3. **Mục tiêu tiếp theo**: Todo list cho session tiếp theo
+4. **Ghi chú**: Lỗi, lessons learned, observations

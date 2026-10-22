@@ -1,4 +1,5 @@
 import { useTheme } from '../lib/useTheme.js';
+import { useAuth } from '../contexts/AuthContext.js';
 
 export function Topbar({
   onMenuToggle,
@@ -10,6 +11,7 @@ export function Topbar({
   envTone: 'mock' | 'live';
 }) {
   const { theme, toggle } = useTheme();
+  const { user, logout } = useAuth();
   const envClass =
     envTone === 'mock'
       ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300'
@@ -43,6 +45,21 @@ export function Topbar({
         >
           {envLabel}
         </span>
+        {user && (
+          <span className="text-sm text-ink-muted dark:text-slate-400">
+            {user.name}
+          </span>
+        )}
+        {user && (
+          <button
+            type="button"
+            onClick={logout}
+            className="rounded-md p-1.5 text-ink-muted hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            title="Sign out"
+          >
+            Sign out
+          </button>
+        )}
         <button
           type="button"
           aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}

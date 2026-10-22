@@ -19,6 +19,7 @@ import { VideosRepo } from '../repositories/videos.js';
 import { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
 import { AccountsRepo } from '../repositories/accounts.js';
 import { QuotasRepo } from '../repositories/quotas.js';
+import { UsersRepo } from '../repositories/users.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -30,19 +31,30 @@ describe('YouTube Upload Integration', () => {
   let posts: ScheduledPostsRepo;
   let accounts: AccountsRepo;
   let quotas: QuotasRepo;
+  let users: UsersRepo;
   let testAccountId: string;
   let testVideoId: string;
 
   beforeAll(async () => {
     // Initialize database connection
     db = await openDB(TEST_DB_PATH);
+    users = new UsersRepo(db);
     videos = new VideosRepo(db);
     posts = new ScheduledPostsRepo(db);
     accounts = new AccountsRepo(db);
     quotas = new QuotasRepo(db);
 
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
+
     // Create test account
     const account = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'test-channel-id',
       display_name: 'Test Channel',
@@ -71,6 +83,7 @@ describe('YouTube Upload Integration', () => {
 
       // Create video record
       const video = videos.insert({
+        user_id: 'test-user-id',
         file_path: testVideoPath,
         sha256: 'a'.repeat(64),
         size_bytes: 100,
@@ -118,6 +131,7 @@ describe('YouTube Upload Integration', () => {
       const scheduledTime = new Date(Date.now() + 3600000); // 1 hour in future
 
       const post = posts.insert({
+        user_id: 'test-user-id',
         video_id: testVideoId,
         account_id: testAccountId,
         scheduled_at: scheduledTime.getTime(),

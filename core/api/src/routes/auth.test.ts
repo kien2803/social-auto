@@ -107,22 +107,41 @@ describe('YouTube OAuth routes (T0.3)', () => {
     const cookie = (await import('@fastify/cookie')).default;
     const { openDB } = await import('../db.js');
     const { AccountsRepo } = await import('../repositories/accounts.js');
+    const { UsersRepo } = await import('../repositories/users.js');
     const { registerAccountRoutes } = await import('../routes/accounts.js');
     const { createMockGoogleClient } = await import('../google/mockClient.js');
     const { registerAuthRoutes } = await import('../routes/auth.js');
 
     const db = await openDB(':memory:');
+    const users = new UsersRepo(db);
     const repo = new AccountsRepo(db);
     const google = createMockGoogleClient();
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
     const app2 = Fastify({ logger: false });
     await app2.register(cookie);
+    const mockAuthMiddleware = async (req: any, _reply: any) => {
+      req.userId = 'test-user-id';
+    };
     registerAuthRoutes(app2, {
       accounts: repo,
       google,
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
+      optionalAuthMiddleware: mockAuthMiddleware,
     });
-    registerAccountRoutes(app2, { accounts: repo, posts: new ScheduledPostsRepo(db) });
+    registerAccountRoutes(app2, {
+      accounts: repo,
+      posts: new ScheduledPostsRepo(db),
+      google,
+      tokenEncryptionKey: 'a'.repeat(64),
+      authMiddleware: mockAuthMiddleware,
+    });
 
     // Walk both connect flows against the same in-memory DB.
     const start1 = await app2.inject({ method: 'GET', url: '/auth/youtube/start' });
@@ -162,14 +181,24 @@ describe('YouTube OAuth routes (T0.3)', () => {
     // reconnect on the UI side.
     const { openDB } = await import('../db.js');
     const { AccountsRepo } = await import('../repositories/accounts.js');
+    const { UsersRepo } = await import('../repositories/users.js');
     const Fastify = (await import('fastify')).default;
     const cookie = (await import('@fastify/cookie')).default;
     const { registerAuthRoutes } = await import('../routes/auth.js');
     const { createMockGoogleClient } = await import('../google/mockClient.js');
 
     const db = await openDB(':memory:');
+    const users = new UsersRepo(db);
     const repo = new AccountsRepo(db);
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
     repo.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 'X',
       external_id: 'UC_bogus',
@@ -209,6 +238,7 @@ describe('YouTube OAuth routes (T0.3)', () => {
     const cookie = (await import('@fastify/cookie')).default;
     const { openDB } = await import('../db.js');
     const { AccountsRepo } = await import('../repositories/accounts.js');
+    const { UsersRepo } = await import('../repositories/users.js');
     const { registerAuthRoutes } = await import('../routes/auth.js');
     const { createMockGoogleClient } = await import('../google/mockClient.js');
 
@@ -216,7 +246,15 @@ describe('YouTube OAuth routes (T0.3)', () => {
     const app1 = Fastify({ logger: false });
     await app1.register(cookie);
     const db1 = await openDB(tmp);
+    const users1 = new UsersRepo(db1);
     const accounts1 = new AccountsRepo(db1);
+    // Create test user
+    users1.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
     registerAuthRoutes(app1, {
       accounts: accounts1,
       google: createMockGoogleClient(),
@@ -244,6 +282,7 @@ describe('YouTube OAuth routes (T0.3)', () => {
     await app2.register(cookie);
     const db2 = await openDB(tmp);
     const accounts2 = new AccountsRepo(db2);
+    // User already exists from first instance, no need to insert again
     registerAuthRoutes(app2, {
       accounts: accounts2,
       google: createMockGoogleClient(),
@@ -310,6 +349,7 @@ describe('Mock multi-platform auth (T2.2/T2.3)', () => {
     const cookie = (await import('@fastify/cookie')).default;
     const { openDB } = await import('../db.js');
     const { AccountsRepo } = await import('../repositories/accounts.js');
+    const { UsersRepo } = await import('../repositories/users.js');
     const { registerAccountRoutes } = await import('../routes/accounts.js');
     const { registerAuthRoutes } = await import('../routes/auth.js');
     const { createMockGoogleClient } = await import('../google/mockClient.js');
@@ -324,23 +364,44 @@ describe('Mock multi-platform auth (T2.2/T2.3)', () => {
     const app = Fastify({ logger: false });
     await app.register(cookie);
     const db = await openDB(':memory:');
+    const users = new UsersRepo(db);
     const accounts = new AccountsRepo(db);
     const google = createMockGoogleClient();
     const tiktok = createMockTiktokClient();
+    const mockAuthMiddleware = async (req: any, _reply: any) => {
+      req.userId = 'test-user-id';
+    };
+    // The callbacks assign accounts to req.userId when the optional auth
+    // middleware resolves a user — same as production. Wire the mock so the
+    // connected rows belong to 'test-user-id' and /accounts can see them.
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
     registerAuthRoutes(app, {
       accounts,
       google,
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
     useMockPublishers: true,
+      optionalAuthMiddleware: mockAuthMiddleware,
     });
     registerTiktokAuthRoutes(app, {
       accounts,
       tiktok,
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
+      optionalAuthMiddleware: mockAuthMiddleware,
     });
-    registerAccountRoutes(app, { accounts, posts: new ScheduledPostsRepo(db) });
+    registerAccountRoutes(app, {
+      accounts,
+      posts: new ScheduledPostsRepo(db),
+      google,
+      tokenEncryptionKey: 'a'.repeat(64),
+      authMiddleware: mockAuthMiddleware,
+    });
     app.addHook('onClose', async () => db.close());
     await app.ready();
     return app;

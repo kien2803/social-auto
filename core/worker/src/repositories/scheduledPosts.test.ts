@@ -3,7 +3,6 @@ import { openDB, type DB } from '../db.js';
 import { AccountsRepo } from './accounts.js';
 import { VideosRepo } from './videos.js';
 import { ScheduledPostsRepo } from './scheduledPosts.js';
-
 let db: DB;
 let videos: VideosRepo;
 let accounts: AccountsRepo;
@@ -14,10 +13,12 @@ beforeEach(async () => {
   videos = new VideosRepo(db);
   accounts = new AccountsRepo(db);
   posts = new ScheduledPostsRepo(db);
+  // 'default-user' is seeded by migration 0011.
 });
 
 function makeFixtures(): { videoId: string; accountId: string } {
   const v = videos.insert({
+    user_id: 'default-user',
     file_path: '/tmp/clip.mp4',
     sha256: 'a'.repeat(64),
     size_bytes: 1_024,
@@ -25,6 +26,7 @@ function makeFixtures(): { videoId: string; accountId: string } {
     duration_sec: 12,
   });
   const a = accounts.insert({
+    user_id: 'default-user',
     platform: 'youtube',
     external_id: 'UC_test',
     display_name: 'Test Channel',
@@ -42,10 +44,10 @@ function makePost(opts: { videoId: string; accountId: string; updatedAt?: number
   const updatedAt = opts.updatedAt ?? now;
   db.raw.run(
     `INSERT INTO scheduled_posts
-     (id, video_id, account_id, scheduled_at, caption, visibility, status,
+     (id, user_id, video_id, account_id, scheduled_at, caption, visibility, status,
       retry_count, is_dead, created_at, updated_at)
-     VALUES (?, ?, ?, ?, '', 'private', 'uploading', 0, 0, ?, ?)`,
-    [id, opts.videoId, opts.accountId, now + 60_000, updatedAt, updatedAt],
+     VALUES (?, ?, ?, ?, ?, '', 'private', 'uploading', 0, 0, ?, ?)`,
+    [id, 'default-user', opts.videoId, opts.accountId, now + 60_000, updatedAt, updatedAt],
   );
   return id;
 }

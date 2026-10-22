@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { createWriteStream, statSync } from 'node:fs';
+import { statSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -32,8 +32,8 @@ export async function ingestUpload(
   iter: AsyncIterable<Buffer>,
   mime: string,
   originalFilename: string,
+  userId?: string,
   onProgress?: (bytes: number) => void,
-  storageManager?: any, // StorageManager instance for quota checking
 ): Promise<IngestResult> {
   if (!ACCEPTED_MIME.has(mime)) {
     throw new UploadError(415, `Unsupported mime type: ${mime}`);
@@ -41,68 +41,30 @@ export async function ingestUpload(
 
   await fs.mkdir(storageDir, { recursive: true });
 
-  // Check disk space if storage manager is provided
-  if (storageManager) {
-    // Estimate required space (2x file size for safety)
-    const estimatedSize = MAX_SIZE_BYTES * 2;
-    try {
-      await storageManager.checkDiskSpace(estimatedSize);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new UploadError(507, error.message);
-      }
-      throw new UploadError(507, 'Disk space check failed');
-    }
-  }
-
-  const tmpName = `upload-${Date.now()}-${randomString(8)}`;
-  const tmpPath = path.join(storageDir, tmpName);
   const hash = createHash('sha256');
   let size = 0;
+  const chunks: Buffer[] = [];
 
-  // Mark file as uploading for storage manager
-  if (storageManager) {
-    storageManager.markFileUploading(tmpPath);
-  }
-
-  try {
-    const out = createWriteStream(tmpPath);
-    for await (const chunk of iter) {
-      size += chunk.length;
-      if (size > MAX_SIZE_BYTES) {
-        out.destroy();
-        await fs.unlink(tmpPath).catch(() => {});
-        throw new UploadError(413, `File exceeds ${MAX_SIZE_BYTES} bytes`);
-      }
-      hash.update(chunk);
-      onProgress?.(size);
-      if (!out.write(chunk)) {
-        const { promise, resolve } = Promise.withResolvers<void>();
-        out.once('drain', () => resolve());
-        await promise;
-      }
+  // Collect chunks and compute hash
+  for await (const chunk of iter) {
+    size += chunk.length;
+    if (size > MAX_SIZE_BYTES) {
+      throw new UploadError(413, `File exceeds ${MAX_SIZE_BYTES} bytes`);
     }
-    const closed = Promise.withResolvers<void>();
-    out.end((err: Error | null | undefined) => (err ? closed.reject(err) : closed.resolve()));
-    await closed.promise;
-  } catch (err) {
-    if (storageManager) {
-      storageManager.markFileComplete(tmpPath);
-    }
-    await fs.unlink(tmpPath).catch(() => {});
-    throw err;
+    hash.update(chunk);
+    chunks.push(chunk);
+    onProgress?.(size);
   }
 
   if (size === 0) {
-    await fs.unlink(tmpPath).catch(() => {});
     throw new UploadError(400, 'Empty upload');
   }
 
   const sha256 = hash.digest('hex');
+  const fileBuffer = Buffer.concat(chunks);
 
   const existing = repo.findBySha256(sha256);
   if (existing) {
-    await fs.unlink(tmpPath).catch(() => {});
     return {
       video_id: existing.id,
       sha256,
@@ -116,56 +78,53 @@ export async function ingestUpload(
 
   const ext = path.extname(originalFilename).toLowerCase() || extForMime(mime);
   const finalName = `${sha256}${ext}`;
-  const finalPath = path.join(storageDir, finalName);
-  await fs.rename(tmpPath, finalPath);
+  const finalKey = path.join(storageDir, finalName);
 
-  // Mark file as complete for storage manager
-  if (storageManager) {
-    storageManager.markFileComplete(tmpPath);
-    storageManager.markFileUploading(finalPath);
-  }
+  // Write to local storage
+  await fs.writeFile(finalKey, fileBuffer);
 
   // Validate real file format using magic number detection
   try {
-    const detectedFormat = await detectRealFileType(finalPath);
+    const detectedFormat = await detectRealFileType(finalKey);
     if (detectedFormat !== ext.replace('.', '')) {
       console.warn(`File extension (${ext}) doesn't match detected format (${detectedFormat})`);
     }
   } catch (error) {
-    // If magic number detection fails, we still accept the file based on MIME type
     console.warn('Magic number detection failed, accepting file based on MIME type:', error);
   }
 
-  const duration = await probeDuration(finalPath).catch(() => null);
-  
+  // Probe duration
+  const duration = await probeDuration(finalKey).catch(() => null);
+
   // Validate duration against YouTube limits (warning only, not rejection)
   if (duration !== null) {
     if (duration > YOUTUBE_MAX_DURATION_SEC) {
       console.warn(`Video duration ${formatDuration(duration)} exceeds YouTube maximum of 12 hours. Upload will proceed but may fail on YouTube.`);
     }
-    
+
     if (duration > YOUTUBE_RECOMMENDED_DURATION_SEC) {
       console.warn(`Video duration ${formatDuration(duration)} exceeds YouTube recommended 15 minutes. Long videos may have processing delays.`);
     }
   }
 
-  const thumbName = `${sha256}.jpg`;
-  const thumbPath = path.join(storageDir, thumbName);
-  await generateThumbnail(finalPath, thumbPath, duration ?? 1).catch(() => null);
+  // Generate thumbnail
+  let thumbnailPath: string | null = null;
+  if (duration !== null) {
+    const thumbName = `${sha256}.jpg`;
+    const thumbPath = path.join(storageDir, thumbName);
+    await generateThumbnail(finalKey, thumbPath, duration).catch(() => null);
+    thumbnailPath = fileExists(thumbPath) ? thumbPath : null;
+  }
 
   const row = repo.insert({
-    file_path: finalPath,
+    user_id: userId,
+    file_path: finalKey,
     sha256,
     size_bytes: size,
     mime,
     duration_sec: duration,
-    thumbnail_path: fileExists(thumbPath) ? thumbPath : null,
+    thumbnail_path: thumbnailPath,
   });
-
-  // Mark file as complete after successful insertion
-  if (storageManager) {
-    storageManager.markFileComplete(finalPath);
-  }
 
   return {
     video_id: row.id,
@@ -198,10 +157,6 @@ function extForMime(mime: string): string {
     default:
       return '';
   }
-}
-
-function randomString(len: number): string {
-  return Math.random().toString(36).slice(2, 2 + len);
 }
 
 function formatDuration(seconds: number): string {

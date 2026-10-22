@@ -8,7 +8,12 @@ Social Auto là công cụ self-hosted để quản lý và tự động đăng 
 
 ## 🌐 Web UI (React + Vite + Tailwind)
 
-### Các trang chính (6 pages)
+### Các trang chính (6 pages + 2 auth pages)
+
+#### 0. **LoginPage / RegisterPage** - Xác thực
+- Form đăng nhập / đăng ký (email + password)
+- JWT token lưu trong localStorage, auto-redirect
+- `ProtectedRoute` chặn truy cập trang khi chưa login
 
 #### 1. **DashboardPage** - Trang chủ
 - Hiển thị tổng quan hoạt động
@@ -93,7 +98,16 @@ Social Auto là công cụ self-hosted để quản lý và tự động đăng 
 
 ## 🔌 API Backend (Fastify + SQLite)
 
-### OAuth Authentication Routes
+### User Authentication Routes (multi-user, JWT)
+
+- `POST /auth/register` - Đăng ký tài khoản (email + password + name), trả về JWT
+- `POST /auth/login` - Đăng nhập, trả về JWT + user info
+- `GET /auth/me` - Lấy thông tin user hiện tại (Bearer token)
+- Password hash bằng scrypt, JWT ký bằng `JWT_SECRET`
+- Tất cả resource routes (accounts, videos, schedule, dashboard, history) yêu cầu Bearer token và lọc theo `user_id`
+- Resource endpoints kiểm tra ownership (403 nếu không phải chủ sở hữu)
+- Web UI: `AuthProvider` + `ProtectedRoute`, trang `/login` + `/register`, nút logout trên Topbar
+- `default-user` (seeded bởi migration) nhận ownership của dữ liệu legacy và của OAuth callbacks khi không có token
 
 #### YouTube (Google OAuth)
 - `GET /auth/youtube/start` - Bắt đầu OAuth flow
@@ -220,8 +234,17 @@ Social Auto là công cụ self-hosted để quản lý và tự động đăng 
 
 ### Tables
 
+#### users
+Lưu tài khoản người dùng (multi-user auth):
+- `id` - Primary key
+- `email` - UNIQUE
+- `password_hash` - scrypt hash
+- `name` - Tên hiển thị
+- `created_at` - Creation timestamp
+
 #### accounts
 Lưu thông tin tài khoản mạng xã hội:
+- `user_id` - FK to users (CASCADE delete)
 - `id` - Primary key
 - `platform` - YouTube, TikTok, Facebook, Instagram
 - `external_id` - Platform-specific ID (channel ID, user ID, etc.)
@@ -247,6 +270,7 @@ Lưu thông tin tài khoản mạng xã hội:
 #### videos
 Lưu thông tin video đã upload:
 - `id` - Primary key
+- `user_id` - FK to users (CASCADE delete)
 - `file_path` - Đường dẫn file
 - `sha256` - File hash (deduplication)
 - `size_bytes` - File size
@@ -258,6 +282,7 @@ Lưu thông tin video đã upload:
 #### scheduled_posts
 Lưu bài đã lên lịch:
 - `id` - Primary key
+- `user_id` - FK to users (CASCADE delete)
 - `video_id` - FK to videos
 - `account_id` - FK to accounts (CASCADE delete)
 - `scheduled_at` - Thời gian đăng
@@ -298,10 +323,20 @@ Theo dõi database migrations:
 - 0007: Claim pending due index
 - 0008: Quotas unique per window
 - 0009: Scheduled posts account cascade
+- 0010: User authentication (users table + user_id FK trên accounts/videos/scheduled_posts)
+- 0011: Seed `default-user` (placeholder user cho dữ liệu legacy + repository fallbacks)
 
 ---
 
 ## 🔒 Security Features
+
+### User Authentication
+- **scrypt password hashing** với per-user salt
+- **JWT (HS256)** cho session tokens, ký bằng `JWT_SECRET`
+- Auth middleware bắt buộc trên tất cả resource routes
+- Optional auth middleware trên OAuth callbacks (gán account cho user đang login)
+- Per-user data isolation qua `user_id` foreign keys + ownership checks (403)
+- Web UI route guards (`ProtectedRoute`) + token persistence trong localStorage
 
 ### Token Management
 - **AES-256-GCM encryption** cho tất cả OAuth tokens
@@ -456,11 +491,12 @@ Xem [API_CREDENTIALS_GUIDE.md](./API_CREDENTIALS_GUIDE.md) để thiết lập.
 ## 📊 Tóm tắt
 
 Dự án có đầy đủ tính năng để vận hành production:
+- ✅ Multi-user authentication (JWT + user isolation)
 - ✅ Complete OAuth integration (chờ credentials)
-- ✅ Full UI với 6 pages
+- ✅ Full UI với 6 pages + login/register
 - ✅ Complete API với 13+ routes
 - ✅ Worker với 4 publishers
-- ✅ Database schema với 4 tables
+- ✅ Database schema với 5 tables
 - ✅ Security (encryption, PKCE)
 - ✅ Test coverage (234 tests)
 - ✅ Mock mode cho dev/test

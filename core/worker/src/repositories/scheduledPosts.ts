@@ -9,6 +9,7 @@ import type { DB } from '../db.js';
 import { randomUUID } from 'node:crypto';
 
 export interface NewScheduledPost {
+  user_id?: string;
   video_id: string;
   account_id: string;
   scheduled_at: number;
@@ -37,70 +38,73 @@ export interface ClaimedScheduledPost extends ScheduledPostRow {
 function rowToScheduledPost(row: unknown[]): ScheduledPostRow {
   return {
     id: row[0] as string,
-    video_id: row[1] as string,
-    account_id: row[2] as string,
-    scheduled_at: row[3] as number,
-    caption: row[4] as string,
-    per_platform_caption: (row[5] as string | null) ?? null,
-    visibility: row[6] as Visibility,
-    status: row[7] as ScheduledPostStatus,
-    external_post_id: (row[8] as string | null) ?? null,
-    last_error: (row[9] as string | null) ?? null,
-    retry_count: row[10] as number,
-    next_retry_at: (row[11] as number | null) ?? null,
-    is_dead: row[12] === 1 || row[12] === true,
-    created_at: row[13] as number,
-    updated_at: row[14] as number,
+    user_id: row[1] as string,
+    video_id: row[2] as string,
+    account_id: row[3] as string,
+    scheduled_at: row[4] as number,
+    caption: row[5] as string,
+    per_platform_caption: (row[6] as string | null) ?? null,
+    visibility: row[7] as Visibility,
+    status: row[8] as ScheduledPostStatus,
+    external_post_id: (row[9] as string | null) ?? null,
+    last_error: (row[10] as string | null) ?? null,
+    retry_count: row[11] as number,
+    next_retry_at: (row[12] as number | null) ?? null,
+    is_dead: row[13] === 1 || row[13] === true,
+    created_at: row[14] as number,
+    updated_at: row[15] as number,
   };
 }
 
 /**
  * Decoder for the joined SELECT in claimDuePosts. Column order is:
- *   sp.*  (15 columns)         → row[0..14]
- *   a.*   (22 columns)         → row[15..36]   (account row)
- *   v.*   (8  columns)         → row[37..44]   (video row)
+ *   sp.*  (16 columns)         → row[0..15]
+ *   a.*   (23 columns)         → row[16..38]   (account row)
+ *   v.*   (9  columns)         → row[39..47]   (video row)
  * Mirrors the order produced by AccountsRepo.rowToAccount and
  * VideosRepo.rowToVideo; updates here MUST stay in lock-step with those.
  */
 function rowToClaimedScheduledPost(row: unknown[]): ClaimedScheduledPost {
-  const sp = rowToScheduledPost(row.slice(0, 15));
-  const accountSlice = row.slice(15, 37);
-  const videoSlice = row.slice(37);
+  const sp = rowToScheduledPost(row.slice(0, 16));
+  const accountSlice = row.slice(16, 39);
+  const videoSlice = row.slice(39);
   return {
     ...sp,
     account: {
       id: accountSlice[0] as string,
-      platform: accountSlice[1] as AccountRow['platform'],
-      external_id: (accountSlice[2] as string | null) ?? '',
-      display_name: accountSlice[3] as string,
-      oauth_refresh_token: accountSlice[4] as string,
-      oauth_access_token: (accountSlice[5] as string | null) ?? null,
-      token_expires_at: (accountSlice[6] as number | null) ?? null,
-      status: accountSlice[7] as AccountRow['status'],
-      created_at: accountSlice[8] as number,
-      content_category: (accountSlice[9] as string | null) ?? '',
-      language_code: (accountSlice[10] as string | null) ?? '',
-      purpose: (accountSlice[11] as string | null) ?? '',
-      link: (accountSlice[12] as string | null) ?? '',
-      channel_handle: (accountSlice[13] as string | null) ?? '',
-      avatar_url: (accountSlice[14] as string | null) ?? '',
-      subscribers: (accountSlice[15] as number | null) ?? null,
-      views: (accountSlice[16] as number | null) ?? null,
-      video_count: (accountSlice[17] as number | null) ?? null,
-      like_count: (accountSlice[18] as number | null) ?? null,
-      avg_watch_seconds: (accountSlice[19] as number | null) ?? null,
-      drop_off_pct: (accountSlice[20] as number | null) ?? null,
-      last_sync_at: (accountSlice[21] as number | null) ?? null,
+      user_id: accountSlice[1] as string,
+      platform: accountSlice[2] as AccountRow['platform'],
+      external_id: (accountSlice[3] as string | null) ?? '',
+      display_name: accountSlice[4] as string,
+      oauth_refresh_token: accountSlice[5] as string,
+      oauth_access_token: (accountSlice[6] as string | null) ?? null,
+      token_expires_at: (accountSlice[7] as number | null) ?? null,
+      status: accountSlice[8] as AccountRow['status'],
+      created_at: accountSlice[9] as number,
+      content_category: (accountSlice[10] as string | null) ?? '',
+      language_code: (accountSlice[11] as string | null) ?? '',
+      purpose: (accountSlice[12] as string | null) ?? '',
+      link: (accountSlice[13] as string | null) ?? '',
+      channel_handle: (accountSlice[14] as string | null) ?? '',
+      avatar_url: (accountSlice[15] as string | null) ?? '',
+      subscribers: (accountSlice[16] as number | null) ?? null,
+      views: (accountSlice[17] as number | null) ?? null,
+      video_count: (accountSlice[18] as number | null) ?? null,
+      like_count: (accountSlice[19] as number | null) ?? null,
+      avg_watch_seconds: (accountSlice[20] as number | null) ?? null,
+      drop_off_pct: (accountSlice[21] as number | null) ?? null,
+      last_sync_at: (accountSlice[22] as number | null) ?? null,
     },
     video: {
       id: videoSlice[0] as string,
-      file_path: videoSlice[1] as string,
-      sha256: videoSlice[2] as string,
-      size_bytes: videoSlice[3] as number,
-      duration_sec: (videoSlice[4] as number | null) ?? null,
-      mime: videoSlice[5] as string,
-      thumbnail_path: (videoSlice[6] as string | null) ?? null,
-      created_at: videoSlice[7] as number,
+      user_id: videoSlice[1] as string,
+      file_path: videoSlice[2] as string,
+      sha256: videoSlice[3] as string,
+      size_bytes: videoSlice[4] as number,
+      duration_sec: (videoSlice[5] as number | null) ?? null,
+      mime: videoSlice[6] as string,
+      thumbnail_path: (videoSlice[7] as string | null) ?? null,
+      created_at: videoSlice[8] as number,
     },
   };
 }
@@ -117,6 +121,7 @@ export class ScheduledPostsRepo {
   insert(input: NewScheduledPost): ScheduledPostRow {
     const row: ScheduledPostRow = {
       id: randomUUID(),
+      user_id: input.user_id ?? 'default-user',
       video_id: input.video_id,
       account_id: input.account_id,
       scheduled_at: input.scheduled_at,
@@ -134,10 +139,11 @@ export class ScheduledPostsRepo {
     };
     this.db.raw.run(
       `INSERT INTO scheduled_posts
-       (id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, user_id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         row.id,
+        row.user_id,
         row.video_id,
         row.account_id,
         row.scheduled_at,

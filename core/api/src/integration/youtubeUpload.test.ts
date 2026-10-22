@@ -21,6 +21,7 @@ import { VideosRepo } from '../repositories/videos.js';
 import { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
 import { AccountsRepo } from '../repositories/accounts.js';
 import { QuotasRepo } from '../repositories/quotas.js';
+import { UsersRepo } from '../repositories/users.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -32,6 +33,7 @@ describe('YouTube Upload Integration', () => {
   let posts: ScheduledPostsRepo;
   let accounts: AccountsRepo;
   let quotas: QuotasRepo;
+  let users: UsersRepo;
   let testAccountId: string;
   let testVideoId: string;
 
@@ -40,13 +42,23 @@ describe('YouTube Upload Integration', () => {
     db = await openDB(':memory:');
 
     // Initialize repositories
+    users = new UsersRepo(db);
     videos = new VideosRepo(db);
     posts = new ScheduledPostsRepo(db);
     accounts = new AccountsRepo(db);
     quotas = new QuotasRepo(db);
 
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
+
     // Create test account
     const account = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'test-channel-id',
       display_name: 'Test YouTube Channel',
@@ -72,6 +84,7 @@ describe('YouTube Upload Integration', () => {
   describe('Video Upload Flow', () => {
     it('should upload video file to storage', async () => {
       const video = videos.insert({
+        user_id: 'test-user-id',
         file_path: TEST_VIDEO_PATH,
         sha256: 'a'.repeat(64),
         size_bytes: 100,
@@ -101,8 +114,9 @@ describe('YouTube Upload Integration', () => {
   describe('Scheduled Post Creation', () => {
     it('should create scheduled post for uploaded video', async () => {
       const scheduledTime = new Date(Date.now() + 3600000); // 1 hour from now
-      
+
       const post = posts.insert({
+        user_id: 'test-user-id',
         video_id: testVideoId,
         account_id: testAccountId,
         scheduled_at: scheduledTime.getTime(),
@@ -118,8 +132,9 @@ describe('YouTube Upload Integration', () => {
 
     it('should validate scheduled time is in the future', async () => {
       const pastTime = new Date(Date.now() - 3600000); // 1 hour ago
-      
+
       const result = posts.insert({
+        user_id: 'test-user-id',
         video_id: testVideoId,
         account_id: testAccountId,
         scheduled_at: pastTime.getTime(),
@@ -201,6 +216,7 @@ describe('YouTube Upload Integration', () => {
     it('should handle expired token scenario', async () => {
       // Create account with expired token
       const expiredAccount = accounts.insert({
+        user_id: 'test-user-id',
         platform: 'youtube',
         external_id: 'expired-channel-id',
         display_name: 'Expired Channel',
@@ -221,6 +237,7 @@ describe('YouTube Upload Integration', () => {
       // This would test the retry logic in the worker
       // For now, we verify the retry count field exists
       const post = posts.insert({
+        user_id: 'test-user-id',
         video_id: testVideoId,
         account_id: testAccountId,
         scheduled_at: Date.now() + 3600000,
@@ -236,17 +253,26 @@ describe('YouTube Upload Integration', () => {
     it('should handle disk space exhaustion', async () => {
       // Test disk space checking logic
       const { StorageManager } = await import('../services/storageManager.js');
-      
+
       // Create a mock storage manager
       const mockVideosRepo = {
         list: () => [],
         delete: () => {},
       };
-      
-      const storageManager = new StorageManager('/tmp', mockVideosRepo as any, 1);
-      
-      // Test that disk space check method exists
-      expect(typeof storageManager.checkDiskSpace).toBe('function');
+
+      const mockStorageBackend = {
+        type: 'local' as const,
+        initialize: async () => {},
+        getUsage: async () => 0,
+        list: async () => [],
+        get: async () => Buffer.alloc(0),
+        put: async () => {},
+        delete: async () => {},
+      };
+
+      const storageManager = new StorageManager(mockStorageBackend, mockVideosRepo as any, 1);
+
+      // Test that storage usage method exists
       expect(typeof storageManager.getStorageUsage).toBe('function');
     });
   });

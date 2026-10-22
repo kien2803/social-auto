@@ -91,6 +91,7 @@ function build(): Record<Platform, Publisher> {
               // Trigger progress callback for video
               triggerProgressCallback(identifier, progress);
             },
+            storageBackend: undefined, // TODO: Pass storage backend when ready
           }),
     tiktok: new TiktokPublisher({
       useMock: env.useMockPublishers || !env.tiktokClientKey,

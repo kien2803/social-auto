@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { openDB } from '../db.js';
 import { VideosRepo } from '../repositories/videos.js';
+import { UsersRepo } from '../repositories/users.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -25,12 +26,24 @@ const TEST_DB_PATH = path.join(process.cwd(), 'test-worker-storage.db');
 describe('Storage Manager Integration', () => {
   let db: any;
   let videos: VideosRepo;
+  let users: UsersRepo;
   const testVideoIds: string[] = [];
 
   beforeAll(async () => {
     await fs.mkdir(TEST_STORAGE_DIR, { recursive: true });
+    // Drop any stale DB from a previous aborted run — the users insert
+    // below is not idempotent and would hit a UNIQUE(email) conflict.
+    await fs.unlink(TEST_DB_PATH).catch(() => {});
     db = await openDB(TEST_DB_PATH);
+    users = new UsersRepo(db);
     videos = new VideosRepo(db);
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
   });
 
   afterAll(async () => {
@@ -50,6 +63,7 @@ describe('Storage Manager Integration', () => {
       await fs.writeFile(videoPath, Buffer.from('test video content'));
 
       const video = videos.insert({
+        user_id: 'test-user-id',
         file_path: videoPath,
         sha256: 'a'.repeat(64), // Valid 64-character hex string
         size_bytes: 100,
@@ -88,6 +102,7 @@ describe('Storage Manager Integration', () => {
       await fs.writeFile(videoPath, Buffer.from('to delete'));
 
       videos.insert({
+        user_id: 'test-user-id',
         file_path: videoPath,
         sha256: 'delete123',
         size_bytes: 50,
@@ -104,6 +119,7 @@ describe('Storage Manager Integration', () => {
 
       // Insert record for non-existent file
       const video = videos.insert({
+        user_id: 'test-user-id',
         file_path: videoPath,
         sha256: 'missing123',
         size_bytes: 0,
@@ -139,6 +155,7 @@ describe('Storage Manager Integration', () => {
       await fs.writeFile(videoPath, Buffer.from('validate'));
 
       const video = videos.insert({
+        user_id: 'test-user-id',
         file_path: videoPath,
         sha256: 'validate123',
         size_bytes: 20,
@@ -170,6 +187,7 @@ describe('Storage Manager Integration', () => {
       const invalidPath = '/invalid/path/to/video.mp4';
 
       const video = videos.insert({
+        user_id: 'test-user-id',
         file_path: invalidPath,
         sha256: 'invalid123',
         size_bytes: 0,

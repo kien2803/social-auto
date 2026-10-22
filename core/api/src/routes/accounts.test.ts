@@ -4,6 +4,7 @@ import cookie from '@fastify/cookie';
 import { openDB, type DB } from '../db.js';
 import { AccountsRepo } from '../repositories/accounts.js';
 import { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
+import { UsersRepo } from '../repositories/users.js';
 import { registerAccountRoutes } from './accounts.js';
 import { createMockGoogleClient } from '../google/mockClient.js';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
@@ -14,6 +15,7 @@ interface BuiltApp {
   app: FastifyInstance;
   accounts: AccountsRepo;
   posts: ScheduledPostsRepo;
+  users: UsersRepo;
 }
 
 async function buildAccountsTestApp(): Promise<BuiltApp> {
@@ -21,18 +23,30 @@ async function buildAccountsTestApp(): Promise<BuiltApp> {
   const app = Fastify({ logger: false });
   await app.register(cookie);
   const db: DB = await openDB(':memory:');
+  const users = new UsersRepo(db);
   const accounts = new AccountsRepo(db);
   const posts = new ScheduledPostsRepo(db);
   const google = createMockGoogleClient();
+  // Create test user
+  users.insert({
+    id: 'test-user-id',
+    email: 'test@example.com',
+    password_hash: 'hash',
+    name: 'Test User',
+  });
+  const mockAuthMiddleware = async (req: any, _reply: any) => {
+    req.userId = 'test-user-id';
+  };
   registerAccountRoutes(app, {
     accounts,
     posts,
     google,
     tokenEncryptionKey: TOKEN_KEY,
+    authMiddleware: mockAuthMiddleware,
   });
   app.addHook('onClose', async () => db.close());
   await app.ready();
-  return { app, accounts, posts };
+  return { app, accounts, posts, users };
 }
 
 describe('Account metadata patch (PATCH /accounts/:id)', () => {
@@ -45,6 +59,7 @@ describe('Account metadata patch (PATCH /accounts/:id)', () => {
     app = built.app;
     accounts = built.accounts;
     const row = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'UC_patch',
       display_name: 'Patch Me',
@@ -133,9 +148,18 @@ describe('Multi-account support — same platform, different channels', () => {
     // the UNIQUE(platform, external_id) index treats each tuple as a
     // separate row.
     const db = await openDB(':memory:');
+    const users = new UsersRepo(db);
     const accounts = new AccountsRepo(db);
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
 
     const channelA = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'UC_channel_a',
       display_name: 'Channel A',
@@ -144,6 +168,7 @@ describe('Multi-account support — same platform, different channels', () => {
       status: 'active',
     });
     const channelB = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'UC_channel_b',
       display_name: 'Channel B',
@@ -168,8 +193,17 @@ describe('Multi-account support — same platform, different channels', () => {
     // collide, so the callback's findByPlatformExternal lookup short-
     // circuits the second insert into an UPDATE.
     const db = await openDB(':memory:');
+    const users = new UsersRepo(db);
     const accounts = new AccountsRepo(db);
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
     accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'UC_dup',
       display_name: 'First',
@@ -178,6 +212,7 @@ describe('Multi-account support — same platform, different channels', () => {
     });
     expect(() =>
       accounts.insert({
+        user_id: 'test-user-id',
         platform: 'youtube',
         external_id: 'UC_dup',
         display_name: 'Second',
@@ -194,8 +229,17 @@ describe('Multi-account support — same platform, different channels', () => {
     // to verify is that the targeted row is updated and the other is
     // untouched.
     const db = await openDB(':memory:');
+    const users = new UsersRepo(db);
     const accounts = new AccountsRepo(db);
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
     const a = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'UC_alpha',
       display_name: 'Alpha',
@@ -205,6 +249,7 @@ describe('Multi-account support — same platform, different channels', () => {
       status: 'active',
     });
     const b = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'UC_beta',
       display_name: 'Beta',
@@ -250,11 +295,15 @@ describe('Multi-account support — same platform, different channels', () => {
         snapshot_at: Date.now(),
       }),
     };
+    const mockAuthMiddleware = async (req: any, _reply: any) => {
+      req.userId = 'test-user-id';
+    };
     registerAccountRoutes(app, {
       accounts,
       posts,
       google: google as unknown as Parameters<typeof registerAccountRoutes>[1]['google'],
       tokenEncryptionKey: TOKEN_KEY,
+      authMiddleware: mockAuthMiddleware,
     });
     await app.ready();
     // No onClose hook — Fastify refuses addHook after app.ready(), and

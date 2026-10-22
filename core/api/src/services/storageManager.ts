@@ -1,7 +1,14 @@
-import { promises as fs } from 'node:fs';
-import { statfsSync } from 'node:fs';
-import path from 'node:path';
 import type { VideosRepo } from '../repositories/videos.js';
+
+export interface StorageBackend {
+  type: 'local' | 's3' | 'r2';
+  initialize(): Promise<void>;
+  getUsage(path: string): Promise<number>;
+  list(path: string, limit: number): Promise<Array<{ key: string; isDirectory: boolean }>>;
+  get(key: string): Promise<Buffer>;
+  put(key: string, data: Buffer): Promise<void>;
+  delete(key: string): Promise<void>;
+}
 
 export interface StorageUsage {
   totalGB: number;
@@ -14,36 +21,46 @@ export class StorageManager {
   private uploadingFiles = new Set<string>();
   
   constructor(
-    private storageDir: string,
+    private storage: StorageBackend,
     private videosRepo: VideosRepo,
     private maxGB: number = 10
   ) {}
   
-  markFileUploading(filePath: string): void {
-    this.uploadingFiles.add(filePath);
+  markFileUploading(key: string): void {
+    this.uploadingFiles.add(key);
+    
+    // For local storage, also mark in the backend
+    if (this.storage.type === 'local') {
+      (this.storage as any).markFileUploading?.(key);
+    }
   }
   
-  markFileComplete(filePath: string): void {
-    this.uploadingFiles.delete(filePath);
+  markFileComplete(key: string): void {
+    this.uploadingFiles.delete(key);
+    
+    // For local storage, also mark in the backend
+    if (this.storage.type === 'local') {
+      (this.storage as any).markFileComplete?.(key);
+    }
   }
   
   async cleanupOrphanedFiles(): Promise<number> {
     try {
-      const allFiles = await fs.readdir(this.storageDir);
-      const dbFiles = this.videosRepo.list().map(v => v.file_path);
+      const allItems = await this.storage.list('', 1000);
+      const dbFiles = this.videosRepo.list().map(v => this.extractKey(v.file_path));
       
-      const orphaned = allFiles.filter(f => 
-        !dbFiles.includes(path.join(this.storageDir, f)) && 
-        !this.uploadingFiles.has(path.join(this.storageDir, f))
+      const orphaned = allItems.filter(item => 
+        !dbFiles.includes(item.key) && 
+        !this.uploadingFiles.has(item.key) &&
+        !item.isDirectory
       );
       
-      for (const file of orphaned) {
-        const filePath = path.join(this.storageDir, file);
+      for (const item of orphaned) {
         try {
-          await fs.unlink(filePath);
-          console.log(`[StorageManager] Deleted orphaned file: ${file}`);
+          await this.storage.delete(item.key);
+          console.log(`[StorageManager] Deleted orphaned file: ${item.key}`);
         } catch (error) {
-          console.error(`[StorageManager] Failed to delete ${file}:`, error);
+          console.error(`[StorageManager] Failed to delete ${item.key}:`, error);
         }
       }
       
@@ -87,15 +104,17 @@ export class StorageManager {
       
       try {
         // Check if video is currently being uploaded
-        if (this.uploadingFiles.has(video.file_path)) {
+        const key = this.extractKey(video.file_path);
+        if (this.uploadingFiles.has(key)) {
           continue;
         }
         
-        await fs.unlink(video.file_path);
+        await this.storage.delete(key);
         
         // Delete thumbnail if exists
         if (video.thumbnail_path) {
-          await fs.unlink(video.thumbnail_path).catch(() => {});
+          const thumbKey = this.extractKey(video.thumbnail_path);
+          await this.storage.delete(thumbKey).catch(() => {});
         }
         
         // Remove from database
@@ -111,58 +130,37 @@ export class StorageManager {
   }
   
   async checkDiskSpace(requiredBytes: number): Promise<boolean> {
-    try {
-      const availableSpace = await this.getAvailableDiskSpace(this.storageDir);
-      
-      if (availableSpace < requiredBytes * 1.5) { // 1.5x safety margin
-        console.log(`[StorageManager] Insufficient disk space: ${availableSpace} available, ${requiredBytes * 1.5} required`);
-        
-        // Try cleanup first
-        await this.cleanupOrphanedFiles();
-        
-        const availableAfter = await this.getAvailableDiskSpace(this.storageDir);
-        
-        if (availableAfter < requiredBytes) {
-          throw new Error(`Insufficient disk space: ${availableAfter} bytes available, ${requiredBytes} required`);
-        }
-      }
-      
+    // For S3/R2, disk space is not a concern
+    if (this.storage.type !== 'local') {
       return true;
+    }
+    
+    try {
+      const availableSpace = await (this.storage as any).checkDiskSpace?.(requiredBytes) ?? true;
+      return availableSpace;
     } catch (error) {
       if (error instanceof Error && error.message.includes('Insufficient disk space')) {
         throw error;
       }
       console.error('[StorageManager] Disk space check failed:', error);
-      // Conservative: assume enough space
-      return true;
+      return true; // Conservative: assume enough space
     }
   }
   
   async getStorageUsage(): Promise<StorageUsage> {
     try {
-      const files = await fs.readdir(this.storageDir);
-      let totalSize = 0;
-      
-      for (const file of files) {
-        const filePath = path.join(this.storageDir, file);
-        try {
-          const stats = await fs.stat(filePath);
-          if (stats.isFile()) {
-            totalSize += stats.size;
-          }
-        } catch (error) {
-          // Skip files that can't be accessed
-        }
-      }
-      
-      const usedGB = totalSize / (1024 * 1024 * 1024);
+      const totalBytes = await this.storage.getUsage('');
+      const usedGB = totalBytes / (1024 * 1024 * 1024);
       const availableGB = Math.max(0, this.maxGB - usedGB);
+      
+      const items = await this.storage.list('', 1000);
+      const files = items.filter(i => !i.isDirectory).length;
       
       return {
         totalGB: this.maxGB,
         usedGB,
         availableGB,
-        files: files.length
+        files
       };
     } catch (error) {
       console.error('[StorageManager] Failed to get storage usage:', error);
@@ -175,33 +173,19 @@ export class StorageManager {
     }
   }
   
-  private async getAvailableDiskSpace(dir: string): Promise<number> {
-    try {
-      if (process.platform === 'win32') {
-        return this.getWindowsDiskSpace(dir);
-      } else {
-        return this.getUnixDiskSpace(dir);
+  /**
+   * Extract storage key from file path
+   * For local storage, this removes the base directory prefix
+   * For S3/R2, this returns the key as-is
+   */
+  private extractKey(filePath: string): string {
+    if (this.storage.type === 'local') {
+      // Remove base directory prefix
+      const baseDir = (this.storage as any).baseDir || '';
+      if (filePath.startsWith(baseDir)) {
+        return filePath.slice(baseDir.length).replace(/^[/\\]/, '');
       }
-    } catch (error) {
-      console.error('[StorageManager] Disk space calculation failed:', error);
-      // Conservative fallback: assume 1GB available
-      return 1024 * 1024 * 1024;
     }
-  }
-  
-  private getWindowsDiskSpace(dir: string): number {
-    const stats = statfsSync(dir);
-    // Use bsize for block size and bfree for available blocks
-    const blockSize = (stats as any).bsize || 4096;
-    const availableBlocks = (stats as any).bfree || stats.bavail || 0;
-    return availableBlocks * blockSize;
-  }
-  
-  private getUnixDiskSpace(dir: string): number {
-    const stats = statfsSync(dir);
-    // Use bsize for block size and bavail for available blocks
-    const blockSize = (stats as any).bsize || 4096;
-    const availableBlocks = (stats as any).bavail || stats.bfree || 0;
-    return availableBlocks * blockSize;
+    return filePath;
   }
 }

@@ -7,14 +7,24 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { openDB, type DB } from '../db.js';
 import { AccountsRepo } from './accounts.js';
+import { UsersRepo } from './users.js';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
 
 const TOKEN_KEY = 'a'.repeat(64);
 
 async function buildFixture(): Promise<{ db: DB; accounts: AccountsRepo; id: string }> {
   const db = await openDB(':memory:');
+  const users = new UsersRepo(db);
   const accounts = new AccountsRepo(db);
+  // Create test user
+  users.insert({
+    id: 'test-user-id',
+    email: 'test@example.com',
+    password_hash: 'hash',
+    name: 'Test User',
+  });
   const row = accounts.insert({
+    user_id: 'test-user-id',
     platform: 'youtube',
     external_id: 'UC_test',
     display_name: 'Test',

@@ -146,15 +146,35 @@ export interface AnalyticsRow {
 
 const BASE = '/api';
 
+// Get JWT token from localStorage
+function getToken(): string | null {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  return localStorage.getItem('auth_token');
+}
+
+// Set JWT token in localStorage
+function setToken(token: string): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  localStorage.setItem('auth_token', token);
+}
+
+// Clear JWT token from localStorage
+function clearToken(): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  localStorage.removeItem('auth_token');
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? 'GET').toUpperCase();
   const url = `${BASE}${path}`;
   let res: Response;
   try {
+    const token = getToken();
     res = await fetch(url, {
       credentials: 'include',
       headers: {
         ...(init?.body ? { 'content-type': 'application/json' } : {}),
+        ...(token ? { 'authorization': `Bearer ${token}` } : {}),
         ...(init?.headers ?? {}),
       },
       ...init,
@@ -167,6 +187,12 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     throw err;
   }
   if (!res.ok) {
+    // Handle 401 Unauthorized - token expired
+    if (res.status === 401) {
+      clearToken();
+      window.location.href = '/login';
+      throw new ApiError(401, 'Unauthorized - Please login again');
+    }
     const body = await res.json().catch(() => ({}));
     const apiError = new ApiError(res.status, body.error ?? res.statusText);
     reportError(classifyHttpError(res.status), `${method} ${path}`, apiError, {
@@ -424,3 +450,51 @@ export interface UploadProgress {
   progress: number;
   timestamp: number;
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Authentication API
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  created_at: number;
+}
+
+export const authApi = {
+  register: (input: RegisterInput) =>
+    req<AuthResponse>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  login: (input: LoginInput) =>
+    req<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  getCurrentUser: () => req<User>('/auth/me'),
+};
+
+// Export token utilities for use in AuthContext
+export { getToken, setToken, clearToken };

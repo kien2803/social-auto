@@ -3,6 +3,7 @@ import type { DB } from '../db.js';
 import { randomUUID } from 'node:crypto';
 
 export interface NewVideo {
+  user_id?: string;
   file_path: string;
   sha256: string;
   size_bytes: number;
@@ -14,13 +15,14 @@ export interface NewVideo {
 function rowToVideo(row: unknown[]): VideoRow {
   return {
     id: row[0] as string,
-    file_path: row[1] as string,
-    sha256: row[2] as string,
-    size_bytes: row[3] as number,
-    duration_sec: (row[4] as number | null) ?? null,
-    mime: row[5] as string,
-    thumbnail_path: (row[6] as string | null) ?? null,
-    created_at: row[7] as number,
+    user_id: row[1] as string,
+    file_path: row[2] as string,
+    sha256: row[3] as string,
+    size_bytes: row[4] as number,
+    duration_sec: (row[5] as number | null) ?? null,
+    mime: row[6] as string,
+    thumbnail_path: (row[7] as string | null) ?? null,
+    created_at: row[8] as number,
   };
 }
 
@@ -30,6 +32,7 @@ export class VideosRepo {
   insert(input: NewVideo): VideoRow {
     const row: VideoRow = {
       id: randomUUID(),
+      user_id: input.user_id ?? 'default-user',
       file_path: input.file_path,
       sha256: input.sha256,
       size_bytes: input.size_bytes,
@@ -39,10 +42,11 @@ export class VideosRepo {
       created_at: Date.now(),
     };
     this.db.raw.run(
-      `INSERT INTO videos (id, file_path, sha256, size_bytes, duration_sec, mime, thumbnail_path, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO videos (id, user_id, file_path, sha256, size_bytes, duration_sec, mime, thumbnail_path, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         row.id,
+        row.user_id,
         row.file_path,
         row.sha256,
         row.size_bytes,

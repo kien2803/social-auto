@@ -4,21 +4,26 @@ import { openDB } from '../db.js';
 import { AccountsRepo } from '../repositories/accounts.js';
 import { VideosRepo } from '../repositories/videos.js';
 import { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
+import { UsersRepo } from '../repositories/users.js';
 import { registerScheduleRoutes } from './schedule.js';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
 
 const TOKEN_KEY = 'a'.repeat(64);
 
-async function buildTestApp(): Promise<{ app: FastifyInstance; accounts: AccountsRepo; videos: VideosRepo; posts: ScheduledPostsRepo }> {
+async function buildTestApp(): Promise<{ app: FastifyInstance; accounts: AccountsRepo; videos: VideosRepo; posts: ScheduledPostsRepo; users: UsersRepo }> {
   const app = Fastify({ logger: false });
   const db = await openDB(':memory:');
+  const users = new UsersRepo(db);
   const accounts = new AccountsRepo(db);
   const videos = new VideosRepo(db);
   const posts = new ScheduledPostsRepo(db);
-  registerScheduleRoutes(app, { posts, videos, accounts });
+  const mockAuthMiddleware = async (req: any, _reply: any) => {
+    req.userId = 'test-user-id';
+  };
+  registerScheduleRoutes(app, { posts, videos, accounts, authMiddleware: mockAuthMiddleware });
   app.addHook('onClose', async () => db.close());
   await app.ready();
-  return { app, accounts, videos, posts };
+  return { app, accounts, videos, posts, users };
 }
 
 describe('Schedule routes (T1.3)', () => {
@@ -26,6 +31,7 @@ describe('Schedule routes (T1.3)', () => {
   let accounts: AccountsRepo;
   let videos: VideosRepo;
   let posts: ScheduledPostsRepo;
+  let users: UsersRepo;
 
   beforeEach(async () => {
     const built = await buildTestApp();
@@ -33,16 +39,26 @@ describe('Schedule routes (T1.3)', () => {
     accounts = built.accounts;
     videos = built.videos;
     posts = built.posts;
+    users = built.users;
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
   });
 
   it('POST /schedule creates a pending post', async () => {
     const video = videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/x.mp4',
       sha256: 'a'.repeat(64),
       size_bytes: 1024,
       mime: 'video/mp4',
     });
     const acc = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 'test',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),
@@ -70,12 +86,14 @@ describe('Schedule routes (T1.3)', () => {
 
   it('POST /schedule rejects too-soon timestamp', async () => {
     const video = videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/x.mp4',
       sha256: 'b'.repeat(64),
       size_bytes: 1024,
       mime: 'video/mp4',
     });
     const acc = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 't',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),
@@ -97,18 +115,21 @@ describe('Schedule routes (T1.3)', () => {
 
   it('POST /schedule creates one row per selected account (Phase 2 multi-platform)', async () => {
     const video = videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/x.mp4',
       sha256: 'c'.repeat(64),
       size_bytes: 1024,
       mime: 'video/mp4',
     });
     const yt = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 'yt',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),
       status: 'active',
     });
     const tt = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'tiktok',
       display_name: 'tt',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),
@@ -136,18 +157,21 @@ describe('Schedule routes (T1.3)', () => {
 
   it('PATCH /schedule/:id updates pending post', async () => {
     const video = videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/x.mp4',
       sha256: 'd'.repeat(64),
       size_bytes: 1024,
       mime: 'video/mp4',
     });
     const acc = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 't',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),
       status: 'active',
     });
     const created = posts.insert({
+      user_id: 'test-user-id',
       video_id: video.id,
       account_id: acc.id,
       scheduled_at: Date.now() + 60_000,
@@ -165,18 +189,21 @@ describe('Schedule routes (T1.3)', () => {
 
   it('PATCH /schedule/:id refuses non-pending posts', async () => {
     const video = videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/x.mp4',
       sha256: 'e'.repeat(64),
       size_bytes: 1024,
       mime: 'video/mp4',
     });
     const acc = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 't',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),
       status: 'active',
     });
     const created = posts.insert({
+      user_id: 'test-user-id',
       video_id: video.id,
       account_id: acc.id,
       scheduled_at: Date.now() + 60_000,
@@ -194,18 +221,21 @@ describe('Schedule routes (T1.3)', () => {
 
   it('DELETE /schedule/:id removes pending post', async () => {
     const video = videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/x.mp4',
       sha256: 'f'.repeat(64),
       size_bytes: 1024,
       mime: 'video/mp4',
     });
     const acc = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 't',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),
       status: 'active',
     });
     const created = posts.insert({
+      user_id: 'test-user-id',
       video_id: video.id,
       account_id: acc.id,
       scheduled_at: Date.now() + 60_000,
@@ -233,7 +263,14 @@ describe('Schedule routes (T1.3)', () => {
 
   it('GET /history filters by account_id and date_from', async () => {
     const local = await buildTestApp();
+    local.users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
     const v = local.videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/a.mp4',
       sha256: 'a'.repeat(64),
       size_bytes: 1,
@@ -241,6 +278,7 @@ describe('Schedule routes (T1.3)', () => {
       duration_sec: 1,
     });
     const a1 = local.accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       external_id: 'A1',
       display_name: 'A1',
@@ -250,6 +288,7 @@ describe('Schedule routes (T1.3)', () => {
       status: 'active',
     });
     const a2 = local.accounts.insert({
+      user_id: 'test-user-id',
       platform: 'tiktok',
       external_id: 'A2',
       display_name: 'A2',
@@ -258,9 +297,9 @@ describe('Schedule routes (T1.3)', () => {
       token_expires_at: 0,
       status: 'active',
     });
-    local.posts.insert({ video_id: v.id, account_id: a1.id, scheduled_at: 1_000, caption: 'past' });
+    local.posts.insert({ user_id: 'test-user-id', video_id: v.id, account_id: a1.id, scheduled_at: 1_000, caption: 'past' });
     const farFuture = 8_000_000_000_000;
-    local.posts.insert({ video_id: v.id, account_id: a2.id, scheduled_at: farFuture, caption: 'future' });
+    local.posts.insert({ user_id: 'test-user-id', video_id: v.id, account_id: a2.id, scheduled_at: farFuture, caption: 'future' });
 
     const all = await local.app.inject({ method: 'GET', url: '/history' });
     expect(all.json().posts).toHaveLength(2);

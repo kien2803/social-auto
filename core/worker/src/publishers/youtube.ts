@@ -1,5 +1,7 @@
 import { google } from 'googleapis';
-import { createReadStream, statSync } from 'node:fs';
+import { createReadStream, statSync, createWriteStream, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import type {
   Publisher,
   PublisherInput,
@@ -8,6 +10,7 @@ import type {
   PublisherVideo,
   UploadMeta,
 } from '@social-auto/shared';
+import type { StorageBackend } from '@social-auto/shared/storage';
 import { 
   PLATFORM_CAPTION_LIMITS, 
   PLATFORM_TITLE_LIMITS,
@@ -24,6 +27,7 @@ export interface YoutubePublisherConfig {
   checkQuota?: (platform: 'youtube') => { used: number; limit: number; remaining: number };
   recordQuotaUsage?: (platform: 'youtube', units: number) => void;
   onProgress?: (identifier: string, progress: number) => void;
+  storageBackend?: StorageBackend;
 }
 
 export class YoutubePublisher implements Publisher {
@@ -86,23 +90,64 @@ async function realUpload(
   oauth2.setCredentials({ access_token: input.access_token });
   const youtube = google.youtube({ version: 'v3', auth: oauth2 });
 
-  // Verify file exists & size matches.
-  const stat = statSync(input.video.file_path);
-  if (stat.size !== input.video.size_bytes) {
-    throw new Error(`size_mismatch: db=${input.video.size_bytes} disk=${stat.size}`);
+  // Determine file path - download from cloud storage if needed
+  let localFilePath = input.video.file_path;
+  let isTempFile = false;
+
+  // Check if file exists locally
+  try {
+    statSync(localFilePath);
+  } catch {
+    // File doesn't exist locally, download from cloud storage
+    if (cfg.storageBackend) {
+      console.log(`[YoutubePublisher] Downloading video from cloud storage: ${input.video.file_path}`);
+      const buffer = await cfg.storageBackend.download(input.video.file_path);
+      
+      // Write to temp file
+      const tempFileName = `social-auto-upload-${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`;
+      localFilePath = path.join(tmpdir(), tempFileName);
+      
+      await new Promise<void>((resolve, reject) => {
+        const writeStream = createWriteStream(localFilePath);
+        writeStream.write(buffer);
+        writeStream.end();
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+      });
+      
+      isTempFile = true;
+      console.log(`[YoutubePublisher] Downloaded to temp file: ${localFilePath}`);
+    } else {
+      throw new Error(`File not found: ${input.video.file_path}`);
+    }
   }
 
-  // Use resumable upload for files > 10MB, direct upload for smaller files
-  const fileSize = stat.size;
-  const useResumable = fileSize > 10 * 1024 * 1024; // 10MB threshold
+  try {
+    // Verify file size matches.
+    const stat = statSync(localFilePath);
+    if (stat.size !== input.video.size_bytes) {
+      throw new Error(`size_mismatch: db=${input.video.size_bytes} disk=${stat.size}`);
+    }
 
-  // Use video file path as progress identifier (since PublisherVideo doesn't have id)
-  const progressIdentifier = input.video.file_path;
+    // Use resumable upload for files > 10MB, direct upload for smaller files
+    const fileSize = stat.size;
+    const useResumable = fileSize > 10 * 1024 * 1024; // 10MB threshold
 
-  if (useResumable) {
-    return await resumableUpload(youtube, input, fileSize, progressIdentifier, cfg.onProgress);
-  } else {
-    return await directUpload(youtube, input, fileSize, progressIdentifier, cfg.onProgress);
+    if (useResumable) {
+      return await resumableUpload(youtube, input, fileSize, localFilePath, cfg.onProgress);
+    } else {
+      return await directUpload(youtube, input, fileSize, localFilePath, cfg.onProgress);
+    }
+  } finally {
+    // Clean up temp file if we downloaded it
+    if (isTempFile) {
+      try {
+        rmSync(localFilePath);
+        console.log(`[YoutubePublisher] Cleaned up temp file: ${localFilePath}`);
+      } catch (error) {
+        console.error(`[YoutubePublisher] Failed to clean up temp file: ${localFilePath}`, error);
+      }
+    }
   }
 }
 
@@ -110,9 +155,10 @@ async function directUpload(
   youtube: any,
   input: PublisherInput,
   fileSize: number,
-  progressIdentifier: string,
+  localFilePath: string,
   onProgress?: (identifier: string, progress: number) => void,
 ): Promise<PublisherUploadResult> {
+  const progressIdentifier = input.video.file_path;
   const res = await youtube.videos.insert({
     part: ['snippet', 'status'],
     requestBody: {
@@ -126,7 +172,7 @@ async function directUpload(
       },
     },
     media: {
-      body: createReadStream(input.video.file_path),
+      body: createReadStream(localFilePath),
     },
   });
 
@@ -143,16 +189,17 @@ async function resumableUpload(
   youtube: any,
   input: PublisherInput,
   fileSize: number,
-  progressIdentifier: string,
+  localFilePath: string,
   onProgress?: (identifier: string, progress: number) => void,
 ): Promise<PublisherUploadResult> {
+  const progressIdentifier = input.video.file_path;
   // Initialize resumable upload session with proper chunking
   const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks as per YouTube recommendation
-  
+
   // Progress tracking with estimation
   let bytesUploaded = 0;
   let progressInterval: NodeJS.Timeout | null = null;
-  
+
   if (onProgress) {
     progressInterval = setInterval(() => {
       // Estimate progress - this is approximate since we don't get real-time feedback from YouTube API
@@ -180,7 +227,7 @@ async function resumableUpload(
         },
       },
       media: {
-        body: createReadStream(input.video.file_path),
+        body: createReadStream(localFilePath),
         mimeType: 'video/*',
       },
     }, {

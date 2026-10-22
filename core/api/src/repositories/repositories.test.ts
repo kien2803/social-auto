@@ -5,6 +5,7 @@ import { VideosRepo } from '../repositories/videos.js';
 import { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
 import { AccountsRepo } from '../repositories/accounts.js';
 import { QuotasRepo } from '../repositories/quotas.js';
+import { UsersRepo } from '../repositories/users.js';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
 
 const TOKEN_KEY = 'a'.repeat(64);
@@ -15,23 +16,34 @@ describe('ScheduledPostsRepo + QuotasRepo', () => {
   let accounts: AccountsRepo;
   let posts: ScheduledPostsRepo;
   let quotas: QuotasRepo;
+  let users: UsersRepo;
 
   beforeEach(async () => {
     db = await openDB(':memory:');
+    users = new UsersRepo(db);
     videos = new VideosRepo(db);
     accounts = new AccountsRepo(db);
     posts = new ScheduledPostsRepo(db);
     quotas = new QuotasRepo(db);
+    // Create test user
+    users.insert({
+      id: 'test-user-id',
+      email: 'test@example.com',
+      password_hash: 'hash',
+      name: 'Test User',
+    });
   });
 
   function makeFixtures() {
     const v = videos.insert({
+      user_id: 'test-user-id',
       file_path: '/tmp/x.mp4',
       sha256: 'a'.repeat(64),
       size_bytes: 1024,
       mime: 'video/mp4',
     });
     const a = accounts.insert({
+      user_id: 'test-user-id',
       platform: 'youtube',
       display_name: 't',
       oauth_refresh_token: encrypt('rt', TOKEN_KEY),

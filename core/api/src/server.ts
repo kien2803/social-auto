@@ -14,19 +14,21 @@ import { AccountsRepo } from './repositories/accounts.js';
 import { VideosRepo } from './repositories/videos.js';
 import { ScheduledPostsRepo } from './repositories/scheduledPosts.js';
 import { QuotasRepo } from './repositories/quotas.js';
+import { UsersRepo } from './repositories/users.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerUserAuthRoutes } from './routes/userAuth.js';
 import { registerVideoRoutes } from './routes/videos.js';
 import { registerScheduleRoutes } from './routes/schedule.js';
 import { registerAccountRoutes } from './routes/accounts.js';
 import { registerQuotaRoutes } from './routes/quota.js';
 import { registerHealthRoutes } from './routes/health.js';
-import { registerStorageRoutes } from './routes/storage.js';
-import { StorageManager } from './services/storageManager.js';
+import { AuthService } from './services/authService.js';
 import { createGoogleClient } from './google/factory.js';
 import { createTiktokClient } from './tiktok/factory.js';
 import { createMetaClient } from './meta/factory.js';
 import { registerPopupCloseRoute } from './auth/popupClose.js';
 import { migrateAvatars } from './migrations/avatarMigration.js';
+import { createAuthMiddleware } from './middleware/auth.js';
 
 export async function buildApp() {
   // Initialize Sentry error tracking
@@ -68,7 +70,11 @@ export async function buildApp() {
   const videos = new VideosRepo(db);
   const posts = new ScheduledPostsRepo(db);
   const quotas = new QuotasRepo(db);
-  const storageManager = new StorageManager(env.storageDir, videos, env.storageQuotaGB || 10);
+  const users = new UsersRepo(db);
+  const authService = new AuthService(users, env.jwtSecret);
+  const authMiddleware = createAuthMiddleware(authService, true);
+  const optionalAuthMiddleware = createAuthMiddleware(authService, false);
+
   const google = createGoogleClient({
     clientId: env.clientId,
     clientSecret: env.clientSecret,
@@ -105,8 +111,8 @@ export async function buildApp() {
   // so a stray /auth/popup-close request doesn't hit a wildcard.
   registerPopupCloseRoute(app);
   registerHealthRoutes(app, { posts, accounts });
-  registerStorageRoutes(app, { storageManager });
   registerQuotaRoutes(app, { quotas });
+  registerUserAuthRoutes(app, { authService });
   // Mount the legacy IG/FB mock OAuth routes when EITHER:
   //   - USE_MOCK_PUBLISHERS=true (worker's stub publishers are in use), or
   //   - Meta credentials are missing (factory falls back to mock).
@@ -126,10 +132,11 @@ export async function buildApp() {
     webOrigin: env.webOrigin,
     tokenEncryptionKey: env.tokenEncryptionKey,
     useMockPublishers: env.useMockPublishers || metaUseMock,
+    optionalAuthMiddleware,
   });
-  registerAccountRoutes(app, { accounts, posts, google, tokenEncryptionKey: env.tokenEncryptionKey });
-  registerVideoRoutes(app, { videos, storageDir: env.storageDir });
-  registerScheduleRoutes(app, { posts, videos, accounts });
+  registerAccountRoutes(app, { accounts, posts, google, tokenEncryptionKey: env.tokenEncryptionKey, authMiddleware });
+  registerVideoRoutes(app, { videos, storageDir: env.storageDir, authMiddleware });
+  registerScheduleRoutes(app, { posts, videos, accounts, authMiddleware });
   return app;
 }
 const isMain = import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}`;
