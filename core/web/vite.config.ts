@@ -1,8 +1,15 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
-const apiTarget = process.env['VITE_API_TARGET'] || 'http://localhost:5182';
+// process.env in a Vite config file does NOT include .env files — they
+// only reach client code via import.meta.env. loadEnv() reads .env.local
+// etc. so VITE_API_TARGET here actually honors the project's env file;
+// without it the proxy silently falls back to a dead port and every
+// /api + /auth request through the dev server 500s.
+const fileEnv = loadEnv(process.env['NODE_ENV'] || 'development', __dirname, '');
+const apiTarget =
+  process.env['VITE_API_TARGET'] || fileEnv['VITE_API_TARGET'] || 'http://localhost:5182';
 
 // Proxy two path prefixes to the API server:
 //   /api/*  → API as /api/<path> with the `/api` prefix stripped. All

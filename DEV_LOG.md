@@ -23,6 +23,10 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 **Known limitation**: sql.js export-toàn-file không thể merge 2 writer — nếu API write *giữa* lúc worker refresh và flush (trong một poll đang xử lý post), write đó vẫn có thể bị mất. Window rất hẹp sau fix, nhưng muốn triệt để cần single-writer (embedded server) hoặc chuyển sang SQLite driver có file locking thật.
 
+### Fix phụ: Vite proxy target luôn fallback về dead port → UI 500
+
+`vite.config.ts` đọc `process.env['VITE_API_TARGET']` nhưng Vite **không auto-load `.env.local` vào process.env** trong config file → proxy `/api`+`/auth` luôn trỏ `http://localhost:5182` (không có gì chạy) → mọi request từ UI trả Internal Server Error. Fix bằng `loadEnv()` trong config. Verify: `/api/health`, login, `/api/accounts` qua proxy đều 200.
+
 ---
 
 ## 2026-10-22 - Phase 4: Testing & Polish (multi-user auth)
