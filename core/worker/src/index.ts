@@ -352,7 +352,7 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
 }
 
 /** Network / 5xx / quota / rate-limit → back off and retry. */
-function isRetryable(err: unknown): boolean {
+export function isRetryable(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   const m = err.message;
   return /(network|timeout|ETIMEDOUT|ECONNRESET|5\d\d|rate.?limit|quota)/i.test(m);
@@ -362,11 +362,17 @@ function isRetryable(err: unknown): boolean {
  * Authorization-side failures: the user revoked the OAuth grant or the
  * refresh token is no longer valid. These are not retryable — the only fix
  * is for the user to reconnect through the web UI.
+ *
+ * Deliberately does NOT match bare "403": YouTube returns 403 for
+ * quotaExceeded / rateLimitExceeded, and treating those as revoked would
+ * permanently mark a healthy account 'expired' the moment the daily quota
+ * ran out (isRevoked is checked before isRetryable). "401" is kept because
+ * an upload-time 401 after a successful refresh means the grant is dead.
  */
-function isRevoked(err: unknown): boolean {
+export function isRevoked(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   const m = err.message;
-  return /(invalid_grant|token.?revoked|revoked|unauthorized|401|403)/i.test(m);
+  return /(invalid_grant|token.?revoked|revoked|unauthorized|401)/i.test(m);
 }
 
 function parseCaption(

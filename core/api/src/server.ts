@@ -139,8 +139,8 @@ export async function buildApp() {
   // Popup-mode OAuth close page. Mounted before the auth start handlers
   // so a stray /auth/popup-close request doesn't hit a wildcard.
   registerPopupCloseRoute(app);
-  registerHealthRoutes(app, { posts, accounts });
-  registerQuotaRoutes(app, { quotas });
+  registerHealthRoutes(app, { posts, accounts, optionalAuthMiddleware });
+  registerQuotaRoutes(app, { quotas, authMiddleware });
   registerUserAuthRoutes(app, { authService });
   // Mount the legacy IG/FB mock OAuth routes when EITHER:
   //   - USE_MOCK_PUBLISHERS=true (worker's stub publishers are in use), or
@@ -167,7 +167,7 @@ export async function buildApp() {
   registerAccountRoutes(app, { accounts, posts, google, tokenEncryptionKey: env.tokenEncryptionKey, authMiddleware });
   registerVideoRoutes(app, { videos, storageDir: env.storageDir, authMiddleware });
   registerScheduleRoutes(app, { posts, videos, accounts, authMiddleware });
-  registerUploadProgressRoutes(app, { authMiddleware });
+  registerUploadProgressRoutes(app, { authMiddleware, videos });
   const backend = createStorageBackend({
     type: env.storageType,
     local: env.storageType === 'local' ? { baseDir: env.storageDir } : undefined,
@@ -200,6 +200,7 @@ export async function buildApp() {
         (await backend.list(p, limit)).map((i) => ({
           key: i.key,
           isDirectory: i.isDirectory,
+          lastModified: i.lastModified,
         })),
       get: (key: string) => backend.download(key),
       put: async (key: string, data: Buffer) => {

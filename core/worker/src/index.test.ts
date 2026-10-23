@@ -21,7 +21,7 @@ import { AccountsRepo } from './repositories/accounts.js';
 import { ScheduledPostsRepo } from './repositories/scheduledPosts.js';
 import { VideosRepo } from './repositories/videos.js';
 import { QuotasRepo } from './repositories/quotas.js';
-import { pollOnce } from './index.js';
+import { pollOnce, isRetryable, isRevoked } from './index.js';
 import { encrypt } from '@social-auto/shared/utils/crypto.js';
 import type { GoogleOAuthClient } from './publishers/googleClientTypes.js';
 import { QuotaManager } from './services/quotaManager.js';
@@ -183,6 +183,21 @@ describe('worker pollOnce — token lifecycle', () => {
     const post = deps.posts.findById(postId);
     expect(post?.status).toBe('failed');
     expect(post?.last_error).toMatch(/account_expired_reconnect_required/);
+  });
+
+  it('classifies a 403 quotaExceeded as retryable, not revoked', () => {
+    // YouTube returns HTTP 403 for quotaExceeded / rateLimitExceeded. If
+    // isRevoked matched bare "403", exhausting the daily quota would mark a
+    // healthy account 'expired' and kill the post permanently.
+    const err = new Error('Request failed with status code 403: quotaExceeded');
+    expect(isRevoked(err)).toBe(false);
+    expect(isRetryable(err)).toBe(true);
+  });
+
+  it('still treats real auth failures as revoked', () => {
+    expect(isRevoked(new Error('invalid_grant: Token has been expired or revoked'))).toBe(true);
+    expect(isRevoked(new Error('Request failed with status code 401'))).toBe(true);
+    expect(isRevoked(new Error('Unauthorized'))).toBe(true);
   });
 
   it('claims only posts whose scheduled_at is in the past', async () => {

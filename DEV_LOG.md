@@ -4,6 +4,33 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 ---
 
+## 2026-10-23 - Backend audit + fix toàn bộ findings
+
+**Audit** toàn bộ `core/api` + `core/worker` → 2 bug nghiêm trọng + 4 medium. Tất cả đã fix.
+
+### 🔴 Bugs đã fix
+
+1. **`isRevoked` match bare "403" → quotaExceeded giết account** (`worker/index.ts`): YouTube trả 403 cho `quotaExceeded`/`rateLimitExceeded` — vì check `isRevoked` trước `isRetryable`, hết daily quota → account mark `expired` vĩnh viễn + post dead. Fix: bỏ `403` khỏi regex (giữ `401`, `invalid_grant`, `revoked`, `unauthorized`); export cả 2 classifier; +2 unit tests.
+2. **`cleanupOrphanedFiles` xóa nhầm file sống** (`storageManager.ts`): `videosRepo.list()` cap 100 rows → DB >100 videos → mọi file ngoài trang đầu bị coi orphan. Fix: `VideosRepo.listAll()` (no limit) cho cả cleanup + LRU. Thêm guard `MIN_AGE_MS=60s` theo `lastModified` để tránh race với in-flight upload (file ghi trước khi insert row); adapter trong server.ts giờ forward `lastModified`.
+
+### 🟡 Medium đã fix
+
+3. **`/health` lộ toàn bộ accounts không auth** → giờ public chỉ trả `status/uptime/timestamp/storage_dir/version/environment`; `worker` rollup + `accounts` (scope `listSlim({userId})`) chỉ khi có JWT hợp lệ (optionalAuthMiddleware).
+4. **`/quota`, `/quota/youtube` không auth** → bắt buộc Bearer.
+5. **`/videos/:id/progress|stream|cancel` không check ownership** → wire `VideosRepo` vào `registerUploadProgressRoutes`, mọi endpoint check `video.user_id === userId` (403 `video_not_owned` / 404).
+
+### 🟢 Còn lại (ghi nhận, chưa fix)
+
+- Cross-process sql.js race standalone-worker mode — kiến trúc; `EMBEDDED_WORKER=true` là lời giải.
+- No rate-limit login/register; password min 6; JWT 7d không revoke; `/auth/me` tự verify token; login timing oracle; Sentry `reply.send(error)` lộ internal message.
+
+### ✅ Verify
+
+- API 152 + web 24 + worker 67 tests; typecheck 4 packages sạch.
+- E2E live: unauth `/health` → minimal; unauth `/quota` → 401; auth `/health` → full scoped; auth `/quota` → 200; progress video không tồn tại → 404.
+
+---
+
 ## 2026-10-23 - Phase 4: E2E user isolation + fix 2 lỗ hổng cross-user
 
 **Mục tiêu**: chạy full test suite + test E2E user isolation (2 tài khoản song song) qua stack thật — phát hiện và fix các chỗ thiếu ownership check.

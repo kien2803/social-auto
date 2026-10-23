@@ -421,12 +421,12 @@ export interface HealthResponse {
   uptime_sec: number;
   timestamp: number;
   storage_dir: string;
-  worker: {
+  worker?: {
     status: 'ok';
     last_publish_at: number | null;
     by_status: Record<string, number>;
   };
-  accounts: Array<{
+  accounts?: Array<{
     id: string;
     platform: string;
     display_name: string;

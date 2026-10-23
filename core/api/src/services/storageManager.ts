@@ -4,7 +4,7 @@ export interface StorageBackend {
   type: 'local' | 's3' | 'r2';
   initialize(): Promise<void>;
   getUsage(path: string): Promise<number>;
-  list(path: string, limit: number): Promise<Array<{ key: string; isDirectory: boolean }>>;
+  list(path: string, limit: number): Promise<Array<{ key: string; isDirectory: boolean; lastModified?: number }>>;
   get(key: string): Promise<Buffer>;
   put(key: string, data: Buffer): Promise<void>;
   delete(key: string): Promise<void>;
@@ -47,12 +47,21 @@ export class StorageManager {
   async cleanupOrphanedFiles(): Promise<number> {
     try {
       const allItems = await this.storage.list('', 1000);
-      const dbFiles = this.videosRepo.list().map(v => this.extractKey(v.file_path));
-      
-      const orphaned = allItems.filter(item => 
-        !dbFiles.includes(item.key) && 
+      // list() is capped at 100 rows — a DB with more videos would mark
+      // every file past the cap as orphaned and delete live content.
+      const dbFiles = this.videosRepo.listAll().map(v => this.extractKey(v.file_path));
+
+      // Files younger than this are assumed in-flight: ingestUpload writes
+      // the file before inserting the row, so there's a window where a
+      // brand-new file has no row yet and would look orphaned.
+      const MIN_AGE_MS = 60_000;
+      const now = Date.now();
+
+      const orphaned = allItems.filter(item =>
+        !dbFiles.includes(item.key) &&
         !this.uploadingFiles.has(item.key) &&
-        !item.isDirectory
+        !item.isDirectory &&
+        (item.lastModified === undefined || now - item.lastModified > MIN_AGE_MS)
       );
       
       for (const item of orphaned) {
@@ -92,7 +101,7 @@ export class StorageManager {
   }
   
   async cleanupLRU(targetGB: number): Promise<void> {
-    const videos = this.videosRepo.list();
+    const videos = this.videosRepo.listAll();
     
     // Sort by creation time (oldest first)
     const sortedVideos = videos.sort((a, b) => a.created_at - b.created_at);

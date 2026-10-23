@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { unlink } from 'node:fs/promises';
+import type { VideosRepo } from '../repositories/videos.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export interface UploadProgress {
   videoId: string;
@@ -51,11 +53,27 @@ export function cleanupOldProgress(): void {
 
 export function registerUploadProgressRoutes(
   app: FastifyInstance,
-  deps?: { authMiddleware?: any },
+  deps?: { authMiddleware?: any; videos?: VideosRepo },
 ): void {
   const auth = deps?.authMiddleware ? { preHandler: deps.authMiddleware } : {};
+  // When a VideosRepo is wired in, every progress endpoint checks that the
+  // caller owns the video — otherwise any authenticated user could read or
+  // write another user's upload progress by guessing/learning the video id.
+  const ownsVideo = (req: any): 'ok' | 'not_found' | 'forbidden' => {
+    if (!deps?.videos) return 'ok';
+    const video = deps.videos.findById(req.params.id);
+    if (!video) return 'not_found';
+    return video.user_id === (req as AuthenticatedRequest).userId ? 'ok' : 'forbidden';
+  };
+  const ownershipError = (reply: any, result: 'not_found' | 'forbidden') =>
+    reply
+      .code(result === 'not_found' ? 404 : 403)
+      .send({ error: result === 'not_found' ? 'Video not found' : 'video_not_owned' });
+
   // Get current progress for a video
   app.get<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req, reply) => {
+    const own = ownsVideo(req);
+    if (own !== 'ok') return ownershipError(reply, own);
     const progress = getProgress(req.params.id);
     
     if (!progress) {
@@ -66,7 +84,9 @@ export function registerUploadProgressRoutes(
   });
   
   // Update progress (called by worker)
-  app.post<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req) => {
+  app.post<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req, reply) => {
+    const own = ownsVideo(req);
+    if (own !== 'ok') return ownershipError(reply, own);
     const { progress } = req.body as { progress: number };
     updateProgress(req.params.id, progress);
     return { success: true };
@@ -74,6 +94,8 @@ export function registerUploadProgressRoutes(
   
   // Server-Sent Events endpoint for real-time progress
   app.get<{ Params: { id: string } }>('/videos/:id/progress/stream', auth, async (req, reply) => {
+    const own = ownsVideo(req);
+    if (own !== 'ok') return ownershipError(reply, own);
     const videoId = req.params.id;
     
     // Set up SSE
@@ -114,13 +136,17 @@ export function registerUploadProgressRoutes(
   });
   
   // Cleanup endpoint (for testing)
-  app.delete<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req) => {
+  app.delete<{ Params: { id: string } }>('/videos/:id/progress', auth, async (req, reply) => {
+    const own = ownsVideo(req);
+    if (own !== 'ok') return ownershipError(reply, own);
     progressCache.delete(req.params.id);
     return { success: true };
   });
-  
+
   // Cancel active upload
   app.post<{ Params: { id: string } }>('/videos/:id/cancel', auth, async (req, reply) => {
+    const own = ownsVideo(req);
+    if (own !== 'ok') return ownershipError(reply, own);
     const { id } = req.params;
     const activeUpload = activeUploads.get(id);
     

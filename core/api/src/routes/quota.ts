@@ -4,6 +4,7 @@ import type { QuotasRepo } from '../repositories/quotas.js';
 
 export interface QuotaDeps {
   quotas: QuotasRepo;
+  authMiddleware?: any;
 }
 
 interface QuotaWire {
@@ -32,7 +33,8 @@ function nextMidnightUtc(now: number): number {
  * midnight UTC so clients can show a countdown without re-deriving it.
  */
 export function registerQuotaRoutes(app: FastifyInstance, deps: QuotaDeps): void {
-  app.get('/quota', async () => {
+  const auth = deps.authMiddleware ? { preHandler: deps.authMiddleware } : {};
+  app.get('/quota', auth, async () => {
     const now = Date.now();
     const items: QuotaWire[] = (
       ['youtube', 'tiktok', 'instagram', 'facebook'] as Platform[]
@@ -52,7 +54,7 @@ export function registerQuotaRoutes(app: FastifyInstance, deps: QuotaDeps): void
   });
   
   // YouTube-specific quota endpoint with more details
-  app.get('/quota/youtube', async () => {
+  app.get('/quota/youtube', auth, async () => {
     const now = Date.now();
     const q = deps.quotas.get('youtube', now);
     const warning = q.used / q.limit > 0.8;

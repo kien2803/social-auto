@@ -1,10 +1,16 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
 import type { AccountsRepo } from '../repositories/accounts.js';
+import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export interface HealthDeps {
   posts: ScheduledPostsRepo;
   accounts: AccountsRepo;
+  /** When present, authenticated callers additionally get the worker
+   * rollup + per-account list. Anonymous callers (load balancers,
+   * monitors) get only the minimal liveness payload — the account rollup
+   * would otherwise expose every user's connected accounts. */
+  optionalAuthMiddleware?: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
 }
 
 interface AccountHealth {
@@ -21,7 +27,7 @@ interface HealthResponse {
   storage_dir: string;
   version: string;
   environment: string;
-  worker: {
+  worker?: {
     /** Always "ok" from the API's perspective — the worker reports by writing
      * to scheduled_posts. A user can tell the worker is alive by checking
      * whether `last_publish_at` is recent or whether the `next due` row is
@@ -34,7 +40,7 @@ interface HealthResponse {
      * since health is called by monitors. */
     by_status: Record<string, number>;
   };
-  accounts: AccountHealth[];
+  accounts?: AccountHealth[];
 }
 
 /**
@@ -48,16 +54,11 @@ export function registerHealthRoutes(
   app: FastifyInstance,
   deps: HealthDeps,
 ): void {
-  app.get('/health', async (): Promise<HealthResponse> => {
-    const counts = deps.posts.countByStatus();
-    const allAccounts = deps.accounts.listSlim();
-    const accounts: AccountHealth[] = allAccounts.map((a) => ({
-      id: a.id,
-      platform: a.platform,
-      display_name: a.display_name,
-      status: a.status,
-    }));
-    return {
+  const pre = deps.optionalAuthMiddleware
+    ? { preHandler: deps.optionalAuthMiddleware }
+    : {};
+  app.get('/health', pre, async (req): Promise<HealthResponse> => {
+    const base: HealthResponse = {
       status: 'ok',
       uptime_sec: Math.round(process.uptime()),
       timestamp: Date.now(),
@@ -67,12 +68,22 @@ export function registerHealthRoutes(
       storage_dir: process.env['STORAGE_DIR'] ?? '',
       version: process.env['APP_VERSION'] || '0.1.0',
       environment: process.env['NODE_ENV'] || 'development',
+    };
+    const userId = (req as AuthenticatedRequest).userId;
+    if (!userId) return base;
+    return {
+      ...base,
       worker: {
         status: 'ok',
         last_publish_at: deps.posts.lastPublishedAt(),
-        by_status: counts,
+        by_status: deps.posts.countByStatus(),
       },
-      accounts,
+      accounts: deps.accounts.listSlim({ userId }).map((a) => ({
+        id: a.id,
+        platform: a.platform,
+        display_name: a.display_name,
+        status: a.status,
+      })),
     };
   });
 }

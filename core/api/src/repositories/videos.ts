@@ -93,6 +93,13 @@ export class VideosRepo {
     return (result[0]?.values ?? []).map(rowToVideo);
   }
 
+  /** Every video row, no limit — for storage reconciliation/cleanup where
+   * missing rows past a page size would mislabel live files as orphans. */
+  listAll(): VideoRow[] {
+    const result = this.db.raw.exec('SELECT * FROM videos ORDER BY created_at DESC');
+    return (result[0]?.values ?? []).map(rowToVideo);
+  }
+
   /** How many video rows point at the same file (same content hash). */
   countBySha256(sha256: string): number {
     const result = this.db.raw.exec('SELECT COUNT(*) FROM videos WHERE sha256 = ?', [sha256]);
