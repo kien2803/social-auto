@@ -10,6 +10,10 @@ import type { UsersRepo } from '../repositories/users.js';
 
 const SALT_ROUNDS = 10;
 const JWT_EXPIRES_IN = '7d';
+// Compared against when the email doesn't exist, so a failed login takes
+// ~the same time whether the account exists or not — otherwise the fast
+// "user not found" return is a free user-enumeration timing oracle.
+const DUMMY_HASH = bcrypt.hashSync('timing-equalizer', SALT_ROUNDS);
 
 export interface AuthTokens {
   token: string;
@@ -67,13 +71,10 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthTokens> {
     // Find user by email
     const user = this.usersRepo.findByEmail(email);
-    if (!user) {
-      throw new Error('Invalid email or password');
-    }
-
     // Get password hash
     const passwordHash = this.usersRepo.getPasswordHashByEmail(email);
-    if (!passwordHash) {
+    if (!user || !passwordHash) {
+      await this.verifyPassword(password, DUMMY_HASH);
       throw new Error('Invalid email or password');
     }
 

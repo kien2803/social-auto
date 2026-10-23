@@ -74,7 +74,14 @@ export async function buildApp() {
         method: request.method,
         headers: request.headers,
       });
-      reply.send(error);
+      const statusCode = error.statusCode ?? 500;
+      // 4xx messages are client-facing contract; 5xx messages may carry
+      // internals (SQL errors, file paths) — don't echo them to the client.
+      reply.code(statusCode).send({
+        statusCode,
+        error: statusCode >= 500 ? 'Internal Server Error' : error.name,
+        message: statusCode >= 500 ? 'An unexpected error occurred' : error.message,
+      });
     });
   }
   
@@ -141,7 +148,7 @@ export async function buildApp() {
   registerPopupCloseRoute(app);
   registerHealthRoutes(app, { posts, accounts, optionalAuthMiddleware });
   registerQuotaRoutes(app, { quotas, authMiddleware });
-  registerUserAuthRoutes(app, { authService });
+  registerUserAuthRoutes(app, { authService, authMiddleware });
   // Mount the legacy IG/FB mock OAuth routes when EITHER:
   //   - USE_MOCK_PUBLISHERS=true (worker's stub publishers are in use), or
   //   - Meta credentials are missing (factory falls back to mock).

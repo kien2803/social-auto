@@ -21,9 +21,10 @@ ecosystem.secrets.cjs
 secrets/
 **/secrets/
 
-# Storage and data
-storage/
-**/storage/
+# Storage and data (runtime upload/DB dirs only — keep src/storage tracked)
+/storage/
+core/api/storage/
+core/worker/storage/
 *.db
 *.sqlite
 *.sqlite3

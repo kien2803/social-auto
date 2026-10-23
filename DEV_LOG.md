@@ -4,6 +4,30 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 ---
 
+## 2026-10-23 - Backend hardening: auth rate limit, error sanitization, storage size
+
+Hardening pass sau khi preview E2E ổn (production-style single origin, port 3000, EMBEDDED_WORKER=true, mock mode).
+
+### Đã fix
+
+1. **Auth rate limiting** (`userAuth.ts`): in-memory per-IP limiter — `POST /auth/login|register` max 10 attempts / 5 phút → 429. Đủ cho self-hosted single instance; multi-replica cần shared store.
+2. **`/auth/me` qua middleware**: bỏ manual token verify, dùng `authMiddleware` chung (401 `Missing authorization token` như mọi route khác).
+3. **Login timing oracle** (`authService.ts`): khi email không tồn tại vẫn chạy `bcrypt.compare` với `DUMMY_HASH` (compute sẵn khi module load) → response time đồng nhất, không enumerate được email.
+4. **Register validation**: email format check + password min 6 → 400 (trước đây chỉ check tồn tại field).
+5. **Sentry error handler** (`server.ts`): `reply.send(error)` serialize cả internal error ra client → giờ 5xx chỉ trả `Internal Server Error` / `An unexpected error occurred`, giữ nguyên Sentry capture + status code cho <5xx.
+6. **`local.ts` storage**: `getFileSize` giờ trả `file.length` cho Buffer (thay vì stub 0) — quota check chính xác cho buffer uploads; stream trả 0 (size không biết trước khi consume). Bỏ dead walk đầu trong `getUsage`.
+
+### Tests
+
+- `userAuth.test.ts` mới: register→login→/auth/me round-trip, email validation, 401, rate limit 429 sau 10 attempts.
+- API 156 (+4) + web 24 + worker 67 pass; typecheck 4 packages sạch.
+
+### Còn lại
+
+- JWT 7d không revoke; password policy tối thiểu; rate limiter per-process (không share multi-replica); standalone-worker sql.js race (dùng `EMBEDDED_WORKER`).
+
+---
+
 ## 2026-10-23 - Backend audit + fix toàn bộ findings
 
 **Audit** toàn bộ `core/api` + `core/worker` → 2 bug nghiêm trọng + 4 medium. Tất cả đã fix.
