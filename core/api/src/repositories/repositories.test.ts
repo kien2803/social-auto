@@ -181,6 +181,36 @@ describe('ScheduledPostsRepo + QuotasRepo', () => {
     expect(quotas.hasRemaining('youtube', now)).toBe(false);
   });
 
+  it('findBySha256 dedups per-user, not globally', () => {
+    users.insert({
+      id: 'user-b',
+      email: 'b@example.com',
+      password_hash: 'hash',
+      name: 'User B',
+    });
+    const sha = 'c'.repeat(64);
+    const vA = videos.insert({
+      user_id: 'test-user-id',
+      file_path: `/tmp/${sha}.mp4`,
+      sha256: sha,
+      size_bytes: 1,
+      mime: 'video/mp4',
+    });
+    // Same content, different user → no dedup hit.
+    expect(videos.findBySha256(sha, 'test-user-id')?.id).toBe(vA.id);
+    expect(videos.findBySha256(sha, 'user-b')).toBeNull();
+    expect(videos.countBySha256(sha)).toBe(1);
+
+    videos.insert({
+      user_id: 'user-b',
+      file_path: `/tmp/${sha}.mp4`,
+      sha256: sha,
+      size_bytes: 1,
+      mime: 'video/mp4',
+    });
+    expect(videos.countBySha256(sha)).toBe(2);
+  });
+
   it('deleting an account cascades to its scheduled posts (FK ON DELETE CASCADE)', () => {
     const { v, a } = makeFixtures();
     posts.insert({

@@ -4,6 +4,44 @@ Nhật ký phát triển dự án Social Auto - theo dõi tiến độ, thay đ�
 
 ---
 
+## 2026-10-23 - Phase 4: E2E user isolation + fix 2 lỗ hổng cross-user
+
+**Mục tiêu**: chạy full test suite + test E2E user isolation (2 tài khoản song song) qua stack thật — phát hiện và fix các chỗ thiếu ownership check.
+
+### ✅ Đã hoàn thành
+
+#### 1. Full test suite — all green trước khi test E2E
+- Typecheck sạch cả 4 packages; API 146 + web 24 + worker 65 pass.
+
+#### 2. E2E user isolation trên stack thật (API port 3100, DB tạm, mock OAuth)
+- Script curl mô phỏng đúng browser flow: register A + B → `oauth_token` cookie → `/auth/youtube/start` → callback → connect account mock → upload video → list/cross-access.
+- **Phát hiện BUG 1 — `DELETE /accounts/:id` không check ownership**: user A xóa được account của user B (HTTP 200). Audit lại `routes/accounts.ts`: **5 endpoint** thiếu user check — `PATCH`, `DELETE`, `GET /:id/stats`, `GET /:id/videos`, `POST /:id/sync` đều dùng `findById(id)` không scope `user_id` (videos/schedule đã check đúng).
+- **Phát hiện BUG 2 — SHA256 dedup là global**: B upload file giống hệt A → dedup trả về row của A → B "upload thành công" nhưng video không thuộc B (không list được, không schedule được) + lộ sự tồn tại file của người khác.
+
+#### 3. Fixes
+- `routes/accounts.ts`: thêm `userId` check → 403 `account_not_owned` cho cả 5 endpoint (theo convention `account_not_owned`/`video_not_owned` của schedule.ts).
+- `repositories/videos.ts`: `findBySha256(sha256, userId?)` — dedup per-user; thêm `countBySha256`. `videoService.ingestUpload` truyền `userId` vào dedup lookup. File vật lý vẫn share qua tên `sha256.ext`.
+- `routes/videos.ts` DELETE: chỉ `unlink` file + thumbnail khi `countBySha256 > 1` là false — xóa row không phá file của user khác.
+- Regression tests: `accounts.test.ts` +5 (cross-user PATCH/DELETE/stats/videos/sync → 403), `repositories.test.ts` +1 (per-user dedup + countBySha256).
+
+#### 4. Kết quả E2E sau fix — 16/16 checks pass
+- A/B chỉ thấy account + video của mình; cross GET → 404, PATCH/DELETE → 403; unauth → 401; cùng file → 2 row khác nhau, không leak.
+
+### 🎯 Mục tiêu tiếp theo
+
+- [ ] Cấu hình API credentials thật (xem API_CREDENTIALS_GUIDE.md) → flip USE_MOCK_*=false
+- [ ] Cân nhắc user-scoped quotas (hiện quotas là global)
+- [ ] Audit tương tự cho `uploadProgress.ts` routes (progress cache chưa scope user — impact thấp, chỉ lộ % upload)
+
+### 📝 Ghi chú
+
+- Kill server trên Windows: `taskkill //F //PID <pid>` — kill shell không giết child tsx process.
+- curl Windows không resolve path `/tmp` trong `-F file=@...` — dùng `cygpath -w`.
+- Node Windows resolve `/tmp` → `C:\tmp` (khác Git Bash `/tmp` → `%TEMP%`).
+- `GET /accounts/:id` không tồn tại — test "cross-user GET → 404" pass nhưng chỉ vì route không có; PATCH/DELETE/stats/videos/sync mới là attack surface thật.
+
+---
+
 ## 2026-10-22 - Production packaging: single-container self-host deploy
 
 **Mục tiêu**: dự án có thể publish cho end-user tự host — một container/lệnh là chạy đủ web + API + worker.

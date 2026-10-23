@@ -65,8 +65,16 @@ export class VideosRepo {
     return first ? rowToVideo(first) : null;
   }
 
-  findBySha256(sha256: string): VideoRow | null {
-    const result = this.db.raw.exec('SELECT * FROM videos WHERE sha256 = ? LIMIT 1', [sha256]);
+  findBySha256(sha256: string, userId?: string): VideoRow | null {
+    // Dedup is per-user: two different users uploading the same file get
+    // separate rows (the on-disk file is shared via the sha256 filename),
+    // otherwise user B's upload would return a row owned by user A that B
+    // could never schedule or see.
+    const sql = userId
+      ? 'SELECT * FROM videos WHERE sha256 = ? AND user_id = ? LIMIT 1'
+      : 'SELECT * FROM videos WHERE sha256 = ? LIMIT 1';
+    const params = userId ? [sha256, userId] : [sha256];
+    const result = this.db.raw.exec(sql, params);
     const first = result[0]?.values[0];
     return first ? rowToVideo(first) : null;
   }
@@ -83,6 +91,12 @@ export class VideosRepo {
       limit,
     ]);
     return (result[0]?.values ?? []).map(rowToVideo);
+  }
+
+  /** How many video rows point at the same file (same content hash). */
+  countBySha256(sha256: string): number {
+    const result = this.db.raw.exec('SELECT COUNT(*) FROM videos WHERE sha256 = ?', [sha256]);
+    return (result[0]?.values[0]?.[0] as number) ?? 0;
   }
 
   delete(id: string): void {

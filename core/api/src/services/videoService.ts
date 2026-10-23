@@ -23,8 +23,8 @@ export interface IngestResult {
 
 /**
  * Stream an upload to disk while computing sha256, then probe duration + generate
- * a thumbnail. Returns a row id; deduplicates by sha256 so two identical uploads
- * share storage.
+ * a thumbnail. Returns a row id; deduplicates by sha256 within the same user
+ * so two identical uploads by one user share the row (and on-disk file).
  */
 export async function ingestUpload(
   repo: VideosRepo,
@@ -63,7 +63,7 @@ export async function ingestUpload(
   const sha256 = hash.digest('hex');
   const fileBuffer = Buffer.concat(chunks);
 
-  const existing = repo.findBySha256(sha256);
+  const existing = repo.findBySha256(sha256, userId);
   if (existing) {
     return {
       video_id: existing.id,

@@ -219,8 +219,12 @@ export function registerAccountRoutes(
       metadata?: Partial<AccountMetadata>;
     };
   }>('/accounts/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
+    if (existing.user_id !== userId) {
+      return reply.code(403).send({ error: 'account_not_owned' });
+    }
     const body = req.body ?? {};
     if (body.display_name !== undefined) {
       const name = body.display_name.trim();
@@ -257,16 +261,24 @@ export function registerAccountRoutes(
 
   // DELETE /accounts/:id — unchanged.
   app.delete<{ Params: { id: string } }>('/accounts/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
+    if (existing.user_id !== userId) {
+      return reply.code(403).send({ error: 'account_not_owned' });
+    }
     deps.accounts.deleteById(req.params.id);
     return { ok: true };
   });
 
   // GET /accounts/:id/stats — per-account scheduled-post counts.
   app.get<{ Params: { id: string } }>('/accounts/:id/stats', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
+    if (existing.user_id !== userId) {
+      return reply.code(403).send({ error: 'account_not_owned' });
+    }
     return deps.posts.countByStatusForAccount(req.params.id);
   });
 
@@ -275,8 +287,12 @@ export function registerAccountRoutes(
   // don't persist a video history. The route exists so the Analytics page
   // single-account view has a uniform surface across platforms.
   app.get<{ Params: { id: string } }>('/accounts/:id/videos', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
+    if (existing.user_id !== userId) {
+      return reply.code(403).send({ error: 'account_not_owned' });
+    }
     return { videos: listVideosForPlatform(existing.platform, existing.external_id) };
   });
 
@@ -285,8 +301,12 @@ export function registerAccountRoutes(
     if (!deps.google || !deps.tokenEncryptionKey) {
       return reply.code(503).send({ error: 'sync_unavailable' });
     }
+    const userId = (req as AuthenticatedRequest).userId;
     const existing = deps.accounts.findById(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
+    if (existing.user_id !== userId) {
+      return reply.code(403).send({ error: 'account_not_owned' });
+    }
     if (existing.platform !== 'youtube') {
       return reply.code(400).send({ error: 'sync_only_youtube' });
     }

@@ -251,16 +251,20 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
       return { error: 'Access denied' };
     }
 
-    // Delete the file from storage
+    // Delete the file from storage — but only when no other row shares
+    // the same content (dedup is per-user, the file is shared).
+    const sharedFile = deps.videos.countBySha256(video.sha256) > 1;
     try {
-      const fs = await import('node:fs/promises');
-      await fs.unlink(video.file_path).catch(() => {
-        // File might not exist, continue with cleanup
-      });
+      if (!sharedFile) {
+        const fs = await import('node:fs/promises');
+        await fs.unlink(video.file_path).catch(() => {
+          // File might not exist, continue with cleanup
+        });
 
-      // Delete thumbnail if exists
-      if (video.thumbnail_path) {
-        await fs.unlink(video.thumbnail_path).catch(() => {});
+        // Delete thumbnail if exists
+        if (video.thumbnail_path) {
+          await fs.unlink(video.thumbnail_path).catch(() => {});
+        }
       }
     } catch (error) {
       // Log error but continue with database cleanup

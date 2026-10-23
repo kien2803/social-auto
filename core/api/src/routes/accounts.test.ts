@@ -330,3 +330,62 @@ describe('Multi-account support — same platform, different channels', () => {
     // The in-memory DB will be GC'd along with the test.
   });
 });
+
+describe('Cross-user isolation (accounts owned by another user)', () => {
+  let app: FastifyInstance;
+  let accounts: AccountsRepo;
+  let otherAccountId: string;
+
+  beforeEach(async () => {
+    const built = await buildAccountsTestApp();
+    app = built.app;
+    accounts = built.accounts;
+    built.users.insert({
+      id: 'other-user',
+      email: 'other@example.com',
+      password_hash: 'hash',
+      name: 'Other User',
+    });
+    const row = accounts.insert({
+      user_id: 'other-user',
+      platform: 'youtube',
+      external_id: 'UC_other',
+      display_name: 'Not Mine',
+      oauth_refresh_token: encrypt('rt', TOKEN_KEY),
+      status: 'active',
+    });
+    otherAccountId = row.id;
+  });
+
+  it('PATCH returns 403 and leaves the row unchanged', async () => {
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/accounts/${otherAccountId}`,
+      payload: { display_name: 'hacked' },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json()).toMatchObject({ error: 'account_not_owned' });
+    expect(accounts.findById(otherAccountId)!.display_name).toBe('Not Mine');
+  });
+
+  it('DELETE returns 403 and keeps the row', async () => {
+    const res = await app.inject({ method: 'DELETE', url: `/accounts/${otherAccountId}` });
+    expect(res.statusCode).toBe(403);
+    expect(accounts.findById(otherAccountId)).not.toBeNull();
+  });
+
+  it('GET /:id/stats returns 403', async () => {
+    const res = await app.inject({ method: 'GET', url: `/accounts/${otherAccountId}/stats` });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('GET /:id/videos returns 403', async () => {
+    const res = await app.inject({ method: 'GET', url: `/accounts/${otherAccountId}/videos` });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('POST /:id/sync returns 403', async () => {
+    const res = await app.inject({ method: 'POST', url: `/accounts/${otherAccountId}/sync` });
+    expect(res.statusCode).toBe(403);
+  });
+});
