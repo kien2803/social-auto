@@ -211,6 +211,18 @@ export function registerAccountRoutes(
     },
   );
 
+  // GET /accounts/:id — single account detail (was missing; the UI had to
+  // filter the list client-side).
+  app.get<{ Params: { id: string } }>('/accounts/:id', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const existing = deps.accounts.findById(req.params.id);
+    if (!existing) return reply.code(404).send({ error: 'not_found' });
+    if (existing.user_id !== userId) {
+      return reply.code(403).send({ error: 'account_not_owned' });
+    }
+    return toWire(existing);
+  });
+
   // PATCH /accounts/:id — accept metadata + display_name.
   app.patch<{
     Params: { id: string };

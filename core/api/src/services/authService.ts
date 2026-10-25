@@ -115,4 +115,20 @@ export class AuthService {
   getUserById(userId: string) {
     return this.usersRepo.findById(userId);
   }
+
+  getPasswordHash(userId: string): string | null {
+    return this.usersRepo.getPasswordHash(userId);
+  }
+
+  updatePassword(userId: string, passwordHash: string): void {
+    this.usersRepo.updatePasswordHash(userId, passwordHash);
+  }
+
+  updateName(userId: string, name: string): void {
+    this.usersRepo.updateName(userId, name);
+  }
+
+  deleteUser(userId: string): void {
+    this.usersRepo.deleteById(userId);
+  }
 }

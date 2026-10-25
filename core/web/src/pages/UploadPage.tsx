@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { api } from '../lib/api.js';
+import { api, fetchVideoThumbnail, type VideoWire } from '../lib/api.js';
 import { useAccounts } from '../lib/accounts.js';
 import { useToast } from '../components/ui/Toast.js';
 import { Card, CardBody, CardHeader } from '../components/ui/Card.js';
@@ -319,6 +319,8 @@ export function UploadPage() {
               </Select>
             </Field>
 
+            <VideoThumbPreview videoId={form.watch('video_id')} videos={uploadedVideo.data?.videos ?? []} />
+
             <Field
               label="Caption"
               hint="First line = title. Rest = description. Use #tags anywhere."
@@ -501,5 +503,37 @@ export function UploadPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+/** Small thumbnail shown next to the video picker. The image lives behind
+ * Bearer auth so it is fetched as a blob and rendered via an object URL. */
+function VideoThumbPreview({ videoId, videos }: { videoId: string; videos: VideoWire[] }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const hasThumb = videos.find((v) => v.id === videoId)?.has_thumbnail ?? false;
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    if (videoId && hasThumb) {
+      void fetchVideoThumbnail(videoId).then((u) => {
+        if (!cancelled && u) {
+          objectUrl = u;
+          setUrl(u);
+        }
+      });
+    } else {
+      setUrl(null);
+    }
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [videoId, hasThumb]);
+  if (!url) return null;
+  return (
+    <img
+      src={url}
+      alt="Video thumbnail"
+      className="h-24 rounded border border-slate-200 object-cover dark:border-slate-700"
+    />
   );
 }

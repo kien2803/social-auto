@@ -364,7 +364,6 @@ describe('Mock multi-platform auth (T2.2/T2.3)', () => {
     const { registerAuthRoutes } = await import('../routes/auth.js');
     const { createMockGoogleClient } = await import('../google/mockClient.js');
     const { createMockTiktokClient } = await import('../tiktok/mockClient.js');
-    const { registerTiktokAuthRoutes } = await import('../tiktok/authRoutes.js');
     const { ScheduledPostsRepo } = await import('../repositories/scheduledPosts.js');
 
     process.env['USE_MOCK_GOOGLE'] = 'true';
@@ -393,17 +392,11 @@ describe('Mock multi-platform auth (T2.2/T2.3)', () => {
     registerAuthRoutes(app, {
       accounts,
       google,
+      tiktok,
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
     useMockPublishers: true,
       authMiddleware: mockAuthMiddleware,
-      optionalAuthMiddleware: mockAuthMiddleware,
-    });
-    registerTiktokAuthRoutes(app, {
-      accounts,
-      tiktok,
-      webOrigin: 'http://localhost:5173',
-      tokenEncryptionKey: 'a'.repeat(64),
       optionalAuthMiddleware: mockAuthMiddleware,
     });
     registerAccountRoutes(app, {

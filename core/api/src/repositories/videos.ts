@@ -79,16 +79,17 @@ export class VideosRepo {
     return first ? rowToVideo(first) : null;
   }
 
-  list(limit = 100, userId?: string): VideoRow[] {
+  list(limit = 100, userId?: string, offset = 0): VideoRow[] {
     if (userId) {
       const result = this.db.raw.exec(
-        'SELECT * FROM videos WHERE user_id = ? ORDER BY created_at DESC LIMIT ?',
-        [userId, limit],
+        'SELECT * FROM videos WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+        [userId, limit, offset],
       );
       return (result[0]?.values ?? []).map(rowToVideo);
     }
-    const result = this.db.raw.exec('SELECT * FROM videos ORDER BY created_at DESC LIMIT ?', [
+    const result = this.db.raw.exec('SELECT * FROM videos ORDER BY created_at DESC LIMIT ? OFFSET ?', [
       limit,
+      offset,
     ]);
     return (result[0]?.values ?? []).map(rowToVideo);
   }

@@ -241,6 +241,7 @@ export class ScheduledPostsRepo {
     accountId?: string;
     userId?: string;
     limit?: number;
+    offset?: number;
   }): ScheduledPostRow[] {
     const where: string[] = [];
     const params: unknown[] = [];
@@ -258,13 +259,14 @@ export class ScheduledPostsRepo {
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const limit = filters?.limit ?? 200;
+    const offset = filters?.offset ?? 0;
     const result = this.db.raw.exec(
       `SELECT id, user_id, video_id, account_id, scheduled_at, visibility, status,
               external_post_id, retry_count, next_retry_at, is_dead,
               created_at, updated_at, '' AS caption, NULL AS per_platform_caption,
               NULL AS last_error
-       FROM scheduled_posts ${whereSql} ORDER BY scheduled_at DESC LIMIT ?`,
-      [...params, limit] as (string | number | null)[],
+       FROM scheduled_posts ${whereSql} ORDER BY scheduled_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset] as (string | number | null)[],
     );
     return (result[0]?.values ?? []).map(rowToSlimScheduledPost);
   }

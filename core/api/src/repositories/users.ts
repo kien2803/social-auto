@@ -98,4 +98,19 @@ export class UsersRepo {
 
     return result[0].values[0][0] as string;
   }
+
+  updateName(id: string, name: string): void {
+    this.db.raw.run('UPDATE users SET name = ? WHERE id = ?', [name, id]);
+  }
+
+  updatePasswordHash(id: string, passwordHash: string): void {
+    this.db.raw.run('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
+  }
+
+  /** Cascades to the user's accounts, videos and scheduled_posts via the
+   * user_id foreign keys. Physical video files become orphans — the
+   * storage cleanup job reclaims them. */
+  deleteById(id: string): void {
+    this.db.raw.run('DELETE FROM users WHERE id = ?', [id]);
+  }
 }

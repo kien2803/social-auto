@@ -171,4 +171,4 @@ This project follows security best practices:
 - OAuth tokens encrypted with AES-256-GCM
 - Environment variables for sensitive configuration
 - `.gitignore` excludes sensitive files
-- Pre-commit hooks to detect secrets
+- `.gitignore` excludes secrets and `.env*` files

@@ -507,7 +507,25 @@ export const authApi = {
       body: JSON.stringify(input),
     }),
   getCurrentUser: () => req<User>('/auth/me'),
+  updateProfile: (name: string) =>
+    req<User>('/auth/me', { method: 'PATCH', body: JSON.stringify({ name }) }),
+  changePassword: (current_password: string, new_password: string) =>
+    req<{ success: boolean }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password, new_password }),
+    }),
+  deleteAccount: () => req<{ success: boolean }>('/auth/me', { method: 'DELETE' }),
 };
+
+/** Thumbnails live behind Bearer auth, which <img> can't send — fetch the
+ * bytes and hand the caller an object URL (remember to revoke it). */
+export async function fetchVideoThumbnail(videoId: string): Promise<string | null> {
+  const res = await fetch(`${BASE}/videos/${videoId}/thumbnail`, {
+    headers: { authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) return null;
+  return URL.createObjectURL(await res.blob());
+}
 
 // Export token utilities for use in AuthContext
 export { getToken, setToken, clearToken };

@@ -122,6 +122,60 @@ export function registerUserAuthRoutes(app: FastifyInstance, deps: UserAuthRoute
     }
   });
 
+  // POST /auth/change-password - verify current, then rehash
+  app.post('/auth/change-password', auth, async (request, reply) => {
+    try {
+      const userId = (request as AuthenticatedRequest).userId;
+      const body = request.body as { current_password?: string; new_password?: string };
+      if (!body.current_password || !body.new_password) {
+        return reply.status(400).send({ error: 'Missing current_password or new_password' });
+      }
+      if (body.new_password.length < 6) {
+        return reply.status(400).send({ error: 'Password must be at least 6 characters' });
+      }
+      const hash = authService.getPasswordHash(userId);
+      if (!hash || !(await authService.verifyPassword(body.current_password, hash))) {
+        return reply.status(401).send({ error: 'Current password is incorrect' });
+      }
+      authService.updatePassword(userId, await authService.hashPassword(body.new_password));
+      // NOTE: existing JWTs remain valid until expiry — there is no token
+      // revocation yet, so advise the client to log in again.
+      return reply.send({ success: true });
+    } catch (error) {
+      app.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // PATCH /auth/me - update profile fields (name only for now)
+  app.patch('/auth/me', auth, async (request, reply) => {
+    try {
+      const userId = (request as AuthenticatedRequest).userId;
+      const body = request.body as { name?: string };
+      if (!body.name || !body.name.trim() || body.name.length > 100) {
+        return reply.status(400).send({ error: 'Invalid name' });
+      }
+      authService.updateName(userId, body.name.trim());
+      const user = authService.getUserById(userId);
+      return reply.send({ id: user!.id, email: user!.email, name: user!.name, created_at: user!.created_at });
+    } catch (error) {
+      app.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
+  // DELETE /auth/me - delete account + all owned data (FK cascade)
+  app.delete('/auth/me', auth, async (request, reply) => {
+    try {
+      const userId = (request as AuthenticatedRequest).userId;
+      authService.deleteUser(userId);
+      return reply.send({ success: true });
+    } catch (error) {
+      app.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
+
   // GET /auth/me - Get current user info
   app.get('/auth/me', auth, async (request, reply) => {
     try {

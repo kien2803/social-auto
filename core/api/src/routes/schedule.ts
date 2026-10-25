@@ -121,13 +121,17 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
   });
 
   app.get('/schedule', { preHandler: deps.authMiddleware }, async (req) => {
-    const q = req.query as { status?: string; account_id?: string };
+    const q = req.query as { status?: string; account_id?: string; limit?: string; offset?: string };
     const userId = (req as AuthenticatedRequest).userId;
+    const limit = Math.min(Math.max(parseInt(q.limit ?? '200', 10) || 200, 1), 500);
+    const offset = Math.max(parseInt(q.offset ?? '0', 10) || 0, 0);
     return {
       posts: deps.posts.listSlim({
         status: q.status as never,
         accountId: q.account_id,
         userId,
+        limit,
+        offset,
       }),
     };
   });

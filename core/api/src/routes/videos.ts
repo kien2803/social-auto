@@ -122,7 +122,22 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
   
   app.get('/videos', { preHandler: deps.authMiddleware }, async (req) => {
     const userId = (req as AuthenticatedRequest).userId;
-    return { videos: deps.videos.list(100, userId).map(toVideoWire) };
+    const q = req.query as { limit?: string; offset?: string };
+    const limit = Math.min(Math.max(parseInt(q.limit ?? '100', 10) || 100, 1), 500);
+    const offset = Math.max(parseInt(q.offset ?? '0', 10) || 0, 0);
+    return { videos: deps.videos.list(limit, userId, offset).map(toVideoWire) };
+  });
+
+  // Serve the generated thumbnail. Ownership-checked like every other
+  // video sub-resource; the file is a jpeg produced by ffmpeg at ingest.
+  app.get<{ Params: { id: string } }>('/videos/:id/thumbnail', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const video = deps.videos.findById(req.params.id);
+    if (!video) return reply.code(404).send({ error: 'Video not found' });
+    if (video.user_id !== userId) return reply.code(403).send({ error: 'Access denied' });
+    if (!video.thumbnail_path) return reply.code(404).send({ error: 'No thumbnail' });
+    const { createReadStream } = await import('node:fs');
+    return reply.type('image/jpeg').send(createReadStream(video.thumbnail_path));
   });
   
   // Bulk upload endpoint
