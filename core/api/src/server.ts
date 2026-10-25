@@ -162,8 +162,11 @@ export async function buildApp() {
   // route mount with that gives the SPA a working "Connect Instagram"
   // button out of the box (inserts a mock-ig-prefixed row that the
   // worker's stubUpload validators accept).
-  const metaUseMock = !env.metaAppId || !env.metaAppSecret || !env.metaRedirectUri;
-  const tiktokUseMock = !env.tiktokClientKey || !env.tiktokClientSecret || !env.tiktokRedirectUri;
+  // Mock OAuth routes mount ONLY when the explicit USE_MOCK_* flag is set —
+  // previously "credentials missing" also enabled them, meaning a production
+  // deploy without Meta/TikTok creds still let anyone mint fake accounts.
+  const metaUseMock = env.useMockMeta;
+  const tiktokUseMock = env.useMockTiktok;
 
   registerAuthRoutes(app, {
     accounts,
