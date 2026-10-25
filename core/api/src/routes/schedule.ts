@@ -23,6 +23,7 @@ interface ScheduleBody {
 const CAPTION_MAX = 5000;
 const SCHEDULE_LEAD_MS = 60_000;
 const MAX_ACCOUNTS_PER_SCHEDULE = 50;
+const VISIBILITIES: ReadonlySet<string> = new Set(['public', 'unlisted', 'private']);
 
 interface MultiScheduleBody {
   video_id: string;
@@ -48,6 +49,9 @@ function validateBase(body: ScheduleBody | MultiScheduleBody): string | null {
   }
   if (!body.caption || body.caption.length > CAPTION_MAX) {
     return `caption required, max ${CAPTION_MAX} chars`;
+  }
+  if (body.visibility !== undefined && !VISIBILITIES.has(body.visibility)) {
+    return 'invalid_visibility';
   }
   return null;
 }
@@ -82,7 +86,9 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
     }
 
     const perPlatform = ('per_platform_caption' in body ? body.per_platform_caption : undefined) ?? {};
-    const created = [];
+    // Validate EVERY account before inserting anything — the previous
+    // validate-and-insert-in-one-loop left rows behind when a later
+    // account failed, so a client retry silently duplicated posts.
     for (const accId of accountIds) {
       const acc = deps.accounts.findById(accId);
       if (!acc) return reply.code(404).send({ error: `account_not_found: ${accId}` });
@@ -96,6 +102,10 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
       if (caption.length > CAPTION_MAX) {
         return reply.code(400).send({ error: `caption_too_long: ${accId}` });
       }
+    }
+    const created = [];
+    for (const accId of accountIds) {
+      const caption = perPlatform[accId] ?? body.caption;
       const row = deps.posts.insert({
         user_id: userId,
         video_id: body.video_id,
@@ -145,6 +155,9 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
     const body = req.body as Partial<ScheduleBody>;
     if (body.caption !== undefined && body.caption.length > CAPTION_MAX) {
       return reply.code(400).send({ error: 'caption_too_long' });
+    }
+    if (body.visibility !== undefined && !VISIBILITIES.has(body.visibility)) {
+      return reply.code(400).send({ error: 'invalid_visibility' });
     }
     if (body.scheduled_at !== undefined && body.scheduled_at < Date.now() + SCHEDULE_LEAD_MS) {
       return reply.code(400).send({ error: 'scheduled_at_too_soon' });

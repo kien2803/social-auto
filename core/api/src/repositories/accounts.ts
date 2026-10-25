@@ -225,12 +225,19 @@ export class AccountsRepo {
     return first ? rowToAccount(first) : null;
   }
 
-  /** All accounts on a platform, oldest first. */
-  listByPlatform(platform: Platform): AccountRow[] {
-    const result = this.db.raw.exec(
-      'SELECT * FROM accounts WHERE platform = ? ORDER BY created_at ASC',
-      [platform],
-    );
+  /** All accounts on a platform, oldest first. Pass userId to scope to one
+   * owner — the per-platform status routes require this or they would leak
+   * every user's connected accounts. */
+  listByPlatform(platform: Platform, userId?: string): AccountRow[] {
+    const result = userId
+      ? this.db.raw.exec(
+          'SELECT * FROM accounts WHERE platform = ? AND user_id = ? ORDER BY created_at ASC',
+          [platform, userId],
+        )
+      : this.db.raw.exec(
+          'SELECT * FROM accounts WHERE platform = ? ORDER BY created_at ASC',
+          [platform],
+        );
     const values = result[0]?.values ?? [];
     return values.map(rowToAccount);
   }

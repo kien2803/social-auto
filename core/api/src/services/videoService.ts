@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { statSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -43,28 +43,40 @@ export async function ingestUpload(
 
   const hash = createHash('sha256');
   let size = 0;
-  const chunks: Buffer[] = [];
-
-  // Collect chunks and compute hash
-  for await (const chunk of iter) {
-    size += chunk.length;
-    if (size > MAX_SIZE_BYTES) {
-      throw new UploadError(413, `File exceeds ${MAX_SIZE_BYTES} bytes`);
+  // Stream chunks straight to a staging file while hashing — buffering the
+  // whole upload in memory let a 2GB file pin 2GB of heap (and the bulk
+  // endpoint multiplies that by file count). The staging name is unique so
+  // concurrent uploads of identical content never collide; orphan cleanup
+  // skips *.part files.
+  const tmpPath = path.join(storageDir, `.upload-${randomUUID()}.part`);
+  const fd = await fs.open(tmpPath, 'w');
+  try {
+    for await (const chunk of iter) {
+      size += chunk.length;
+      if (size > MAX_SIZE_BYTES) {
+        throw new UploadError(413, `File exceeds ${MAX_SIZE_BYTES} bytes`);
+      }
+      hash.update(chunk);
+      await fd.write(chunk);
+      onProgress?.(size);
     }
-    hash.update(chunk);
-    chunks.push(chunk);
-    onProgress?.(size);
+    await fd.close();
+  } catch (err) {
+    await fd.close().catch(() => {});
+    await fs.unlink(tmpPath).catch(() => {});
+    throw err;
   }
 
   if (size === 0) {
+    await fs.unlink(tmpPath).catch(() => {});
     throw new UploadError(400, 'Empty upload');
   }
 
   const sha256 = hash.digest('hex');
-  const fileBuffer = Buffer.concat(chunks);
 
   const existing = repo.findBySha256(sha256, userId);
   if (existing) {
+    await fs.unlink(tmpPath).catch(() => {});
     return {
       video_id: existing.id,
       sha256,
@@ -80,8 +92,9 @@ export async function ingestUpload(
   const finalName = `${sha256}${ext}`;
   const finalKey = path.join(storageDir, finalName);
 
-  // Write to local storage
-  await fs.writeFile(finalKey, fileBuffer);
+  // Content-addressed name — rename is atomic on the same filesystem, so
+  // the file either fully exists under its sha256 name or not at all.
+  await fs.rename(tmpPath, finalKey);
 
   // Validate real file format using magic number detection
   try {

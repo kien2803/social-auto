@@ -27,7 +27,7 @@ import { registerAccountRoutes } from './routes/accounts.js';
 import { registerQuotaRoutes } from './routes/quota.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerStorageRoutes } from './routes/storage.js';
-import { registerUploadProgressRoutes } from './routes/uploadProgress.js';
+import { registerUploadProgressRoutes, updateProgress } from './routes/uploadProgress.js';
 import { StorageManager } from './services/storageManager.js';
 import { createStorageBackend } from '@social-auto/shared/storage';
 import { AuthService } from './services/authService.js';
@@ -44,6 +44,11 @@ export async function buildApp() {
 
   const app = Fastify({
     logger: true,
+    // Behind a reverse proxy (the documented production topology) every
+    // client shares the proxy's socket address. trustProxy makes
+    // request.ip read X-Forwarded-For so per-IP rate limiting actually
+    // distinguishes users instead of rate-limiting the whole deployment.
+    trustProxy: true,
     // Single-origin deploys serve the SPA and the API on one port. The web
     // app always prefixes API calls with /api — strip it so the same route
     // tree answers. Dev is unaffected: the Vite proxy strips it upstream.
@@ -169,10 +174,11 @@ export async function buildApp() {
     tokenEncryptionKey: env.tokenEncryptionKey,
     useMockPublishers: env.useMockPublishers || metaUseMock,
     mockTiktok: tiktokUseMock,
+    authMiddleware,
     optionalAuthMiddleware,
   });
   registerAccountRoutes(app, { accounts, posts, google, tokenEncryptionKey: env.tokenEncryptionKey, authMiddleware });
-  registerVideoRoutes(app, { videos, storageDir: env.storageDir, authMiddleware });
+  registerVideoRoutes(app, { videos, posts, storageDir: env.storageDir, authMiddleware });
   registerScheduleRoutes(app, { posts, videos, accounts, authMiddleware });
   registerUploadProgressRoutes(app, { authMiddleware, videos });
   const backend = createStorageBackend({
@@ -248,9 +254,18 @@ export async function buildApp() {
   if (env.embeddedWorker) {
     const workerEntry = new URL('../../worker/src/index.js', import.meta.url).href;
     const { startEmbeddedWorker } = (await import(workerEntry)) as {
-      startEmbeddedWorker: (db: unknown) => { stop(): void };
+      startEmbeddedWorker: (
+        db: unknown,
+        opts?: { onUploadProgress?: (videoId: string, progress: number) => void },
+      ) => { stop(): void };
     };
-    const worker = startEmbeddedWorker(db);
+    const worker = startEmbeddedWorker(db, {
+      // The worker shares this process, so its upload-progress callbacks can
+      // write the same progressCache the /videos/:id/progress routes read.
+      // In standalone-worker mode there is no shared cache — the endpoints
+      // simply report 404, same as before.
+      onUploadProgress: updateProgress,
+    });
     app.addHook('onClose', async () => {
       worker.stop();
     });

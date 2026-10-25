@@ -28,13 +28,13 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4 dark:bg-[#0b1220]">
       <div className="max-w-md w-full">
-        <div className="bg-surface rounded-lg shadow-lg p-8">
-          <h1 className="text-2xl font-bold mb-6 text-center">Sign In</h1>
+        <div className="bg-surface rounded-lg shadow-lg p-8 dark:bg-[#111a2c] dark:border dark:border-slate-800 dark:shadow-none">
+          <h1 className="text-2xl font-bold mb-6 text-center text-ink dark:text-slate-100">Sign In</h1>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm dark:bg-red-500/10 dark:border-red-900/60 dark:text-red-300">
               {error}
             </div>
           )}
@@ -69,9 +69,9 @@ export function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-ink-muted">
+          <p className="mt-6 text-center text-sm text-ink-muted dark:text-slate-400">
             Don't have an account?{' '}
-            <Link to="/register" className="text-brand-600 hover:underline">
+            <Link to="/register" className="text-brand-600 hover:underline dark:text-brand-100">
               Sign up
             </Link>
           </p>

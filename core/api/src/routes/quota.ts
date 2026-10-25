@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { Platform } from '@social-auto/shared';
-import type { QuotasRepo } from '../repositories/quotas.js';
+import { UNITS_PER_UPLOAD, type QuotasRepo } from '../repositories/quotas.js';
 
 export interface QuotaDeps {
   quotas: QuotasRepo;
@@ -66,8 +66,8 @@ export function registerQuotaRoutes(app: FastifyInstance, deps: QuotaDeps): void
       remaining: q.remaining,
       reset_at: nextMidnightUtc(now),
       warning,
-      upload_cost: 1600, // YouTube video upload cost
-      uploads_remaining: Math.floor(q.remaining / 1600)
+      upload_cost: UNITS_PER_UPLOAD.youtube,
+      uploads_remaining: Math.floor(q.remaining / UNITS_PER_UPLOAD.youtube)
     };
   });
 }

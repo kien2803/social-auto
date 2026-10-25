@@ -133,6 +133,7 @@ describe('YouTube OAuth routes (T0.3)', () => {
       google,
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
+      authMiddleware: mockAuthMiddleware,
       optionalAuthMiddleware: mockAuthMiddleware,
     });
     registerAccountRoutes(app2, {
@@ -216,6 +217,9 @@ describe('YouTube OAuth routes (T0.3)', () => {
       google: createMockGoogleClient(),
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
+      authMiddleware: async (req: any) => {
+        req.userId = 'test-user-id';
+      },
     });
     await app2.ready();
     const res = await app2.inject({ method: 'GET', url: '/auth/youtube/status' });
@@ -260,6 +264,9 @@ describe('YouTube OAuth routes (T0.3)', () => {
       google: createMockGoogleClient(),
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
+      authMiddleware: async (req: any) => {
+        req.userId = 'default-user';
+      },
     });
     await app1.ready();
     const start = await app1.inject({ method: 'GET', url: '/auth/youtube/start' });
@@ -288,6 +295,9 @@ describe('YouTube OAuth routes (T0.3)', () => {
       google: createMockGoogleClient(),
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
+      authMiddleware: async (req: any) => {
+        req.userId = 'default-user';
+      },
     });
     await app2.ready();
     const status = await app2.inject({ method: 'GET', url: '/auth/youtube/status' });
@@ -386,6 +396,7 @@ describe('Mock multi-platform auth (T2.2/T2.3)', () => {
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
     useMockPublishers: true,
+      authMiddleware: mockAuthMiddleware,
       optionalAuthMiddleware: mockAuthMiddleware,
     });
     registerTiktokAuthRoutes(app, {

@@ -75,8 +75,8 @@ export function registerHealthRoutes(
       ...base,
       worker: {
         status: 'ok',
-        last_publish_at: deps.posts.lastPublishedAt(),
-        by_status: deps.posts.countByStatus(),
+        last_publish_at: deps.posts.lastPublishedAt(userId),
+        by_status: deps.posts.countByStatus(userId),
       },
       accounts: deps.accounts.listSlim({ userId }).map((a) => ({
         id: a.id,

@@ -24,8 +24,8 @@ import { captureException } from './sentry.js';
 import { AccountsRepo } from './repositories/accounts.js';
 import { ScheduledPostsRepo, type ClaimedScheduledPost } from './repositories/scheduledPosts.js';
 import { VideosRepo } from './repositories/videos.js';
-import { QuotasRepo } from './repositories/quotas.js';
-import { getPublisher } from './publishers/index.js';
+import { QuotasRepo, UNITS_PER_UPLOAD } from './repositories/quotas.js';
+import { getPublisher, registerProgressCallback, unregisterProgressCallback } from './publishers/index.js';
 import { createGoogleClient } from './publishers/googleClient.js';
 import { decrypt, encrypt } from '@social-auto/shared/utils/crypto.js';
 import { env } from './env.js';
@@ -51,6 +51,10 @@ interface PollDeps {
   videos: VideosRepo;
   quotas: QuotasRepo;
   google: GoogleOAuthClient;
+  /** Sink for publisher upload-progress reports. Wired in embedded mode so
+   * the API's /videos/:id/progress endpoints have real data; undefined in
+   * standalone mode (separate process, no shared cache). */
+  onUploadProgress?: (videoId: string, progress: number) => void;
 }
 
 export async function runWorker(): Promise<void> {
@@ -286,7 +290,10 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (isRevoked(err)) {
+    // Non-YouTube platforms can't refresh — a stored token past expiry is
+    // terminal. Treat "expired" as revoked so the account is flagged and
+    // the user sees a reconnect signal instead of silent retry-burn.
+    if (isRevoked(err) || /expired/i.test(msg)) {
       deps.accounts.updateStatus(account.id, 'expired');
       deps.posts.markFailed(postId, `account_expired:${msg}`);
       console.error(`[worker] account ${account.id} expired: ${msg}`);
@@ -312,6 +319,12 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
     return;
   }
 
+  const progressVideoId = video.id;
+  if (deps.onUploadProgress) {
+    registerProgressCallback(progressVideoId, (p) =>
+      deps.onUploadProgress!(progressVideoId, p),
+    );
+  }
   try {
     const result = await publisher.upload({
       access_token: accessToken,
@@ -319,7 +332,13 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
       meta,
     });
     deps.posts.markPublished(postId, result.external_id);
-    deps.quotas.incrementUsage(account.platform, 1);
+    // YouTube's publisher records its own units (1600/upload) via
+    // recordQuotaUsage — incrementing here too double-counted every
+    // publish. Other platforms have no self-reporting path, so record
+    // the per-upload unit here.
+    if (account.platform !== 'youtube') {
+      deps.quotas.incrementUsage(account.platform, UNITS_PER_UPLOAD[account.platform]);
+    }
     console.log(`[worker] published ${postId} -> ${result.external_id}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -348,6 +367,8 @@ async function processOne(claim: ClaimedScheduledPost, deps: PollDeps): Promise<
       deps.posts.markFailed(postId, msg);
       console.error(`[worker] failed ${postId}: ${msg}`);
     }
+  } finally {
+    unregisterProgressCallback(progressVideoId);
   }
 }
 
@@ -385,9 +406,11 @@ function parseCaption(
   tags?: string[];
   visibility: 'public' | 'unlisted' | 'private';
 } {
-  const lines = caption.split(/\r?\n/, 2);
+  const lines = caption.split(/\r?\n/);
   const title = (lines[0] ?? caption).slice(0, 100);
-  const description = (lines[1] ?? '').trim();
+  // Everything after the first line is the description — the old split(_, 2)
+  // silently dropped caption lines 3+.
+  const description = lines.slice(1).join('\n').trim();
   const tags = Array.from(caption.matchAll(/#(\w+)/g))
     .map((m) => m[1])
     .filter((t): t is string => Boolean(t));
@@ -405,8 +428,12 @@ export interface EmbeddedWorkerHandle {
  * instance — with one in-memory snapshot there is no cross-process export
  * race at all. The API starts this when EMBEDDED_WORKER=true.
  */
-export function startEmbeddedWorker(db: DB): EmbeddedWorkerHandle {
+export function startEmbeddedWorker(
+  db: DB,
+  opts?: { onUploadProgress?: (videoId: string, progress: number) => void },
+): EmbeddedWorkerHandle {
   const deps: PollDeps = {
+    onUploadProgress: opts?.onUploadProgress,
     db,
     accounts: new AccountsRepo(db),
     posts: new ScheduledPostsRepo(db),

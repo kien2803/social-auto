@@ -20,12 +20,23 @@ export interface UserAuthRoutesDeps {
  */
 const RATE_LIMIT_WINDOW_MS = 5 * 60_000;
 const RATE_LIMIT_MAX = 10;
+/** Hard cap on tracked IPs — without it, a spray of unique source
+ * addresses grows this map unboundedly. When full, expired entries are
+ * dropped first; if the map is still full we fail open (count as a new
+ * window) rather than lock everyone out. */
+const RATE_LIMIT_MAX_TRACKED_IPS = 10_000;
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const rec = attempts.get(ip);
   if (!rec || rec.resetAt < now) {
+    if (attempts.size >= RATE_LIMIT_MAX_TRACKED_IPS) {
+      for (const [k, v] of attempts) {
+        if (v.resetAt < now) attempts.delete(k);
+      }
+      if (attempts.size >= RATE_LIMIT_MAX_TRACKED_IPS) attempts.clear();
+    }
     attempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }

@@ -1,5 +1,5 @@
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, renameSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { runMigrations } from './migrations.js';
 
@@ -92,7 +92,11 @@ export async function openDB(path: string): Promise<DB> {
 
   const persist = (): void => {
     if (path === ':memory:' || closed) return;
-    writeFileSync(path, Buffer.from(raw.export()));
+    // Write-then-rename so a crash mid-write can't leave a truncated DB
+    // file — rename is atomic on POSIX filesystems.
+    const tmpPath = `${path}.tmp-${process.pid}`;
+    writeFileSync(tmpPath, Buffer.from(raw.export()));
+    renameSync(tmpPath, path);
     knownMtime = statSync(path).mtimeMs;
     dirty = false;
   };

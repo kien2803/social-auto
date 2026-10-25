@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
 import type { VideoRow } from '@social-auto/shared';
 import type { VideosRepo } from '../repositories/videos.js';
+import type { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import {
   ACCEPTED_VIDEO_MIME,
@@ -12,6 +13,9 @@ import {
 
 export interface VideosDeps {
   videos: VideosRepo;
+  /** Needed to refuse deleting a video that scheduled posts still
+   * reference — the FK constraint would otherwise surface as a 500. */
+  posts: ScheduledPostsRepo;
   storageDir: string;
   authMiddleware: any;
 }
@@ -249,6 +253,17 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
     if (video.user_id !== userId) {
       reply.code(403);
       return { error: 'Access denied' };
+    }
+
+    // scheduled_posts.video_id has no cascade — deleting a referenced
+    // video fails the FK constraint and surfaces as a 500. Refuse cleanly
+    // and let the user cancel the posts first.
+    const referencing = deps.posts.countByVideoId(req.params.id);
+    if (referencing > 0) {
+      return reply.code(409).send({
+        error: 'video_has_scheduled_posts',
+        message: `${referencing} scheduled post(s) still reference this video — cancel them first`,
+      });
     }
 
     // Delete the file from storage — but only when no other row shares

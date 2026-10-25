@@ -44,6 +44,13 @@ export async function buildTestAppWithMock(mockCfg: MockGoogleConfig = {}): Prom
     webOrigin: 'http://localhost:5173',
     tokenEncryptionKey: 'a'.repeat(64),
     useMockPublishers: true,
+    // Required in production since /auth/*/status endpoints are scoped per
+    // user. In tests every account lands on 'default-user' (the OAuth
+    // callback fallback), so the mock attributes requests to it — keeping
+    // the status routes' assertions meaningful.
+    authMiddleware: async (req: any) => {
+      req.userId = 'default-user';
+    },
   });
   // Mount the same /auth/* orphan-cookie hook the real buildApp() uses.
   // registerAuthRoutes mounts it idempotently, so this only fills in the

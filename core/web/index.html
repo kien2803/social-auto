@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>social-auto</title>
+    <script>
+      // Apply the theme before first paint — mirrors detect() in
+      // src/lib/useTheme.ts (same storage key + OS fallback). Without this
+      // the `dark` class only exists once Topbar mounts inside the app
+      // shell, leaving public pages (login/register/landing) with whatever
+      // stale class survived the last session.
+      (function () {
+        var t;
+        try {
+          t = window.localStorage.getItem('social-auto.theme');
+        } catch (e) {
+          t = null;
+        }
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.classList.toggle('dark', t === 'dark');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

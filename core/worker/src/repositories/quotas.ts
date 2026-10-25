@@ -19,7 +19,10 @@ export const QUOTA_WARNING_THRESHOLD = 0.8; // Warn at 80% usage
 export const QUOTA_CRITICAL_THRESHOLD = 0.95; // Critical at 95% usage
 
 export const UNITS_PER_UPLOAD: Record<Platform, number> = {
-  youtube: 100,
+  // YouTube Data API v3 videos.insert costs 1600 quota units — the previous
+  // 100 made the quota check under-count real consumption 16x and disagreed
+  // with the API-side repo (which already uses 1600) and /quota/youtube.
+  youtube: 1600,
   tiktok: 1,
   instagram: 1,
   facebook: 1,

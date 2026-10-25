@@ -7,7 +7,7 @@ import type { GoogleOAuthClient } from '../google/client.js';
 import type { TiktokOAuthClient } from '../tiktok/client.js';
 import type { MetaOAuthClient } from '../meta/client.js';
 import { generatePKCE } from '../auth/pkce.js';
-import { getUserId } from '../utils/authHelpers.js';
+import { getUserId, type AuthenticatedRequest } from '../utils/authHelpers.js';
 
 export interface AuthDeps {
   accounts: AccountsRepo;
@@ -23,6 +23,10 @@ export interface AuthDeps {
   /** Mounts mock /auth/tiktok start+callback when no real TikTok client is
    * configured — otherwise the SPA's "Add TikTok account" 404s. */
   mockTiktok?: boolean;
+  /** Required-auth middleware for the per-platform status endpoints.
+   * Without it they would serve every user's connected accounts to
+   * anyone. */
+  authMiddleware: (request: any, reply: any) => Promise<void>;
   /** Optional auth middleware for backward compatibility. */
   optionalAuthMiddleware?: (request: any, reply: any) => Promise<void>;
 }
@@ -41,6 +45,30 @@ import {
 
 export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
+  /**
+   * OAuth reconnect semantics when the channel's account row already exists:
+   *   - same user            → refresh tokens in place (normal reconnect)
+   *   - owned by default-user → adopt: the legacy/placeholder owner can be
+   *     claimed by the first real user who reconnects (migration path)
+   *   - owned by anyone else  → conflict: silently flipping ownership would
+   *     let a user hijack another user's channel row (and its scheduled
+   *     posts keep publishing under the attacker's tokens).
+   * Caller turns 'conflict' into a web redirect with an error param.
+   */
+  function resolveExistingOwner(existing: AccountRow, userId: string): 'ok' | 'conflict' {
+    if (existing.user_id === userId) return 'ok';
+    if (existing.user_id === 'default-user') {
+      deps.accounts.reassignOwner(existing.id, userId);
+      return 'ok';
+    }
+    return 'conflict';
+  }
+
+  function ownerConflictRedirect(popupMode: boolean, platform: string) {
+    const msg = `${platform} account is already connected by another user`;
+    const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(msg)}`;
+    return buildAuthRedirect(popupMode, webRedirect, { error: msg });
+  }
 
   /** Read the popup-mode opt-in from the inbound request's query string. */
   function readPopupQuery(req: { query: unknown }): boolean {
@@ -150,7 +178,9 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     const existing = deps.accounts.findByPlatformExternal('youtube', channel.id);
     let accountId: string;
     if (existing) {
-      if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
+      if (resolveExistingOwner(existing, userId) === 'conflict') {
+        return reply.redirect(ownerConflictRedirect(popupMode, 'youtube'));
+      }
       deps.accounts.updateDisplayName(existing.id, channel.title);
       deps.accounts.updateStatus(existing.id, 'active');
       deps.accounts.updateTokens(existing.id, {
@@ -182,11 +212,13 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       }),
     );
   });
-  app.get('/auth/youtube/status', async () => {
-    // Multi-account: return list of all active YouTube accounts whose stored
+  app.get('/auth/youtube/status', { preHandler: deps.authMiddleware }, async (req) => {
+    // Multi-account: return list of the caller's YouTube accounts whose stored
     // access token can still decrypt + call YouTube API. Old single-account
     // shape is preserved by keeping `connected: true` plus an `accounts` array.
-    const rows = deps.accounts.listByPlatform('youtube');
+    // Auth is required and the list is scoped by user_id — before both were
+    // missing, any anonymous caller could enumerate every user's channels.
+    const rows = deps.accounts.listByPlatform('youtube', (req as AuthenticatedRequest).userId);
     if (rows.length === 0) return { connected: false, accounts: [] };
     const accounts: Array<{
       id: string;
@@ -322,7 +354,9 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       const existing = deps.accounts.findByPlatformExternal('tiktok', user.open_id);
       let accountId: string;
       if (existing) {
-        if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
+        if (resolveExistingOwner(existing, userId) === 'conflict') {
+          return reply.redirect(ownerConflictRedirect(popupMode, 'tiktok'));
+        }
         deps.accounts.updateDisplayName(existing.id, user.display_name);
         deps.accounts.updateStatus(existing.id, 'active');
         deps.accounts.updateTokens(existing.id, {
@@ -353,8 +387,8 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       );
     });
 
-    app.get('/auth/tiktok/status', async () => {
-      const rows = deps.accounts.listByPlatform('tiktok');
+    app.get('/auth/tiktok/status', { preHandler: deps.authMiddleware }, async (req) => {
+      const rows = deps.accounts.listByPlatform('tiktok', (req as AuthenticatedRequest).userId);
       if (rows.length === 0) return { connected: false, accounts: [] };
       const accounts: Array<{
         id: string;
@@ -485,7 +519,9 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         const existing = deps.accounts.findByPlatformExternal(platform, page.id);
         let accountId: string;
         if (existing) {
-          if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
+          if (resolveExistingOwner(existing, userId) === 'conflict') {
+            return reply.redirect(ownerConflictRedirect(popupMode, platform));
+          }
           deps.accounts.updateDisplayName(existing.id, page.name);
           deps.accounts.updateStatus(existing.id, 'active');
           deps.accounts.updateTokens(existing.id, {
@@ -518,8 +554,8 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       );
     });
 
-    app.get('/auth/instagram/status', async () => {
-      const rows = deps.accounts.listByPlatform('instagram');
+    app.get('/auth/instagram/status', { preHandler: deps.authMiddleware }, async (req) => {
+      const rows = deps.accounts.listByPlatform('instagram', (req as AuthenticatedRequest).userId);
       if (rows.length === 0) return { connected: false, accounts: [] };
       const accounts: Array<{
         id: string;
@@ -572,8 +608,8 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       return { connected: true, accounts };
     });
 
-    app.get('/auth/facebook/status', async () => {
-      const rows = deps.accounts.listByPlatform('facebook');
+    app.get('/auth/facebook/status', { preHandler: deps.authMiddleware }, async (req) => {
+      const rows = deps.accounts.listByPlatform('facebook', (req as AuthenticatedRequest).userId);
       if (rows.length === 0) return { connected: false, accounts: [] };
       const accounts: Array<{
         id: string;
@@ -695,7 +731,9 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       const existing = deps.accounts.findByPlatformExternal(platform, code);
       let accountId: string;
       if (existing) {
-        if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
+        if (resolveExistingOwner(existing, userId) === 'conflict') {
+          return reply.redirect(ownerConflictRedirect(popupMode, platform));
+        }
         deps.accounts.updateDisplayName(existing.id, displayName);
         deps.accounts.updateStatus(existing.id, 'active');
         deps.accounts.updateTokens(existing.id, {

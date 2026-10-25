@@ -61,6 +61,10 @@ export class StorageManager {
         !dbFiles.includes(item.key) &&
         !this.uploadingFiles.has(item.key) &&
         !item.isDirectory &&
+        // ingestUpload stages uploads as `.upload-*.part` for the whole
+        // duration of the transfer — a slow upload can outlive MIN_AGE_MS,
+        // so never treat a staging file as orphaned.
+        !item.key.endsWith('.part') &&
         (item.lastModified === undefined || now - item.lastModified > MIN_AGE_MS)
       );
       

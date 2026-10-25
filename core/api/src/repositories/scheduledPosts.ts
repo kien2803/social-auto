@@ -424,9 +424,10 @@ export class ScheduledPostsRepo {
     this.db.raw.run('DELETE FROM scheduled_posts WHERE id = ?', [id]);
   }
 
-  countByStatus(): Record<ScheduledPostStatus, number> {
+  countByStatus(userId?: string): Record<ScheduledPostStatus, number> {
     const result = this.db.raw.exec(
-      `SELECT status, COUNT(*) AS n FROM scheduled_posts GROUP BY status`,
+      `SELECT status, COUNT(*) AS n FROM scheduled_posts${userId ? ' WHERE user_id = ?' : ''} GROUP BY status`,
+      userId ? [userId] : [],
     );
     const out: Record<ScheduledPostStatus, number> = {
       pending: 0,
@@ -441,9 +442,20 @@ export class ScheduledPostsRepo {
     return out;
   }
 
-  lastPublishedAt(): number | null {
+  /** Posts referencing a video — used to block video deletion instead of
+   * letting the FK constraint surface as a 500. */
+  countByVideoId(videoId: string): number {
     const res = this.db.raw.exec(
-      `SELECT MAX(updated_at) FROM scheduled_posts WHERE status = 'published'`,
+      'SELECT COUNT(*) FROM scheduled_posts WHERE video_id = ?',
+      [videoId],
+    );
+    return (res[0]?.values[0]?.[0] as number) ?? 0;
+  }
+
+  lastPublishedAt(userId?: string): number | null {
+    const res = this.db.raw.exec(
+      `SELECT MAX(updated_at) FROM scheduled_posts WHERE status = 'published'${userId ? ' AND user_id = ?' : ''}`,
+      userId ? [userId] : [],
     );
     const v = res[0]?.values[0]?.[0];
     return typeof v === 'number' ? v : null;
