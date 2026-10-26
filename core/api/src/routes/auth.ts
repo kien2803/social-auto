@@ -29,6 +29,8 @@ export interface AuthDeps {
   authMiddleware: (request: any, reply: any) => Promise<void>;
   /** Optional auth middleware for backward compatibility. */
   optionalAuthMiddleware?: (request: any, reply: any) => Promise<void>;
+  /** Set Secure on OAuth cookies — required once the app sits behind HTTPS. */
+  cookieSecure?: boolean;
 }
 /**
  * Mount OAuth routes for YouTube (Phase 0).
@@ -92,6 +94,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       path: '/auth',
       httpOnly: true,
       sameSite: 'lax',
+      secure: deps.cookieSecure,
       maxAge: 600,
     });
     // Popup-mode opt-in: SPA appends ?popup=1 when opening a child window.
@@ -103,6 +106,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         path: '/auth',
         httpOnly: true,
         sameSite: 'lax',
+        secure: deps.cookieSecure,
         maxAge: 600,
       });
     }
@@ -293,12 +297,14 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         path: '/auth',
         httpOnly: true,
         sameSite: 'lax',
+        secure: deps.cookieSecure,
         maxAge: 600,
       });
       reply.setCookie('tiktok_code_verifier', verifier, {
         path: '/auth',
         httpOnly: true,
         sameSite: 'lax',
+        secure: deps.cookieSecure,
         maxAge: 600,
       });
 
@@ -308,6 +314,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
           path: '/auth',
           httpOnly: true,
           sameSite: 'lax',
+          secure: deps.cookieSecure,
           maxAge: 600,
         });
       }
@@ -462,6 +469,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         path: '/auth',
         httpOnly: true,
         sameSite: 'lax',
+        secure: deps.cookieSecure,
         maxAge: 600,
       });
 
@@ -471,6 +479,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
           path: '/auth',
           httpOnly: true,
           sameSite: 'lax',
+          secure: deps.cookieSecure,
           maxAge: 600,
         });
       }
@@ -703,6 +712,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
           path: '/auth',
           httpOnly: true,
           sameSite: 'lax',
+          secure: deps.cookieSecure,
           maxAge: 600,
         });
       }

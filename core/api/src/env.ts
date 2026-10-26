@@ -133,6 +133,10 @@ export const env = {
   // sharing one sql.js handle (no cross-process file race). The Docker
   // image sets this; dev keeps the worker as its own process.
   embeddedWorker: opt('EMBEDDED_WORKER', 'false') === 'true',
+  // Secure flag on OAuth state/token cookies. Behind HTTPS this must be
+  // true — browsers reject Secure-flagged flows inconsistently but
+  // regulators/app-reviews expect it; harmless to leave off over http.
+  secureCookies: opt('SECURE_COOKIES', process.env['NODE_ENV'] === 'production' ? 'true' : 'false') === 'true',
   // Built SPA to serve when present (production single-origin deploys).
   webDistDir: repoPath(opt('WEB_DIST_DIR', './core/web/dist')),
 };

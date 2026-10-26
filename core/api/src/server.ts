@@ -174,6 +174,7 @@ export async function buildApp() {
     tiktok: tiktokUseMock ? undefined : tiktok,
     meta: metaUseMock ? undefined : meta,
     webOrigin: env.webOrigin,
+    cookieSecure: env.secureCookies,
     tokenEncryptionKey: env.tokenEncryptionKey,
     useMockPublishers: env.useMockPublishers || metaUseMock,
     mockTiktok: tiktokUseMock,

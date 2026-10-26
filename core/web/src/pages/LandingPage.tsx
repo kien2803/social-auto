@@ -141,6 +141,10 @@ export function LandingPage() {
 
       <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-ink-subtle md:px-8 dark:text-slate-500">
         Social Auto — self-hosted video scheduling for YouTube, TikTok, Instagram &amp; Facebook.
+        {' · '}
+        <Link to="/privacy" className="underline hover:text-ink dark:hover:text-slate-300">
+          Privacy Policy
+        </Link>
       </footer>
     </div>
   );

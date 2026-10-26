@@ -1,0 +1,8 @@
+# Reverse proxy with automatic HTTPS (Let's Encrypt) for VPS deploys.
+#   caddy run --config Caddyfile
+# DNS: point app.yourdomain.com at the VPS first — Caddy issues the cert
+# on first request.
+
+app.yourdomain.com {
+	reverse_proxy localhost:3000
+}

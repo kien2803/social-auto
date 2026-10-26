@@ -174,7 +174,8 @@ function clearToken(): void {
 export function stageOAuthTokenCookie(): void {
   const token = getToken();
   if (!token || typeof document === 'undefined') return;
-  document.cookie = `oauth_token=${encodeURIComponent(token)}; path=/auth; max-age=600; SameSite=Lax`;
+  const secure = window.location?.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `oauth_token=${encodeURIComponent(token)}; path=/auth; max-age=600; SameSite=Lax${secure}`;
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {

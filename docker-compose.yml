@@ -29,6 +29,9 @@ services:
       TIKTOK_REDIRECT_URI: ${WEB_ORIGIN:-http://localhost:3000}/auth/tiktok/callback
       META_REDIRECT_URI: ${WEB_ORIGIN:-http://localhost:3000}/auth/meta/callback
       STORAGE_QUOTA_GB: ${STORAGE_QUOTA_GB:-10}
+      NODE_ENV: ${NODE_ENV:-production}
+      # Secure cookies — must stay true behind HTTPS (reverse proxy).
+      SECURE_COOKIES: ${SECURE_COOKIES:-true}
       SENTRY_DSN: ${SENTRY_DSN:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:

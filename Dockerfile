@@ -26,7 +26,7 @@ RUN pnpm -F @social-auto/shared run build \
 # Node >= 22 required: Promise.withResolvers (Node 20 is EOL anyway).
 FROM node:22-alpine AS runtime
 # ffmpeg/ffprobe are required for duration probing + thumbnails.
-RUN apk add --no-cache ffmpeg \
+RUN apk add --no-cache ffmpeg libxcb \
  && corepack enable && corepack prepare pnpm@9.0.0 --activate
 WORKDIR /app
 ENV NODE_ENV=production \
