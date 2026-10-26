@@ -1,5 +1,6 @@
 name = "social-auto"
 main = "src/index.ts"
+workers_dev = true
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -7,13 +8,13 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "social-auto-db"
-database_id = "00000000-0000-0000-0000-000000000000" # replace after `wrangler d1 create`
+database_id = "2a75c37f-cb5e-4f4a-982b-c7776262bbac"
 migrations_dir = "migrations"
 
 # ── R2 (video + thumbnail objects) ──────────────────────────────────
-[[r2_buckets]]
-binding = "STORAGE"
-bucket_name = "social-auto-videos"
+# [[r2_buckets]]                    # TODO: uncomment after enabling R2 in dashboard
+# binding = "STORAGE"
+# bucket_name = "social-auto-videos"
 
 # ── Queue: publish jobs (with dead-letter) ──────────────────────────
 [[queues.producers]]

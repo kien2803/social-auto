@@ -99,3 +99,11 @@ như scaffold tham khảo (không ảnh hưởng app chính) — nếu muốn x�
 
 **Track chính vẫn là Fastify app hiện tại** — deploy path = Docker (đã verify
 qua podman) + VPS/Railway + Caddy. CF dev worker :8787 đã tắt.
+
+## Cloudflare account state (2026-10-26)
+
+- wrangler 4.152 logged in (trunkynw2803@gmail.com, acct 386b5292…)
+- D1 `social-auto-db` created (2a75c37f-cb5e-4f4a-982b-c7776262bbac) + remote migrations applied
+- Queues `social-auto-publish` + `social-auto-publish-dlq` created
+- BLOCKED user actions in dashboard: (1) register workers.dev subdomain via workers/onboarding, (2) enable R2 — then uncomment r2_buckets in wrangler.toml
+- Next: `wrangler deploy` → port remaining routes (accounts/videos/schedule/OAuth) → Pages for web
