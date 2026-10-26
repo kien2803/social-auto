@@ -41,4 +41,16 @@ export class UsersRepo {
       .first<{ password_hash: string }>();
     return row?.password_hash ?? null;
   }
+
+  async updateName(id: string, name: string): Promise<void> {
+    await this.db.prepare('UPDATE users SET name = ? WHERE id = ?').bind(name, id).run();
+  }
+
+  async updatePasswordHash(id: string, hash: string): Promise<void> {
+    await this.db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(hash, id).run();
+  }
+
+  async deleteById(id: string): Promise<void> {
+    await this.db.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+  }
 }

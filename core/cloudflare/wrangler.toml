@@ -51,7 +51,8 @@ crons = ["*/1 * * * *"]
 
 [vars]
 # Public origin for OAuth redirect_uri — must match platform consoles.
-WEB_ORIGIN = "http://localhost:8787"
+WEB_ORIGIN = "https://social-auto.trunkynw2803.workers.dev"
+GOOGLE_REDIRECT_URI = "https://social-auto.trunkynw2803.workers.dev/auth/callback"
 SECURE_COOKIES = "false"
 STORAGE_QUOTA_GB = "10"
 META_API_VERSION = "v24.0"

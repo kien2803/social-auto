@@ -4,6 +4,7 @@ export interface Env {
   DB: D1Database;
   STORAGE: R2Bucket;
   PUBLISH_QUEUE: Queue<PublishJob>;
+  ASSETS: Fetcher;
 
   // Vars (wrangler.toml [vars])
   WEB_ORIGIN: string;
@@ -15,6 +16,7 @@ export interface Env {
   TOKEN_ENCRYPTION_KEY: string;
   JWT_SECRET: string;
   GOOGLE_CLIENT_ID?: string;
+  GOOGLE_REDIRECT_URI?: string;
   GOOGLE_CLIENT_SECRET?: string;
   TIKTOK_CLIENT_KEY?: string;
   TIKTOK_CLIENT_SECRET?: string;
