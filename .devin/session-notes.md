@@ -47,11 +47,16 @@ Test account: `demo@socialauto.dev` / `demo123456`.
 
 → **Ngày mai**: để user tự click focus + login rồi Connect YouTube (Google consent bắt buộc phải click tay), hoặc bỏ qua computer-use — flow này vốn dĩ cần thao tác người. Verify sau connect: `GET /auth/youtube/status` trả account thật, upload video → schedule → worker post lên YouTube (sẽ là private).
 
+## Cập nhật 2026-10-26 (sau)
+
+- `00f4b19` đã push: SECURE_COOKIES + /privacy page + .env.production.example + Caddyfile + Dockerfile fix (libxcb)
+- **Docker build ĐÃ VERIFY qua podman** (`podman build -t social-auto .`) — container chạy OK: health + SPA + API. Lưu ý: podman port-forward dùng `127.0.0.1` (localhost resolve ::1 fail)
+- OAuth state mismatch root cause: cookie domain `127.0.0.1` ≠ `localhost` — phải dùng `http://localhost:3000` (gõ đúng chữ localhost)
+
 ## Việc còn lại (ưu tiên)
 
-1. **User tự test Connect YouTube** — consent phải click tay
-2. Xóa 2 file dead untracked (meta/tiktok authRoutes)
-3. OAuth review: TikTok partner review + Meta app review + Google verification (critical path)
-4. Docker verify trên máy có daemon
-5. Code gaps: UI change-password/delete-account (API sẵn), video stream route, cancel upload
-6. Scale-up khi cần: Postgres, S3, refresh token, per-user quota
+1. **User tự test Connect YouTube** qua `http://localhost:3000` — consent phải click tay
+2. OAuth review: TikTok + Meta + Google verification — cần deploy public trước
+3. Deploy VPS/Railway: docker-compose sẵn, Caddyfile auto-HTTPS, chỉ cần domain + DNS
+4. Code gaps: UI change-password/delete-account (API sẵn), video stream route, cancel upload
+5. Scale-up khi cần: Postgres, S3, refresh token, per-user quota
