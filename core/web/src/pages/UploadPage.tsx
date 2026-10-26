@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -55,6 +55,7 @@ export function UploadPage() {
   const [progress, setProgress] = useState<number>(0);
   const [progressTotal, setProgressTotal] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
+  const uploadIdRef = useRef<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [perAccountCaption, setPerAccountCaption] = useState<Record<string, string>>({});
@@ -71,8 +72,10 @@ export function UploadPage() {
       setUploading(true);
       setProgress(0);
       setProgressTotal(file.size);
+      const uploadId = crypto.randomUUID();
+      uploadIdRef.current = uploadId;
       try {
-        return (await api.uploadVideo(file, (sent) => setProgress(sent))) as UploadResult;
+        return (await api.uploadVideo(file, (sent) => setProgress(sent), uploadId)) as UploadResult;
       } finally {
         setUploading(false);
       }
@@ -269,8 +272,15 @@ export function UploadPage() {
                   onClick={() => {
                     if (uploadMut.data?.video_id) {
                       cancelUploadMut.mutate(uploadMut.data.video_id);
+                    } else if (uploadIdRef.current) {
+                      // In-flight upload — abort server-side stream too
+                      api.cancelUpload(uploadIdRef.current).catch(() => {});
+                      uploadIdRef.current = null;
+                      setUploading(false);
+                      setProgress(0);
+                      setProgressTotal(0);
+                      uploadMut.reset();
                     } else {
-                      // Cancel before upload completes
                       setUploading(false);
                       setProgress(0);
                       setProgressTotal(0);

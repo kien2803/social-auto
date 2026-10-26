@@ -252,8 +252,10 @@ export const api = {
   listVideos: () => req<{ videos: VideoWire[] }>('/videos'),
   getVideo: (id: string) => req<VideoWire>(`/videos/${id}`),
   deleteVideo: (id: string) => req<{ success: boolean; message: string }>(`/videos/${id}`, { method: 'DELETE' }),
-  uploadVideo: (file: File, onProgress?: (bytes: number) => void) =>
-    uploadFile('/videos', file, onProgress),
+  uploadVideo: (file: File, onProgress?: (bytes: number) => void, uploadId?: string) =>
+    uploadFile('/videos', file, onProgress, uploadId),
+  cancelUpload: (uploadId: string) =>
+    req<{ success: boolean }>(`/videos/${uploadId}/cancel`, { method: 'POST' }),
   listSchedule: (q?: { status?: string; account_id?: string }) => {
     const params = new URLSearchParams();
     if (q?.status) params.set('status', q.status);
@@ -322,6 +324,7 @@ async function uploadFile<T>(
   path: string,
   file: File,
   onProgress?: (bytes: number) => void,
+  uploadId?: string,
 ): Promise<T> {
   const { promise, resolve, reject } = Promise.withResolvers<T>();
   const xhr = new XMLHttpRequest();
@@ -347,6 +350,7 @@ async function uploadFile<T>(
   };
   xhr.onerror = () => reject(new ApiError(0, 'network_error'));
   const fd = new FormData();
+  if (uploadId) fd.append('upload_id', uploadId);
   fd.append('file', file);
   xhr.send(fd);
   return promise;

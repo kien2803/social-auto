@@ -34,6 +34,7 @@ export async function ingestUpload(
   originalFilename: string,
   userId?: string,
   onProgress?: (bytes: number) => void,
+  signal?: AbortSignal,
 ): Promise<IngestResult> {
   if (!ACCEPTED_MIME.has(mime)) {
     throw new UploadError(415, `Unsupported mime type: ${mime}`);
@@ -52,6 +53,7 @@ export async function ingestUpload(
   const fd = await fs.open(tmpPath, 'w');
   try {
     for await (const chunk of iter) {
+      if (signal?.aborted) throw new UploadError(499, 'Upload cancelled');
       size += chunk.length;
       if (size > MAX_SIZE_BYTES) {
         throw new UploadError(413, `File exceeds ${MAX_SIZE_BYTES} bytes`);

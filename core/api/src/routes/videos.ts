@@ -85,8 +85,11 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
       });
     }
 
+    const uploadId = (part.fields as Record<string, { value?: string } | undefined>)['upload_id']?.value;
+    const userId = (req as AuthenticatedRequest).userId ?? 'default-user';
+    const ac = new AbortController();
+    if (uploadId) registerActiveUpload(uploadId, ac, '', userId);
     try {
-      const userId = (req as AuthenticatedRequest).userId ?? 'default-user';
       const result = await ingestUpload(
         deps.videos,
         deps.storageDir,
@@ -95,6 +98,7 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
         part.filename,
         userId,
         undefined, // onProgress callback
+        ac.signal,
       );
       return reply.code(result.deduped ? 200 : 201).send(result);
     } catch (err) {
@@ -117,9 +121,11 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
         message: 'An unexpected error occurred. Please try again',
         code: 'INTERNAL_ERROR'
       });
+    } finally {
+      if (uploadId) activeUploads.delete(uploadId);
     }
   });
-  
+
   app.get('/videos', { preHandler: deps.authMiddleware }, async (req) => {
     const userId = (req as AuthenticatedRequest).userId;
     const q = req.query as { limit?: string; offset?: string };

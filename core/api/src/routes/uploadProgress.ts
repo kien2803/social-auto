@@ -14,7 +14,7 @@ export interface UploadProgress {
 export const progressCache = new Map<string, UploadProgress>();
 
 // Track active uploads that can be cancelled
-export const activeUploads = new Map<string, { abortController: AbortController; filePath: string }>();
+export const activeUploads = new Map<string, { abortController: AbortController; filePath: string; userId?: string }>();
 
 export function updateProgress(videoId: string, progress: number): void {
   progressCache.set(videoId, {
@@ -35,8 +35,8 @@ export function getProgress(videoId: string): UploadProgress | undefined {
   }
   return undefined;
 }
-export function registerActiveUpload(videoId: string, abortController: AbortController, filePath: string): void {
-  activeUploads.set(videoId, { abortController, filePath });
+export function registerActiveUpload(videoId: string, abortController: AbortController, filePath: string, userId?: string): void {
+  activeUploads.set(videoId, { abortController, filePath, userId });
 }
 
 export function cleanupOldProgress(): void {
@@ -145,10 +145,12 @@ export function registerUploadProgressRoutes(
 
   // Cancel active upload
   app.post<{ Params: { id: string } }>('/videos/:id/cancel', auth, async (req, reply) => {
-    const own = ownsVideo(req);
-    if (own !== 'ok') return ownershipError(reply, own);
     const { id } = req.params;
+    const own = ownsVideo(req);
     const activeUpload = activeUploads.get(id);
+    if (own !== 'ok' && activeUpload?.userId !== (req as AuthenticatedRequest).userId) {
+      return ownershipError(reply, own);
+    }
     
     if (!activeUpload) {
       return reply.code(404).send({ error: 'No active upload found for this video' });
