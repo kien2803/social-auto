@@ -90,3 +90,12 @@ Secrets local ở `core/cloudflare/.dev.vars` (gitignored). Đã test: register 
 - P5: queue consumer → port publishers (youtube/tiktok/meta) + mark dead từ DLQ
 - P7: Pages deploy + route /api → Worker
 - P8: OAuth redirect URIs đổi sang domain CF + secrets qua `wrangler secret put`
+
+## 2026-10-26 — DỪNG migration 100% Cloudflare
+
+User quyết định dừng hướng Cloudflare. `core/cloudflare/` giữ nguyên trên repo
+như scaffold tham khảo (không ảnh hưởng app chính) — nếu muốn xóa hẳn:
+`git rm -r core/cloudflare` + revert workspace entry trong pnpm-workspace.yaml.
+
+**Track chính vẫn là Fastify app hiện tại** — deploy path = Docker (đã verify
+qua podman) + VPS/Railway + Caddy. CF dev worker :8787 đã tắt.
