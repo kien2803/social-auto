@@ -47,6 +47,9 @@ const RegisterPage = lazy(() =>
 const PrivacyPage = lazy(() =>
   import('./pages/PrivacyPage.js').then((m) => ({ default: m.PrivacyPage })),
 );
+const SettingsPage = lazy(() =>
+  import('./pages/SettingsPage.js').then((m) => ({ default: m.SettingsPage })),
+);
 const LandingPage = lazy(() =>
   import('./pages/LandingPage.js').then((m) => ({ default: m.LandingPage })),
 );
@@ -79,6 +82,7 @@ ReactDOM.createRoot(root).render(
                     <Route path="/history" element={<HistoryPage />} />
                     <Route path="/accounts" element={<AccountsPage />} />
                     <Route path="/analytics" element={<AnalyticsPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
                   </Route>
                 </Routes>
               </Suspense>

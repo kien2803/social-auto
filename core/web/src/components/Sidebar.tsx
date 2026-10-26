@@ -14,6 +14,7 @@ const NAV: NavItem[] = [
   { to: '/history', label: 'History', icon: '⌛' },
   { to: '/analytics', label: 'Analytics', icon: '📊' },
   { to: '/accounts', label: 'Accounts', icon: '◉' },
+  { to: '/settings', label: 'Settings', icon: '⚙' },
 ];
 
 function linkClass({ isActive, collapsed }: { isActive: boolean; collapsed?: boolean }) {
