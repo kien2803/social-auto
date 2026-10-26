@@ -1,6 +1,12 @@
 name = "social-auto"
 main = "src/index.ts"
+compatibility_date = "2026-10-19"
 workers_dev = true
+
+[assets]
+binding = "ASSETS"
+directory = "../web/dist"
+not_found_handling = "single-page-application"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 

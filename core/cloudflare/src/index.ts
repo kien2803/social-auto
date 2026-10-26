@@ -19,6 +19,15 @@ app.get('/health', (c) =>
 );
 
 app.route('/', userAuthRoutes);
+app.route('/api', userAuthRoutes); // SPA calls /api/* same-origin
+
+// SPA fallback — assets layer returns 404 for unknown paths before the
+// worker runs, so serve index.html ourselves for non-API GETs.
+app.get('*', (c) => {
+  const p = c.req.path;
+  if (p.startsWith('/api/') || p.startsWith('/auth/')) return c.notFound();
+  return c.env.ASSETS.fetch(new URL('/', c.req.url).toString());
+});
 
 export default {
   fetch: app.fetch,
