@@ -1,0 +1,50 @@
+name = "social-auto"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 (SQLite) ─────────────────────────────────────────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "social-auto-db"
+database_id = "00000000-0000-0000-0000-000000000000" # replace after `wrangler d1 create`
+migrations_dir = "migrations"
+
+# ── R2 (video + thumbnail objects) ──────────────────────────────────
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "social-auto-videos"
+
+# ── Queue: publish jobs (with dead-letter) ──────────────────────────
+[[queues.producers]]
+binding = "PUBLISH_QUEUE"
+queue = "social-auto-publish"
+
+[[queues.consumers]]
+queue = "social-auto-publish"
+max_batch_size = 5
+max_batch_timeout = 10
+max_retries = 5
+dead_letter_queue = "social-auto-publish-dlq"
+
+[[queues.consumers]]
+queue = "social-auto-publish-dlq"
+max_batch_size = 10
+max_retries = 0
+
+# ── Cron: claim due posts → enqueue (replaces 30s poll loop; CF min 60s) ──
+[triggers]
+crons = ["*/1 * * * *"]
+
+# ── Secrets (set via `wrangler secret put`) ─────────────────────────
+# TOKEN_ENCRYPTION_KEY, JWT_SECRET
+# GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
+# META_APP_ID, META_APP_SECRET
+
+[vars]
+# Public origin for OAuth redirect_uri — must match platform consoles.
+WEB_ORIGIN = "http://localhost:8787"
+SECURE_COOKIES = "false"
+STORAGE_QUOTA_GB = "10"
+META_API_VERSION = "v24.0"

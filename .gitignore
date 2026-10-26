@@ -68,3 +68,4 @@ temp/
 
 # IDE and tool configs
 .env.local.*
+.dev.vars

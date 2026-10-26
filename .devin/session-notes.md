@@ -60,3 +60,33 @@ Test account: `demo@socialauto.dev` / `demo123456`.
 3. Deploy VPS/Railway: docker-compose sẵn, Caddyfile auto-HTTPS, chỉ cần domain + DNS
 4. Code gaps: UI change-password/delete-account (API sẵn), video stream route, cancel upload
 5. Scale-up khi cần: Postgres, S3, refresh token, per-user quota
+
+## Cloudflare migration — foundation done (P0–P1, một phần P2/P6)
+
+Package `core/cloudflare` đã scaffold + chạy được trên `workerd`:
+- `wrangler.toml`: D1 `DB`, R2 `STORAGE`, Queue `PUBLISH_QUEUE` + DLQ, cron `*/1 * * * *`
+- `migrations/0001_init.sql` — schema gộp (end-state của 11 migrations cũ)
+- `src/index.ts` — fetch (Hono) + `scheduled` (claim due→enqueue) + `queue` consumer skeleton
+- Routes xong: `/health`, `POST /auth/register`, `POST /auth/login` — cùng API contract `{token,user}` với Fastify
+- `lib/crypto.ts` WebCrypto AES-GCM wire-compatible với Node (`iv:tag:ct` hex), `lib/jwt.ts` jose HS256 7d
+- `repos/users.ts` — pattern async D1 cho các repo còn lại
+
+### Verify local
+```bash
+cd core/cloudflare && pnpm install && pnpm dev --local   # :8787
+pnpm exec wrangler d1 migrations apply social-auto-db --local
+```
+Secrets local ở `core/cloudflare/.dev.vars` (gitignored). Đã test: register 201, login 200 JWT, wrong-pass 401.
+
+### Gotchas đã gặp
+- bcryptjs@3 cần `setRandomFallback` + lazy hash (module-scope crypto không có trong workerd)
+- wrangler 3.x local — compat date bị fallback 2025-07-18; upgrade wrangler 4 khi deploy thật
+- Miniflare không auto-fire cron — test scheduled bằng `--test-scheduled` hoặc `/__scheduled`
+
+### Còn lại theo plan (P2–P8)
+- P2: port accounts/videos/scheduledPosts/quotas repos → async D1 (~100 queries)
+- P3: port ~15 route files sang Hono (accounts, videos, schedule, auth OAuth callbacks, quota, health, userAuth mgmt)
+- P4: R2 multipart upload + client-side probe/thumbnail (bỏ ffmpeg)
+- P5: queue consumer → port publishers (youtube/tiktok/meta) + mark dead từ DLQ
+- P7: Pages deploy + route /api → Worker
+- P8: OAuth redirect URIs đổi sang domain CF + secrets qua `wrangler secret put`
