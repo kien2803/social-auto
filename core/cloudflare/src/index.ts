@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { userAuthRoutes } from './routes/userAuth';
+import { ScheduledPostsRepo } from './repos/scheduledPosts';
 import type { Env, PublishJob } from './env';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -41,16 +42,15 @@ export default {
   async queue(batch: MessageBatch<PublishJob>, env: Env) {
     for (const msg of batch.messages) {
       const { postId } = msg.body;
-      const post = await env.DB.prepare('SELECT * FROM scheduled_posts WHERE id = ?')
-        .bind(postId)
-        .first<Record<string, unknown>>();
-      if (!post || post['status'] !== 'uploading') {
+      const posts = new ScheduledPostsRepo(env.DB);
+      const post = await posts.findClaimedWithJoin(postId);
+      if (!post || post.status !== 'uploading') {
         msg.ack();
         continue;
       }
       // TODO(P5): port publisher dispatch — call the platform publisher for
-      // post.platform with decrypted tokens, on success mark 'published',
-      // on failure msg.retry() (queue handles backoff + DLQ → mark dead).
+      // post.account.platform with decrypted tokens, then markPublished /
+      // releaseToPending. Queue retries handle backoff; DLQ → markDead.
       msg.retry();
     }
   },

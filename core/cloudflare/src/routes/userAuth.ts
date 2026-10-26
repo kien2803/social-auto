@@ -9,7 +9,7 @@ const SALT_ROUNDS = 10;
 
 // bcryptjs can't find a RNG at module-init time under workerd — point it at
 // WebCrypto and compute the timing-equalizer hash lazily inside the handler.
-bcrypt.setRandomFallback((len) => crypto.getRandomValues(new Uint8Array(len)));
+bcrypt.setRandomFallback((len) => Array.from(crypto.getRandomValues(new Uint8Array(len))));
 let dummyHash: string | null = null;
 function getDummyHash(): string {
   return (dummyHash ??= bcrypt.hashSync('timing-equalizer', SALT_ROUNDS));
