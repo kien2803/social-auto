@@ -224,9 +224,9 @@ export async function buildApp() {
         await backend.upload(data, key);
       },
       delete: (key: string) => backend.delete(key),
-      markFileUploading: (backend as any).markFileUploading?.bind(backend),
-      markFileComplete: (backend as any).markFileComplete?.bind(backend),
-      checkDiskSpace: (backend as any).checkDiskSpace?.bind(backend),
+      markFileUploading: (backend as unknown as { markFileUploading?(k: string): void }).markFileUploading?.bind(backend),
+      markFileComplete: (backend as unknown as { markFileComplete?(k: string): void }).markFileComplete?.bind(backend),
+      checkDiskSpace: (backend as unknown as { checkDiskSpace?(b: number): Promise<boolean> }).checkDiskSpace?.bind(backend),
   };
   const storageManager = new StorageManager(storageAdapter, videos, env.storageQuotaGB);
   registerStorageRoutes(app, { storageManager, authMiddleware });

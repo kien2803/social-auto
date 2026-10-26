@@ -17,6 +17,13 @@ export interface StorageUsage {
   files: number;
 }
 
+interface StorageExtras {
+  markFileUploading?(key: string): void;
+  markFileComplete?(key: string): void;
+  checkDiskSpace?(requiredBytes: number): Promise<boolean>;
+  baseDir?: string;
+}
+
 export class StorageManager {
   private uploadingFiles = new Set<string>();
   
@@ -31,7 +38,7 @@ export class StorageManager {
     
     // For local storage, also mark in the backend
     if (this.storage.type === 'local') {
-      (this.storage as any).markFileUploading?.(key);
+      (this.storage as unknown as StorageExtras).markFileUploading?.(key);
     }
   }
   
@@ -40,7 +47,7 @@ export class StorageManager {
     
     // For local storage, also mark in the backend
     if (this.storage.type === 'local') {
-      (this.storage as any).markFileComplete?.(key);
+      (this.storage as unknown as StorageExtras).markFileComplete?.(key);
     }
   }
   
@@ -149,7 +156,7 @@ export class StorageManager {
     }
     
     try {
-      const availableSpace = await (this.storage as any).checkDiskSpace?.(requiredBytes) ?? true;
+      const availableSpace = await (this.storage as unknown as StorageExtras).checkDiskSpace?.(requiredBytes) ?? true;
       return availableSpace;
     } catch (error) {
       if (error instanceof Error && error.message.includes('Insufficient disk space')) {
@@ -194,7 +201,7 @@ export class StorageManager {
   private extractKey(filePath: string): string {
     if (this.storage.type === 'local') {
       // Remove base directory prefix
-      const baseDir = (this.storage as any).baseDir || '';
+      const baseDir = (this.storage as unknown as StorageExtras).baseDir || '';
       if (filePath.startsWith(baseDir)) {
         return filePath.slice(baseDir.length).replace(/^[/\\]/, '');
       }

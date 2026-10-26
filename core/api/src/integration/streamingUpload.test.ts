@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test fixtures use loose JSON shapes */
 /**
  * Integration Test: Streaming Upload
  * 

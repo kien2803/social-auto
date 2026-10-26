@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { unlink } from 'node:fs/promises';
 import type { VideosRepo } from '../repositories/videos.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
@@ -53,19 +53,19 @@ export function cleanupOldProgress(): void {
 
 export function registerUploadProgressRoutes(
   app: FastifyInstance,
-  deps?: { authMiddleware?: any; videos?: VideosRepo },
+  deps?: { authMiddleware?: (request: FastifyRequest, reply: FastifyReply) => Promise<void>; videos?: VideosRepo },
 ): void {
   const auth = deps?.authMiddleware ? { preHandler: deps.authMiddleware } : {};
   // When a VideosRepo is wired in, every progress endpoint checks that the
   // caller owns the video — otherwise any authenticated user could read or
   // write another user's upload progress by guessing/learning the video id.
-  const ownsVideo = (req: any): 'ok' | 'not_found' | 'forbidden' => {
+  const ownsVideo = (req: FastifyRequest): 'ok' | 'not_found' | 'forbidden' => {
     if (!deps?.videos) return 'ok';
-    const video = deps.videos.findById(req.params.id);
+    const video = deps.videos.findById((req.params as { id: string }).id);
     if (!video) return 'not_found';
     return video.user_id === (req as AuthenticatedRequest).userId ? 'ok' : 'forbidden';
   };
-  const ownershipError = (reply: any, result: 'not_found' | 'forbidden') =>
+  const ownershipError = (reply: FastifyReply, result: 'not_found' | 'forbidden') =>
     reply
       .code(result === 'not_found' ? 404 : 403)
       .send({ error: result === 'not_found' ? 'Video not found' : 'video_not_owned' });

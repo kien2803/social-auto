@@ -1,4 +1,5 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { Readable } from 'node:stream';
 import multipart from '@fastify/multipart';
 import type { VideoRow } from '@social-auto/shared';
 import type { VideosRepo } from '../repositories/videos.js';
@@ -18,7 +19,7 @@ export interface VideosDeps {
    * reference — the FK constraint would otherwise surface as a 500. */
   posts: ScheduledPostsRepo;
   storageDir: string;
-  authMiddleware: any;
+  authMiddleware: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 }
 
 /** Wire shape returned to clients. Drops server-side filesystem paths. */
@@ -190,7 +191,7 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
     }
 
     const parts = req.files();
-    const files: Array<{ file: any; filename: string; mimetype: string }> = [];
+    const files: Array<{ file: Readable; filename: string; mimetype: string }> = [];
 
     for await (const part of parts) {
       if (part.type === 'file') {

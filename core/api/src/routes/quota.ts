@@ -1,10 +1,10 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Platform } from '@social-auto/shared';
 import { UNITS_PER_UPLOAD, type QuotasRepo } from '../repositories/quotas.js';
 
 export interface QuotaDeps {
   quotas: QuotasRepo;
-  authMiddleware?: any;
+  authMiddleware?: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 }
 
 interface QuotaWire {

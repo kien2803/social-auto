@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type {
   AccountChannelSnapshot,
   AccountLanguageCode,
@@ -18,7 +18,7 @@ export interface AccountsDeps {
   posts: ScheduledPostsRepo;
   google?: GoogleOAuthClient;
   tokenEncryptionKey?: string;
-  authMiddleware: any;
+  authMiddleware: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 }
 
 /** Wire shape for an account row returned by the API. Never includes tokens. */

@@ -1,11 +1,11 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { StorageManager } from '../services/storageManager.js';
 
 export function registerStorageRoutes(
   app: FastifyInstance,
   deps: {
     storageManager: StorageManager;
-    authMiddleware?: any;
+    authMiddleware?: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   },
 ): void {
   const auth = deps.authMiddleware ? { preHandler: deps.authMiddleware } : {};

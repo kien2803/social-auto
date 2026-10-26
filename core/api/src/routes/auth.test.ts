@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test fixtures use loose JSON shapes */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildTestAppWithMock } from '../test-helpers.js';
 import { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';

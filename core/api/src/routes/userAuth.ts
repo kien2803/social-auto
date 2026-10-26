@@ -4,13 +4,13 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AuthService } from '../services/authService.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export interface UserAuthRoutesDeps {
   authService: AuthService;
-  authMiddleware?: any;
+  authMiddleware?: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 }
 
 /**

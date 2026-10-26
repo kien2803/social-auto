@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test fixtures use loose JSON shapes */
 /**
  * Tests for `migrateAvatars` — verifies the one-shot migration logic
  * without booting Fastify. Uses an in-memory SQLite + mock Google client

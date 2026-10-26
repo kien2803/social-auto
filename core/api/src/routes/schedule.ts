@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Visibility } from '@social-auto/shared';
 import type { ScheduledPostsRepo } from '../repositories/scheduledPosts.js';
 import type { VideosRepo } from '../repositories/videos.js';
@@ -9,7 +9,7 @@ export interface ScheduleDeps {
   posts: ScheduledPostsRepo;
   videos: VideosRepo;
   accounts: AccountsRepo;
-  authMiddleware: any;
+  authMiddleware: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 }
 
 interface ScheduleBody {

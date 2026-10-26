@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test fixtures use loose JSON shapes */
 /**
  * Tests for `AccountsRepo.updateChannelSnapshot`. Verifies the batch-write
  * contract: any subset of AccountChannelSnapshot fields can be patched,

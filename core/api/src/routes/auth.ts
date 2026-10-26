@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { decrypt, encrypt } from '@social-auto/shared/utils/crypto.js';
 import type { AccountRow } from '@social-auto/shared';
 import { randomBytes } from 'node:crypto';
@@ -26,9 +26,9 @@ export interface AuthDeps {
   /** Required-auth middleware for the per-platform status endpoints.
    * Without it they would serve every user's connected accounts to
    * anyone. */
-  authMiddleware: (request: any, reply: any) => Promise<void>;
+  authMiddleware: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   /** Optional auth middleware for backward compatibility. */
-  optionalAuthMiddleware?: (request: any, reply: any) => Promise<void>;
+  optionalAuthMiddleware?: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   /** Set Secure on OAuth cookies — required once the app sits behind HTTPS. */
   cookieSecure?: boolean;
 }

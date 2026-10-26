@@ -1,5 +1,6 @@
 import { createMockGoogleClient, type MockGoogleConfig } from './google/mockClient.js';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { AuthenticatedRequest } from './middleware/auth.js';
 
 export interface TestApp {
   app: FastifyInstance;
@@ -48,13 +49,13 @@ export async function buildTestAppWithMock(mockCfg: MockGoogleConfig = {}): Prom
     // user. In tests every account lands on 'default-user' (the OAuth
     // callback fallback), so the mock attributes requests to it — keeping
     // the status routes' assertions meaningful.
-    authMiddleware: async (req: any) => {
-      req.userId = 'default-user';
+    authMiddleware: async (req: FastifyRequest) => {
+      (req as AuthenticatedRequest).userId = 'default-user';
     },
     // Callbacks now redirect unauthenticated hits to /login — simulate a
     // signed-in user so tests keep exercising the success path.
-    optionalAuthMiddleware: async (req: any) => {
-      req.userId = 'default-user';
+    optionalAuthMiddleware: async (req: FastifyRequest) => {
+      (req as AuthenticatedRequest).userId = 'default-user';
     },
   });
   // Mount the same /auth/* orphan-cookie hook the real buildApp() uses.
