@@ -267,6 +267,9 @@ describe('YouTube OAuth routes (T0.3)', () => {
       authMiddleware: async (req: any) => {
         req.userId = 'default-user';
       },
+      optionalAuthMiddleware: async (req: any) => {
+        req.userId = 'default-user';
+      },
     });
     await app1.ready();
     const start = await app1.inject({ method: 'GET', url: '/auth/youtube/start' });
@@ -296,6 +299,9 @@ describe('YouTube OAuth routes (T0.3)', () => {
       webOrigin: 'http://localhost:5173',
       tokenEncryptionKey: 'a'.repeat(64),
       authMiddleware: async (req: any) => {
+        req.userId = 'default-user';
+      },
+      optionalAuthMiddleware: async (req: any) => {
         req.userId = 'default-user';
       },
     });

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { api, fetchVideoThumbnail, type VideoWire } from '../lib/api.js';
+import { api, fetchVideoStream, fetchVideoThumbnail, type VideoWire } from '../lib/api.js';
 import { useAccounts } from '../lib/accounts.js';
 import { useToast } from '../components/ui/Toast.js';
 import { Card, CardBody, CardHeader } from '../components/ui/Card.js';
@@ -538,12 +538,31 @@ function VideoThumbPreview({ videoId, videos }: { videoId: string; videos: Video
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [videoId, hasThumb]);
+  const [playing, setPlaying] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let obj: string | null = null;
+    if (playing) {
+      void fetchVideoStream(videoId).then((u) => {
+        obj = u;
+        setVideoUrl(u);
+      });
+    }
+    return () => {
+      if (obj) URL.revokeObjectURL(obj);
+    };
+  }, [playing, videoId]);
+  if (playing && videoUrl) {
+    return <video src={videoUrl} controls autoPlay className="h-40 rounded" />;
+  }
   if (!url) return null;
   return (
-    <img
-      src={url}
-      alt="Video thumbnail"
-      className="h-24 rounded border border-slate-200 object-cover dark:border-slate-700"
-    />
+    <button type="button" onClick={() => setPlaying(true)} title="Preview video">
+      <img
+        src={url}
+        alt="Video thumbnail"
+        className="h-24 rounded border border-slate-200 object-cover dark:border-slate-700"
+      />
+    </button>
   );
 }

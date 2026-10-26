@@ -51,6 +51,11 @@ export async function buildTestAppWithMock(mockCfg: MockGoogleConfig = {}): Prom
     authMiddleware: async (req: any) => {
       req.userId = 'default-user';
     },
+    // Callbacks now redirect unauthenticated hits to /login — simulate a
+    // signed-in user so tests keep exercising the success path.
+    optionalAuthMiddleware: async (req: any) => {
+      req.userId = 'default-user';
+    },
   });
   // Mount the same /auth/* orphan-cookie hook the real buildApp() uses.
   // registerAuthRoutes mounts it idempotently, so this only fills in the

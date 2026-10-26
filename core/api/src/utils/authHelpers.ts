@@ -11,11 +11,11 @@ export interface AuthenticatedRequest extends FastifyRequest {
 }
 
 /**
- * Get userId from authenticated request.
- * During migration phase, falls back to 'default-user' if userId is not set.
- * TODO: Remove fallback after all routes require authentication.
+ * Get userId from an authenticated request. Returns undefined when the
+ * optional-auth middleware ran without credentials (OAuth callbacks
+ * redirect unauthenticated users to login instead of attributing work
+ * to a shared placeholder account).
  */
-export function getUserId(req: FastifyRequest): string {
-  const userId = (req as AuthenticatedRequest).userId;
-  return userId || 'default-user';
+export function getUserId(req: FastifyRequest): string | undefined {
+  return (req as AuthenticatedRequest).userId;
 }

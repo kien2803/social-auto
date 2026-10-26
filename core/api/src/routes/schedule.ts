@@ -65,7 +65,7 @@ export function registerScheduleRoutes(app: FastifyInstance, deps: ScheduleDeps)
     const video = deps.videos.findById(body.video_id);
     if (!video) return reply.code(404).send({ error: 'video_not_found' });
 
-    const userId = (req as AuthenticatedRequest).userId ?? 'default-user';
+    const userId = (req as AuthenticatedRequest).userId!;
 
     // Check video ownership
     if (video.user_id !== userId) {

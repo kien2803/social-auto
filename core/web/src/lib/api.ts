@@ -532,5 +532,15 @@ export async function fetchVideoThumbnail(videoId: string): Promise<string | nul
   return URL.createObjectURL(await res.blob());
 }
 
+/** Same Bearer constraint for <video> preview — fetch the stream as a blob
+ * and hand back an object URL. Fine for preview sizes used in the UI. */
+export async function fetchVideoStream(videoId: string): Promise<string | null> {
+  const res = await fetch(`${BASE}/videos/${videoId}/stream`, {
+    headers: { authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) return null;
+  return URL.createObjectURL(await res.blob());
+}
+
 // Export token utilities for use in AuthContext
 export { getToken, setToken, clearToken };

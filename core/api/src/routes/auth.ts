@@ -149,6 +149,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     reply.clearCookie('oauth_state', { path: '/auth' });
 
     const userId = getUserId(req);
+    if (!userId) return reply.redirect(`${deps.webOrigin}/login`);
     const tokens = await deps.google.exchangeCode(code);
     req.log.info({ has_refresh: !!tokens.refresh_token, has_access: !!tokens.access_token }, 'oauth token exchange');
     if (!tokens.refresh_token) {
@@ -328,6 +329,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
 
       const userId = getUserId(req);
+      if (!userId) return reply.redirect(`${deps.webOrigin}/login`);
 
       if (error) {
         const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
@@ -493,6 +495,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       if (popupMode) reply.clearCookie(POPUP_COOKIE, { path: '/auth' });
 
       const userId = getUserId(req);
+      if (!userId) return reply.redirect(`${deps.webOrigin}/login`);
 
       if (error) {
         const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
@@ -733,6 +736,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       }
 
       const userId = getUserId(req);
+      if (!userId) return reply.redirect(`${deps.webOrigin}/login`);
       const accessToken = `${MOCK_TOKEN_PREFIX[platform]}${code}`;
       const encryptedAccess = encrypt(accessToken, deps.tokenEncryptionKey);
       const encryptedRefresh = encrypt(`mock-refresh-${code}`, deps.tokenEncryptionKey);

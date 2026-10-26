@@ -87,7 +87,7 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
     }
 
     const uploadId = (part.fields as Record<string, { value?: string } | undefined>)['upload_id']?.value;
-    const userId = (req as AuthenticatedRequest).userId ?? 'default-user';
+    const userId = (req as AuthenticatedRequest).userId!;
     const ac = new AbortController();
     if (uploadId) registerActiveUpload(uploadId, ac, '', userId);
     try {
@@ -219,7 +219,7 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
       });
     }
 
-    const userId = (req as AuthenticatedRequest).userId ?? 'default-user';
+    const userId = (req as AuthenticatedRequest).userId!;
     const results = [];
     const errors = [];
 
