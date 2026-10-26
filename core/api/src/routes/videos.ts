@@ -10,6 +10,7 @@ import {
   UploadError,
   ingestUpload,
 } from '../services/videoService.js';
+import { activeUploads, registerActiveUpload } from './uploadProgress.js';
 
 export interface VideosDeps {
   videos: VideosRepo;
@@ -145,7 +146,39 @@ export function registerVideoRoutes(app: FastifyInstance, deps: VideosDeps): voi
     const { createReadStream } = await import('node:fs');
     return reply.type('image/jpeg').send(createReadStream(video.thumbnail_path));
   });
-  
+
+  // Stream the video itself for <video> preview. Range-aware so seeking
+  // works; same ownership check as the thumbnail route.
+  app.get<{ Params: { id: string } }>('/videos/:id/stream', { preHandler: deps.authMiddleware }, async (req, reply) => {
+    const userId = (req as AuthenticatedRequest).userId;
+    const video = deps.videos.findById(req.params.id);
+    if (!video) return reply.code(404).send({ error: 'Video not found' });
+    if (video.user_id !== userId) return reply.code(403).send({ error: 'Access denied' });
+    const { createReadStream, statSync } = await import('node:fs');
+    const { size } = statSync(video.file_path);
+    const range = req.headers.range;
+    const m = range?.match(/bytes=(\d*)-(\d*)/);
+    if (m && (m[1] || m[2])) {
+      const start = m[1] ? parseInt(m[1], 10) : 0;
+      const end = m[2] ? Math.min(parseInt(m[2], 10), size - 1) : size - 1;
+      if (start >= size || start > end) {
+        return reply.code(416).header('Content-Range', `bytes */${size}`).send();
+      }
+      return reply
+        .code(206)
+        .header('Content-Range', `bytes ${start}-${end}/${size}`)
+        .header('Accept-Ranges', 'bytes')
+        .header('Content-Length', end - start + 1)
+        .type(video.mime)
+        .send(createReadStream(video.file_path, { start, end }));
+    }
+    return reply
+      .header('Accept-Ranges', 'bytes')
+      .header('Content-Length', size)
+      .type(video.mime)
+      .send(createReadStream(video.file_path));
+  });
+
   // Bulk upload endpoint
   app.post('/videos/bulk', { preHandler: deps.authMiddleware }, async (req, reply) => {
     if (!req.isMultipart()) {
