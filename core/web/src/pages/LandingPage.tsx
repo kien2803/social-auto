@@ -59,8 +59,19 @@ export function LandingPage() {
         </nav>
       </header>
 
-      {/* Hero — left aligned, editorial */}
-      <section className="mx-auto max-w-5xl px-6 pb-14 pt-10 md:pt-16">
+      {/* Hero — left aligned, editorial; faint network motif as backdrop */}
+      <section className="relative mx-auto max-w-5xl overflow-hidden px-6 pb-14 pt-10 md:pt-16">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-10 top-4 h-72 w-72 text-brand-600 opacity-[0.07] dark:text-brand-500"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"
+        >
+          <circle cx="12" cy="12" r="2.6" />
+          <circle cx="4.5" cy="5.5" r="1.9" />
+          <circle cx="19.5" cy="5.5" r="1.9" />
+          <circle cx="12" cy="19.5" r="1.9" />
+          <path d="m6.2 6.9 3.7 3.3M17.8 6.9l-3.7 3.3M12 14.8v2.8" />
+        </svg>
         <p className="font-mono text-xs tracking-wide text-brand-600 dark:text-brand-500">
           multi-platform video scheduler
         </p>
@@ -102,9 +113,9 @@ export function LandingPage() {
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="grid gap-1 border-b border-stone-200 py-5 sm:grid-cols-[220px_1fr] sm:gap-8 dark:border-stone-800"
+              className="group grid gap-1 border-b border-stone-200 py-5 transition-colors hover:bg-surface sm:grid-cols-[220px_1fr] sm:gap-8 sm:-mx-3 sm:px-3 dark:border-stone-800 dark:hover:bg-[#221e19]"
             >
-              <h3 className="font-display text-base font-medium">{f.title}</h3>
+              <h3 className="font-display text-base font-medium transition-colors group-hover:text-brand-600 dark:group-hover:text-brand-500">{f.title}</h3>
               <p className="text-sm leading-relaxed text-ink-muted dark:text-stone-400">{f.body}</p>
             </div>
           ))}

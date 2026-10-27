@@ -37,8 +37,10 @@ export default {
         xl: '10px',
       },
       boxShadow: {
-        soft: 'none',
-        lift: '0 1px 0 rgba(27,24,20,0.06)',
+        soft: '0 1px 1px rgba(60,45,30,0.04), 0 2px 8px -2px rgba(60,45,30,0.08)',
+        lift: '0 1px 1px rgba(60,45,30,0.05), 0 8px 24px -8px rgba(60,45,30,0.14)',
+        press: 'inset 0 -2px 0 rgba(0,0,0,0.14), 0 1px 1px rgba(60,45,30,0.08)',
+        inlay: 'inset 0 1px 0 rgba(255,255,255,0.7)',
       },
       fontFamily: {
         sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
