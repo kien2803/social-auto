@@ -1,3 +1,4 @@
+import { IconHistory } from '../components/icons.js';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -110,7 +111,7 @@ export function HistoryPage() {
         <SkeletonRow count={6} />
       ) : posts.length === 0 ? (
         <EmptyState
-          icon={<span>⌛</span>}
+          icon={<IconHistory className="h-6 w-6" />}
           title={hasFilters ? 'No posts match these filters' : 'No posts yet'}
           description={
             hasFilters

@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { IconCheck, IconCross, IconInfo } from '../icons.js';
 
 export type ToastTone = 'success' | 'error' | 'info';
 
@@ -83,20 +84,15 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         ? 'border-red-300 bg-red-50 text-red-900 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-100'
         : 'border-slate-300 bg-white text-ink dark:border-slate-700 dark:bg-[#262019] dark:text-slate-100';
 
-  const icon =
-    toast.tone === 'success' ? '✓' : toast.tone === 'error' ? '!' : 'i';
+  const Icon =
+    toast.tone === 'success' ? IconCheck : toast.tone === 'error' ? IconCross : IconInfo;
 
   return (
     <div
       role="status"
       className={`pointer-events-auto flex items-start gap-3 rounded-md border px-4 py-3 shadow-lift ${palette}`}
     >
-      <span
-        aria-hidden="true"
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-xs font-bold dark:bg-black/30"
-      >
-        {icon}
-      </span>
+      <Icon aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">{toast.title}</p>
         {toast.description && (

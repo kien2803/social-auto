@@ -1,3 +1,4 @@
+import { IconSchedule } from '../components/icons.js';
 import { useMemo, useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -181,7 +182,7 @@ export function SchedulePage() {
         <SkeletonRow count={4} />
       ) : grouped.length === 0 ? (
         <EmptyState
-          icon={<span>⏱</span>}
+          icon={<IconSchedule className="h-6 w-6" />}
           title="No posts to show"
           description={
             filter === 'all' && !accountFilter

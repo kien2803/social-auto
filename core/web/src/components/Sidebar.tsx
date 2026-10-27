@@ -1,20 +1,30 @@
 import { NavLink } from 'react-router-dom';
+import type { ComponentType, SVGProps } from 'react';
+import {
+  IconAccounts,
+  IconAnalytics,
+  IconDashboard,
+  IconHistory,
+  IconSchedule,
+  IconSettings,
+  IconUpload,
+} from './icons.js';
 
 interface NavItem {
   to: string;
   label: string;
-  icon: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
   end?: boolean;
 }
 
 const NAV: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: '◐' },
-  { to: '/upload', label: 'Upload & Schedule', icon: '↑' },
-  { to: '/schedule', label: 'Schedule', icon: '⏱' },
-  { to: '/history', label: 'History', icon: '⌛' },
-  { to: '/analytics', label: 'Analytics', icon: '📊' },
-  { to: '/accounts', label: 'Accounts', icon: '◉' },
-  { to: '/settings', label: 'Settings', icon: '⚙' },
+  { to: '/dashboard', label: 'Dashboard', icon: IconDashboard },
+  { to: '/upload', label: 'Upload & Schedule', icon: IconUpload },
+  { to: '/schedule', label: 'Schedule', icon: IconSchedule },
+  { to: '/history', label: 'History', icon: IconHistory },
+  { to: '/analytics', label: 'Analytics', icon: IconAnalytics },
+  { to: '/accounts', label: 'Accounts', icon: IconAccounts },
+  { to: '/settings', label: 'Settings', icon: IconSettings },
 ];
 
 function linkClass({ isActive, collapsed }: { isActive: boolean; collapsed?: boolean }) {
@@ -64,9 +74,7 @@ export function Sidebar({
           className={({ isActive }) => linkClass({ isActive, collapsed })}
           title={collapsed ? n.label : undefined}
         >
-          <span aria-hidden="true" className="text-base leading-none">
-            {n.icon}
-          </span>
+          <n.icon aria-hidden="true" className="h-[18px] w-[18px]" />
           {!collapsed && <span>{n.label}</span>}
         </NavLink>
       ))}

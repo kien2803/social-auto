@@ -1,3 +1,4 @@
+import { IconHistory, IconSchedule, IconUpload } from '../components/icons.js';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -123,10 +124,10 @@ function StatCard({
           ↑ New upload
         </Link>
         <Link to="/schedule" className="btn-secondary">
-          ⏱ Schedule list
+          <IconSchedule className="h-4 w-4" /> Schedule list
         </Link>
         <Link to="/history" className="btn-secondary">
-          ⌛ History
+          <IconHistory className="h-4 w-4" /> History
         </Link>
         <Link to="/accounts" className="btn-ghost ml-auto">
           Manage accounts →
@@ -168,7 +169,7 @@ function UpcomingList() {
           </div>
         ) : upcoming.length === 0 ? (
           <EmptyState
-            icon={<span>⏱</span>}
+            icon={<IconSchedule className="h-6 w-6" />}
             title="Nothing scheduled"
             description="Create an upload and pick a time to see it here."
           />
@@ -281,7 +282,7 @@ export function DashboardPage() {
           </p>
         </div>
         <Link to="/upload" className="btn-primary">
-          ↑ New upload
+          <IconUpload className="h-4 w-4" /> New upload
         </Link>
       </header>
 

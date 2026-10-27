@@ -1,3 +1,4 @@
+import { IconMenu, IconMoon, IconSun } from './icons.js';
 import { useTheme } from '../lib/useTheme.js';
 import { useAuth } from '../contexts/AuthContext.js';
 
@@ -26,7 +27,7 @@ export function Topbar({
           onClick={onMenuToggle}
           className="rounded-md p-1.5 text-ink-muted hover:bg-slate-100 md:hidden dark:text-slate-400 dark:hover:bg-slate-800"
         >
-          ☰
+          <IconMenu className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
           <span
@@ -66,7 +67,7 @@ export function Topbar({
           onClick={toggle}
           className="rounded-md p-1.5 text-ink-muted hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
         >
-          {theme === 'dark' ? '☀' : '☾'}
+          {theme === 'dark' ? <IconSun className="h-4 w-4" /> : <IconMoon className="h-4 w-4" />}
         </button>
       </div>
     </header>

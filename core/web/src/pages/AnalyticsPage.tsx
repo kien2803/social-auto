@@ -1,3 +1,4 @@
+import { IconAnalytics } from '../components/icons.js';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -120,7 +121,7 @@ export function AnalyticsPage() {
         <Skeleton className="h-64 w-full" />
       ) : rows.length === 0 ? (
         <EmptyState
-          icon={<span>📊</span>}
+          icon={<IconAnalytics className="h-6 w-6" />}
           title="No data yet"
           description={
             accountId
