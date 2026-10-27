@@ -227,14 +227,14 @@ export function UploadPage() {
             className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
               dragOver
                 ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10'
-                : 'border-slate-300 bg-surface-muted dark:border-slate-700 dark:bg-[#211d18]'
+                : 'border-stone-300 bg-surface-muted dark:border-stone-700 dark:bg-[#211d18]'
             }`}
           >
             <div className="mb-3 text-3xl">↑</div>
-            <p className="text-sm font-medium text-ink dark:text-slate-200">
+            <p className="text-sm font-medium text-ink dark:text-stone-200">
               Drop your video here
             </p>
-            <p className="mt-1 text-xs text-ink-muted dark:text-slate-400">
+            <p className="mt-1 text-xs text-ink-muted dark:text-stone-400">
               mp4, mov, or webm · max 2GB
             </p>
             <div className="mt-4">
@@ -254,7 +254,7 @@ export function UploadPage() {
           </div>
           {(uploading || uploadMut.isPending) && (
             <div className="mt-4 space-y-3">
-              <div className="h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
+              <div className="h-1.5 w-full overflow-hidden rounded bg-stone-200 dark:bg-stone-800">
                 <div
                   className="h-full bg-brand-600 transition-all"
                   style={{
@@ -263,7 +263,7 @@ export function UploadPage() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-ink-muted dark:text-slate-400">
+                <p className="text-xs text-ink-muted dark:text-stone-400">
                   {formatProgress(progress, progressTotal)}
                 </p>
                 <Button
@@ -342,7 +342,7 @@ export function UploadPage() {
                 rows={6}
                 placeholder={'My title\nDescription goes here.\n#hashtags'}
               />
-              <p className="mt-1 text-right text-xs text-ink-muted dark:text-slate-400">
+              <p className="mt-1 text-right text-xs text-ink-muted dark:text-stone-400">
                 {form.watch('caption')?.length ?? 0} / 5000
               </p>
             </Field>
@@ -379,13 +379,13 @@ export function UploadPage() {
                 {Object.entries(accountsByPlatform).map(([platform, list]) => (
                   <div
                     key={platform}
-                    className="rounded-md border border-slate-200 p-3 dark:border-slate-800"
+                    className="rounded-md border border-stone-200 p-3 dark:border-stone-800"
                   >
                     <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-slate-400">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-stone-400">
                         {platform}
                       </span>
-                      <span className="text-xs text-ink-subtle dark:text-slate-500">
+                      <span className="text-xs text-ink-subtle dark:text-stone-500">
                         {list.length} account{list.length === 1 ? '' : 's'}
                       </span>
                     </div>
@@ -394,7 +394,7 @@ export function UploadPage() {
                         return (
                           <label
                             key={a.id}
-                            className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                            className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-stone-50 dark:hover:bg-stone-800 ${
                               a.status !== 'active' ? 'opacity-60' : ''
                             }`}
                           >
@@ -405,7 +405,7 @@ export function UploadPage() {
                               disabled={a.status !== 'active'}
                               className="rounded"
                             />
-                            <span className="flex-1 truncate text-ink dark:text-slate-200">
+                            <span className="flex-1 truncate text-ink dark:text-stone-200">
                               {a.display_name}
                             </span>
                             <Badge
@@ -426,7 +426,7 @@ export function UploadPage() {
                   </div>
                 ))}
                 {accounts.data?.length === 0 && (
-                  <p className="text-xs text-ink-muted dark:text-slate-400">
+                  <p className="text-xs text-ink-muted dark:text-stone-400">
                     No accounts yet.{' '}
                     <a href="/accounts" className="text-brand-600 underline dark:text-brand-100">
                       Connect one
@@ -481,19 +481,19 @@ export function UploadPage() {
             return (
               <div
                 key={acc.id}
-                className="rounded-md border border-slate-200 p-3 dark:border-slate-800"
+                className="rounded-md border border-stone-200 p-3 dark:border-stone-800"
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <div className="text-sm font-semibold text-ink dark:text-slate-100">
+                  <div className="text-sm font-semibold text-ink dark:text-stone-100">
                     {acc.platform} — {acc.display_name}
                   </div>
                 </div>
-                <p className="mb-1 text-xs text-ink-muted dark:text-slate-400">Title</p>
+                <p className="mb-1 text-xs text-ink-muted dark:text-stone-400">Title</p>
                 <p className="mb-2 text-sm">{title || '—'}</p>
-                <p className="mb-1 text-xs text-ink-muted dark:text-slate-400">
+                <p className="mb-1 text-xs text-ink-muted dark:text-stone-400">
                   Description preview
                 </p>
-                <p className="text-sm text-ink dark:text-slate-200">{desc || '—'}</p>
+                <p className="text-sm text-ink dark:text-stone-200">{desc || '—'}</p>
                 <details className="mt-2">
                   <summary className="cursor-pointer text-xs text-brand-600 dark:text-brand-100">
                     Override caption for this account
@@ -561,7 +561,7 @@ function VideoThumbPreview({ videoId, videos }: { videoId: string; videos: Video
       <img
         src={url}
         alt="Video thumbnail"
-        className="h-24 rounded border border-slate-200 object-cover dark:border-slate-700"
+        className="h-24 rounded border border-stone-200 object-cover dark:border-stone-700"
       />
     </button>
   );

@@ -7,10 +7,10 @@ import { Link } from 'react-router-dom';
  */
 export function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-surface text-ink dark:bg-slate-950 dark:text-slate-200">
+    <div className="min-h-screen bg-surface text-ink dark:bg-stone-950 dark:text-stone-200">
       <main className="mx-auto max-w-3xl px-4 py-16 md:px-8">
         <h1 className="text-3xl font-semibold">Privacy Policy</h1>
-        <p className="mt-2 text-sm text-ink-subtle dark:text-slate-500">Last updated: October 2026</p>
+        <p className="mt-2 text-sm text-ink-subtle dark:text-stone-500">Last updated: October 2026</p>
 
         <section className="mt-8 space-y-4 text-sm leading-relaxed">
           <h2 className="text-lg font-semibold">1. What we collect</h2>

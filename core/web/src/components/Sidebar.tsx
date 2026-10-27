@@ -33,7 +33,7 @@ function linkClass({ isActive, collapsed }: { isActive: boolean; collapsed?: boo
     collapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
     isActive
       ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-100'
-      : 'text-ink-muted hover:bg-slate-100 hover:text-ink dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
+      : 'text-ink-muted hover:bg-stone-100 hover:text-ink dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100',
   ].join(' ');
 }
 
@@ -52,14 +52,14 @@ export function Sidebar({
         {!collapsed && (
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="Omnicast" className="h-7 w-7 rounded-lg" />
-            <span className="text-sm font-semibold text-ink dark:text-slate-100">Omnicast</span>
+            <span className="text-sm font-semibold text-ink dark:text-stone-100">Omnicast</span>
           </div>
         )}
         <button
           type="button"
           onClick={onToggle}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="rounded-md p-1 text-ink-muted hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+          className="rounded-md p-1 text-ink-muted hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
           title={collapsed ? 'Expand' : 'Collapse'}
         >
           {collapsed ? '▶' : '◀'}

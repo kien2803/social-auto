@@ -91,7 +91,7 @@ function PlatformAvatar({
     platform === 'youtube'
       ? 'bg-red-500 text-white'
       : platform === 'tiktok'
-        ? 'bg-slate-900 text-pink-300'
+        ? 'bg-stone-900 text-pink-300'
         : platform === 'instagram'
           ? 'bg-gradient-to-br from-pink-500 to-purple-600 text-white'
           : platform === 'facebook'
@@ -106,7 +106,7 @@ function PlatformAvatar({
         height={40}
         loading="lazy"
         referrerPolicy="no-referrer"
-        className="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover dark:border-slate-700"
+        className="h-10 w-10 shrink-0 rounded-full border border-stone-200 object-cover dark:border-stone-700"
       />
     );
   }
@@ -135,9 +135,9 @@ function StatusBadge({ status }: { status: AccountRow['status'] }) {
 function MetaBadge({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted dark:border-slate-700 dark:bg-[#211d18] dark:text-slate-400">
-      <span className="text-ink-subtle dark:text-slate-500">{label}</span>
-      <span className="text-ink dark:text-slate-200">{value}</span>
+    <span className="inline-flex items-center gap-1 rounded border border-stone-200 bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted dark:border-stone-700 dark:bg-[#211d18] dark:text-stone-400">
+      <span className="text-ink-subtle dark:text-stone-500">{label}</span>
+      <span className="text-ink dark:text-stone-200">{value}</span>
     </span>
   );
 }
@@ -325,7 +325,7 @@ function EditMetadataModal({
             aria-invalid={Boolean(linkError)}
           />
         </Field>
-        <p className="rounded border border-slate-200 bg-surface-muted px-3 py-2 text-xs text-ink-muted dark:border-slate-700 dark:bg-[#211d18] dark:text-slate-400">
+        <p className="rounded border border-stone-200 bg-surface-muted px-3 py-2 text-xs text-ink-muted dark:border-stone-700 dark:bg-[#211d18] dark:text-stone-400">
           Credentials (OAuth tokens, passwords, API keys) are never edited here and cannot be
           changed through the UI.
         </p>
@@ -374,12 +374,12 @@ function AccountCard({
         <PlatformAvatar platform={account.platform} avatarUrl={account.channel.avatar_url} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-ink dark:text-slate-100">
+            <h3 className="truncate text-sm font-semibold text-ink dark:text-stone-100">
               {account.display_name}
             </h3>
             <StatusBadge status={account.status} />
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted dark:text-slate-400">
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted dark:text-stone-400">
             <span className="capitalize">{account.platform}</span>
             <span aria-hidden="true">·</span>
             <code
@@ -399,7 +399,7 @@ function AccountCard({
             <MetaBadge label="Cat" value={account.metadata.content_category} />
             <MetaBadge label="Lang" value={account.metadata.language_code} />
             {account.metadata.purpose && (
-              <span className="max-w-full truncate rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-ink-muted dark:border-slate-700 dark:bg-[#211d18] dark:text-slate-400">
+              <span className="max-w-full truncate rounded border border-stone-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-ink-muted dark:border-stone-700 dark:bg-[#211d18] dark:text-stone-400">
                 {account.metadata.purpose}
               </span>
             )}
@@ -408,7 +408,7 @@ function AccountCard({
                 href={safeHref(account.metadata.link)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="max-w-[12rem] truncate rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-brand-600 underline dark:border-slate-700 dark:bg-[#211d18] dark:text-brand-300"
+                className="max-w-[12rem] truncate rounded border border-stone-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-brand-600 underline dark:border-stone-700 dark:bg-[#211d18] dark:text-brand-300"
               >
                 {account.metadata.link}
               </a>
@@ -445,7 +445,7 @@ function AccountCard({
           </>
         }
       >
-        <p className="text-sm text-ink-muted dark:text-slate-400">
+        <p className="text-sm text-ink-muted dark:text-stone-400">
           Disconnecting <strong>{account.display_name}</strong> removes the encrypted token
           from this machine. Re-connect any time to schedule new posts.
         </p>
@@ -468,9 +468,9 @@ function AccountTable({
   onChanged: () => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-      <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-        <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-wide text-ink-subtle dark:bg-[#211d18] dark:text-slate-500">
+    <div className="overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-800">
+      <table className="min-w-full divide-y divide-stone-200 text-sm dark:divide-stone-800">
+        <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-wide text-ink-subtle dark:bg-[#211d18] dark:text-stone-500">
           <tr>
             <th className="px-3 py-2 font-medium">Account</th>
             <th className="px-3 py-2 font-medium">Platform</th>
@@ -483,22 +483,22 @@ function AccountTable({
             <th className="px-3 py-2 font-medium text-right">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+        <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
           {accounts.map((a) => (
             <tr key={a.id} data-account-id={a.id} className="bg-surface hover:bg-surface-muted/60 dark:bg-[#262019]">
               <td className="max-w-[16rem] truncate px-3 py-2">
                 <div className="flex items-center gap-2">
                   <PlatformAvatar platform={a.platform} avatarUrl={a.channel.avatar_url} />
-                  <span className="truncate font-medium text-ink dark:text-slate-100">
+                  <span className="truncate font-medium text-ink dark:text-stone-100">
                     {a.display_name}
                   </span>
                 </div>
               </td>
-              <td className="px-3 py-2 capitalize text-ink-muted dark:text-slate-400">
+              <td className="px-3 py-2 capitalize text-ink-muted dark:text-stone-400">
                 {a.platform}
               </td>
               <td
-                className="px-3 py-2 font-mono text-[11px] text-ink-muted dark:text-slate-400"
+                className="px-3 py-2 font-mono text-[11px] text-ink-muted dark:text-stone-400"
                 title={a.external_id}
               >
                 {shortChannelId(a.external_id)}
@@ -506,7 +506,7 @@ function AccountTable({
               <td className="px-3 py-2">
                 <StatusBadge status={a.status} />
               </td>
-              <td className="px-3 py-2 text-xs text-ink-muted dark:text-slate-400">
+              <td className="px-3 py-2 text-xs text-ink-muted dark:text-stone-400">
                 {a.metadata.content_category || '—'}
                 {' · '}
                 {a.metadata.language_code || '—'}
@@ -517,7 +517,7 @@ function AccountTable({
               <td className="px-3 py-2 text-right tabular-nums">
                 {formatBigNumber(a.channel.video_count)}
               </td>
-              <td className="px-3 py-2 text-xs text-ink-muted dark:text-slate-400">
+              <td className="px-3 py-2 text-xs text-ink-muted dark:text-stone-400">
                 {a.channel.snapshot_at ? dayjs(a.channel.snapshot_at).format('MMM D, HH:mm') : '—'}
               </td>
               <td className="px-3 py-2">
@@ -581,7 +581,7 @@ function RowDisconnect({
           </>
         }
       >
-        <p className="text-sm text-ink-muted dark:text-slate-400">
+        <p className="text-sm text-ink-muted dark:text-stone-400">
           Disconnecting <strong>{account.display_name}</strong> removes the encrypted token.
         </p>
       </Modal>
@@ -658,7 +658,7 @@ function ConnectMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-10 mt-1 min-w-[16rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"
+          className="absolute right-0 z-10 mt-1 min-w-[16rem] rounded-md border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-800"
         >
           {CONNECT_OPTIONS.map((opt) => {
             const count = counts[opt.platform] ?? 0;
@@ -671,7 +671,7 @@ function ConnectMenu({
                   setOpen(false);
                   onSelect(opt.platform);
                 }}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-stone-100 dark:hover:bg-stone-700"
               >
                 <span className="flex items-center gap-2">
                   <PlatformAvatar platform={opt.platform} />
@@ -679,7 +679,7 @@ function ConnectMenu({
                 </span>
                 <span className="flex items-center gap-1">
                   {count > 0 && (
-                    <span className="rounded-full bg-slate-200 px-2 text-[11px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                    <span className="rounded-full bg-stone-200 px-2 text-[11px] font-semibold text-stone-700 dark:bg-stone-700 dark:text-stone-200">
                       {count}
                     </span>
                   )}
@@ -873,8 +873,8 @@ export function AccountsPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-ink dark:text-slate-100">Accounts</h1>
-          <p className="mt-1 text-sm text-ink-muted dark:text-slate-400">{subtitle}</p>
+          <h1 className="text-2xl font-bold text-ink dark:text-stone-100">Accounts</h1>
+          <p className="mt-1 text-sm text-ink-muted dark:text-stone-400">{subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ConnectMenu onSelect={handleConnect} counts={counts} />
@@ -970,14 +970,14 @@ export function AccountsPage() {
               <div
                 role="group"
                 aria-label="View density"
-                className="inline-flex rounded border border-slate-300 dark:border-slate-700"
+                className="inline-flex rounded border border-stone-300 dark:border-stone-700"
               >
                 <button
                   type="button"
                   className={`px-2.5 py-1.5 text-xs font-medium ${
                     view === 'cards'
                       ? 'bg-brand-600 text-white'
-                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-slate-400'
+                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
                   }`}
                   aria-pressed={view === 'cards'}
                   onClick={() => setView('cards')}
@@ -986,10 +986,10 @@ export function AccountsPage() {
                 </button>
                 <button
                   type="button"
-                  className={`border-l border-slate-300 px-2.5 py-1.5 text-xs font-medium dark:border-slate-700 ${
+                  className={`border-l border-stone-300 px-2.5 py-1.5 text-xs font-medium dark:border-stone-700 ${
                     view === 'table'
                       ? 'bg-brand-600 text-white'
-                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-slate-400'
+                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
                   }`}
                   aria-pressed={view === 'table'}
                   onClick={() => setView('table')}
@@ -1071,7 +1071,7 @@ export function AccountsPage() {
       )}
 
       {accountsQuery.dataUpdatedAt > 0 && (
-        <p className="text-right text-xs text-ink-subtle dark:text-slate-500">
+        <p className="text-right text-xs text-ink-subtle dark:text-stone-500">
           Last refreshed {dayjs(accountsQuery.dataUpdatedAt).format('HH:mm:ss')}
         </p>
       )}

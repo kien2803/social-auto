@@ -21,12 +21,12 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800 ${className ?? ''}`}
+      className={`flex items-start justify-between gap-4 border-b border-stone-200 px-5 py-4 dark:border-stone-800 ${className ?? ''}`}
     >
       <div>
-        <h3 className="text-sm font-semibold text-ink dark:text-slate-100">{title}</h3>
+        <h3 className="text-sm font-semibold text-ink dark:text-stone-100">{title}</h3>
         {description && (
-          <p className="mt-0.5 text-xs text-ink-muted dark:text-slate-400">{description}</p>
+          <p className="mt-0.5 text-xs text-ink-muted dark:text-stone-400">{description}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -45,7 +45,7 @@ export function CardBody({ className, children, ...rest }: HTMLAttributes<HTMLDi
 export function CardFooter({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`border-t border-slate-200 px-5 py-3 dark:border-slate-800 ${className ?? ''}`}
+      className={`border-t border-stone-200 px-5 py-3 dark:border-stone-800 ${className ?? ''}`}
       {...rest}
     >
       {children}

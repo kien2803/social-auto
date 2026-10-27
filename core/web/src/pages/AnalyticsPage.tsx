@@ -24,14 +24,14 @@ function AccountHeader({ row }: { row: AnalyticsRow }) {
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-base font-semibold text-ink dark:text-slate-100">
+          <span className="text-base font-semibold text-ink dark:text-stone-100">
             {row.display_name}
           </span>
           <Badge tone="neutral" className="capitalize">
             {row.platform}
           </Badge>
         </div>
-        <p className="mt-1 text-xs text-ink-muted dark:text-slate-400">
+        <p className="mt-1 text-xs text-ink-muted dark:text-stone-400">
           {row.total} post{row.total === 1 ? '' : 's'} total
           {row.last_published_at
             ? ` · last published ${dayjs(row.last_published_at).format('MMM D, HH:mm')}`
@@ -48,12 +48,12 @@ function StatusTable({ row }: { row: AnalyticsRow }) {
       {STATUS_KEYS.map((k) => (
         <div
           key={k}
-          className="rounded-md border border-slate-200 bg-surface-muted px-3 py-2 text-center dark:border-slate-800 dark:bg-[#211d18]"
+          className="rounded-md border border-stone-200 bg-surface-muted px-3 py-2 text-center dark:border-stone-800 dark:bg-[#211d18]"
         >
-          <div className="text-xl font-semibold tabular-nums text-ink dark:text-slate-100">
+          <div className="text-xl font-semibold tabular-nums text-ink dark:text-stone-100">
             {row.by_status[k] ?? 0}
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-ink-subtle dark:text-slate-500">
+          <div className="text-[10px] uppercase tracking-wide text-ink-subtle dark:text-stone-500">
             {k}
           </div>
         </div>
@@ -96,8 +96,8 @@ export function AnalyticsPage() {
     <div className="space-y-6">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-ink dark:text-slate-100">Analytics</h1>
-          <p className="mt-1 text-sm text-ink-muted dark:text-slate-400">
+          <h1 className="text-2xl font-bold text-ink dark:text-stone-100">Analytics</h1>
+          <p className="mt-1 text-sm text-ink-muted dark:text-stone-400">
             All-time stats per account. Pick a channel to drill in.
           </p>
         </div>
@@ -146,11 +146,11 @@ function SnapshotTile({
   value: string;
 }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-surface-muted px-2 py-1.5 text-center dark:border-slate-800 dark:bg-[#211d18]">
-      <div className="text-base font-semibold tabular-nums text-ink dark:text-slate-100">
+    <div className="rounded-md border border-stone-200 bg-surface-muted px-2 py-1.5 text-center dark:border-stone-800 dark:bg-[#211d18]">
+      <div className="text-base font-semibold tabular-nums text-ink dark:text-stone-100">
         {value}
       </div>
-      <div className="text-[10px] uppercase tracking-wide text-ink-subtle dark:text-slate-500">
+      <div className="text-[10px] uppercase tracking-wide text-ink-subtle dark:text-stone-500">
         {label}
       </div>
     </div>
@@ -239,7 +239,7 @@ function VideoListCard({ accountId }: { accountId: string }) {
       />
       <CardBody className="overflow-x-auto p-0">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-slate-400">
+          <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-stone-400">
             <tr>
               <th className="px-4 py-2 font-medium">Title</th>
               <th className="px-4 py-2 font-medium text-right">Views</th>
@@ -251,13 +251,13 @@ function VideoListCard({ accountId }: { accountId: string }) {
           </thead>
           <tbody>
             {videos.map((v: ChannelVideo) => (
-              <tr key={v.id} className="border-t border-slate-200 dark:border-slate-800">
+              <tr key={v.id} className="border-t border-stone-200 dark:border-stone-800">
                 <td className="max-w-md truncate px-4 py-2">
                   <a
                     href={v.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-ink hover:underline dark:text-slate-200"
+                    className="text-ink hover:underline dark:text-stone-200"
                   >
                     {v.title}
                   </a>
@@ -274,7 +274,7 @@ function VideoListCard({ accountId }: { accountId: string }) {
                 <td className="px-4 py-2 text-right tabular-nums">
                   {formatAvgWatch(v.duration_sec)}
                 </td>
-                <td className="px-4 py-2 text-xs text-ink-muted dark:text-slate-400">
+                <td className="px-4 py-2 text-xs text-ink-muted dark:text-stone-400">
                   {dayjs(v.published_at).format('MMM D, YYYY')}
                 </td>
               </tr>
@@ -330,7 +330,7 @@ function SingleAccountAnalytics({
               type="button"
               onClick={() => syncMut.mutate()}
               disabled={syncMut.isPending}
-              className="rounded-md border border-slate-200 px-3 py-1 text-xs font-medium text-ink hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="rounded-md border border-stone-200 px-3 py-1 text-xs font-medium text-ink hover:bg-stone-100 disabled:opacity-50 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800"
             >
               {syncMut.isPending ? 'Syncing…' : 'Sync'}
             </button>
@@ -399,7 +399,7 @@ function AllAccountsAnalytics({
         />
         <CardBody className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-slate-400">
+            <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-stone-400">
               <tr>
                 <th className="px-4 py-2 font-medium">Account</th>
                 {STATUS_KEYS.map((k) => (
@@ -415,12 +415,12 @@ function AllAccountsAnalytics({
               {rows.map((r) => (
                 <tr
                   key={r.account_id}
-                  className="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-[#211d18]"
+                  className="cursor-pointer border-t border-stone-200 hover:bg-stone-50 dark:border-stone-800 dark:hover:bg-[#211d18]"
                   onClick={() => onFocusAccount(r.account_id)}
                 >
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-ink hover:underline dark:text-slate-200">
+                      <span className="text-ink hover:underline dark:text-stone-200">
                         {r.display_name}
                       </span>
                       <Badge tone="neutral" className="capitalize">
@@ -436,7 +436,7 @@ function AllAccountsAnalytics({
                   <td className="px-4 py-2 text-center font-medium tabular-nums">
                     {r.total}
                   </td>
-                  <td className="px-4 py-2 text-xs text-ink-muted dark:text-slate-400">
+                  <td className="px-4 py-2 text-xs text-ink-muted dark:text-stone-400">
                     {r.last_published_at
                       ? dayjs(r.last_published_at).format('MMM D, HH:mm')
                       : '—'}

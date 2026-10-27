@@ -82,7 +82,7 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-100'
       : toast.tone === 'error'
         ? 'border-red-300 bg-red-50 text-red-900 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-100'
-        : 'border-slate-300 bg-white text-ink dark:border-slate-700 dark:bg-[#262019] dark:text-slate-100';
+        : 'border-stone-300 bg-white text-ink dark:border-stone-700 dark:bg-[#262019] dark:text-stone-100';
 
   const Icon =
     toast.tone === 'success' ? IconCheck : toast.tone === 'error' ? IconCross : IconInfo;

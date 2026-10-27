@@ -41,7 +41,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 p-4 md:p-8">
-      <h1 className="text-2xl font-semibold text-ink dark:text-slate-100">Settings</h1>
+      <h1 className="text-2xl font-semibold text-ink dark:text-stone-100">Settings</h1>
 
       {msg && (
         <div
@@ -57,13 +57,13 @@ export function SettingsPage() {
 
       {/* Profile */}
       <section className="card space-y-4 p-5">
-        <h2 className="text-lg font-medium text-ink dark:text-slate-100">Profile</h2>
+        <h2 className="text-lg font-medium text-ink dark:text-stone-100">Profile</h2>
         <div>
-          <label className="mb-1 block text-sm text-ink-subtle dark:text-slate-400">Email</label>
+          <label className="mb-1 block text-sm text-ink-subtle dark:text-stone-400">Email</label>
           <input className="input w-full opacity-60" value={user?.email ?? ''} disabled />
         </div>
         <div>
-          <label className="mb-1 block text-sm text-ink-subtle dark:text-slate-400">Name</label>
+          <label className="mb-1 block text-sm text-ink-subtle dark:text-stone-400">Name</label>
           <input
             className="input w-full"
             value={name}
@@ -82,7 +82,7 @@ export function SettingsPage() {
 
       {/* Change password */}
       <section className="card space-y-4 p-5">
-        <h2 className="text-lg font-medium text-ink dark:text-slate-100">Change password</h2>
+        <h2 className="text-lg font-medium text-ink dark:text-stone-100">Change password</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -132,7 +132,7 @@ export function SettingsPage() {
       {/* Danger zone */}
       <section className="card space-y-4 border-red-200 p-5 dark:border-red-900">
         <h2 className="text-lg font-medium text-red-600 dark:text-red-400">Delete account</h2>
-        <p className="text-sm text-ink-subtle dark:text-slate-400">
+        <p className="text-sm text-ink-subtle dark:text-stone-400">
           Permanently deletes your account, connected social accounts, videos, and scheduled posts.
           This cannot be undone. Type <strong>DELETE</strong> to confirm.
         </p>

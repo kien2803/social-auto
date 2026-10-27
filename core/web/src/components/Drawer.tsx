@@ -29,7 +29,7 @@ export function Drawer({
         onClick={onClose}
         className="absolute inset-0 bg-black/40"
       />
-      <aside className="absolute left-0 top-0 h-full w-64 border-r border-slate-200 bg-surface shadow-lift dark:border-slate-800 dark:bg-[#211d18]">
+      <aside className="absolute left-0 top-0 h-full w-64 border-r border-stone-200 bg-surface shadow-lift dark:border-stone-800 dark:bg-[#211d18]">
         {children}
       </aside>
     </div>,

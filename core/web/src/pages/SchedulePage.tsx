@@ -65,20 +65,20 @@ function UploadProgressRow({ post }: { post: ScheduledPostRow }) {
   };
   return (
     <div className="mt-2">
-      <div className="flex items-center justify-between text-xs text-ink-muted dark:text-slate-400">
+      <div className="flex items-center justify-between text-xs text-ink-muted dark:text-stone-400">
         <span>Uploading...</span>
         <div className="flex items-center gap-2">
           <span>{progress.toFixed(0)}%</span>
           <button
             onClick={handleCancel}
             disabled={cancelling}
-            className="text-xs text-red-600 hover:text-red-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+            className="text-xs text-red-600 hover:text-red-700 disabled:text-stone-400 disabled:cursor-not-allowed"
           >
             {cancelling ? 'Cancelling...' : 'Cancel'}
           </button>
         </div>
       </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-stone-200 dark:bg-stone-800">
         <div
           className="h-full bg-brand-600 transition-all"
           style={{ width: `${progress}%` }}
@@ -144,8 +144,8 @@ export function SchedulePage() {
     <div className="space-y-6">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-ink dark:text-slate-100">Schedule</h1>
-          <p className="mt-1 text-sm text-ink-muted dark:text-slate-400">
+          <h1 className="text-2xl font-bold text-ink dark:text-stone-100">Schedule</h1>
+          <p className="mt-1 text-sm text-ink-muted dark:text-stone-400">
             Upcoming and recent posts. Edit pending ones; published posts are read-only.
           </p>
         </div>
@@ -194,7 +194,7 @@ export function SchedulePage() {
         <div className="space-y-6">
           {grouped.map(([day, list]) => (
             <section key={day}>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-slate-400">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-stone-400">
                 {day}
               </h2>
               <div className="space-y-2">
@@ -263,21 +263,21 @@ function ScheduleRow({
       <CardBody className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-semibold text-ink dark:text-slate-100">
+            <span className="font-mono text-sm font-semibold text-ink dark:text-stone-100">
               {dayjs(post.scheduled_at).format('HH:mm')}
             </span>
             <Badge tone={statusToTone(post.status)}>{post.status}</Badge>
-            <span className="text-xs text-ink-muted dark:text-slate-400">
+            <span className="text-xs text-ink-muted dark:text-stone-400">
               {post.visibility}
             </span>
             {post.retry_count > 0 && (
               <Badge tone="warn">retry {post.retry_count}</Badge>
             )}
           </div>
-          <p className="mt-1 line-clamp-2 text-sm text-ink dark:text-slate-200">
+          <p className="mt-1 line-clamp-2 text-sm text-ink dark:text-stone-200">
             {post.caption.split('\n')[0] || '(no caption)'}
           </p>
-          <p className="mt-1 text-xs text-ink-muted dark:text-slate-400">
+          <p className="mt-1 text-xs text-ink-muted dark:text-stone-400">
             {accountLabel}
             {post.external_post_id && ` · ${post.external_post_id}`}
             {post.last_error && ` · ${post.last_error}`}

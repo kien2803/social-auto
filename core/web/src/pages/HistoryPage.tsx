@@ -56,8 +56,8 @@ export function HistoryPage() {
     <div className="space-y-6">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-ink dark:text-slate-100">History</h1>
-          <p className="mt-1 text-sm text-ink-muted dark:text-slate-400">
+          <h1 className="text-2xl font-bold text-ink dark:text-stone-100">History</h1>
+          <p className="mt-1 text-sm text-ink-muted dark:text-stone-400">
             All scheduled and published posts.
           </p>
         </div>
@@ -123,7 +123,7 @@ export function HistoryPage() {
         <Card>
           <CardBody className="overflow-x-auto p-0">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-slate-400">
+              <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-stone-400">
                 <tr>
                   <th className="px-4 py-2 font-medium">Scheduled</th>
                   <th className="px-4 py-2 font-medium">Account</th>
@@ -141,15 +141,15 @@ export function HistoryPage() {
                   return (
                     <tr
                       key={p.id}
-                      className="border-t border-slate-200 dark:border-slate-800"
+                      className="border-t border-stone-200 dark:border-stone-800"
                     >
-                      <td className="whitespace-nowrap px-4 py-2 text-ink dark:text-slate-200">
+                      <td className="whitespace-nowrap px-4 py-2 text-ink dark:text-stone-200">
                         {dayjs(p.scheduled_at).format('YYYY-MM-DD HH:mm')}
                       </td>
-                      <td className="px-4 py-2 text-ink-muted dark:text-slate-400">
+                      <td className="px-4 py-2 text-ink-muted dark:text-stone-400">
                         {accountLabel}
                       </td>
-                      <td className="max-w-md truncate px-4 py-2 text-ink dark:text-slate-200">
+                      <td className="max-w-md truncate px-4 py-2 text-ink dark:text-stone-200">
                         {p.caption.split('\n')[0] || '(no caption)'}
                       </td>
                       <td className="px-4 py-2">
@@ -160,7 +160,7 @@ export function HistoryPage() {
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-2 font-mono text-xs text-ink-subtle dark:text-slate-500">
+                      <td className="px-4 py-2 font-mono text-xs text-ink-subtle dark:text-stone-500">
                         {p.external_post_id ?? '—'}
                       </td>
                     </tr>

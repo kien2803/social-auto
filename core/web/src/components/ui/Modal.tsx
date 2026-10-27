@@ -148,20 +148,20 @@ export function Modal({
         tabIndex={-1}
         className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-lg bg-surface shadow-lift outline-none dark:bg-[#262019] ${widthClass}`}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-          <h2 className="text-sm font-semibold text-ink dark:text-slate-100">{title}</h2>
+        <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4 dark:border-stone-800">
+          <h2 className="text-sm font-semibold text-ink dark:text-stone-100">{title}</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-ink-muted hover:text-ink dark:text-slate-400 dark:hover:text-slate-100"
+            className="text-ink-muted hover:text-ink dark:text-stone-400 dark:hover:text-stone-100"
           >
             ✕
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3 dark:border-slate-800">
+          <div className="flex justify-end gap-2 border-t border-stone-200 px-5 py-3 dark:border-stone-800">
             {footer}
           </div>
         )}

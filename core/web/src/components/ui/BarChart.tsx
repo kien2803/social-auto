@@ -6,7 +6,7 @@ interface BarDatum {
 }
 
 const PALETTE = {
-  pending: 'fill-slate-400 dark:fill-slate-500',
+  pending: 'fill-stone-400 dark:fill-stone-500',
   uploading: 'fill-blue-500 dark:fill-blue-400',
   published: 'fill-emerald-500 dark:fill-emerald-400',
   failed: 'fill-amber-500 dark:fill-amber-400',
@@ -28,7 +28,7 @@ export function BarChart({
   if (data.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center text-xs text-ink-subtle dark:text-slate-500 ${className ?? ''}`}
+        className={`flex items-center justify-center text-xs text-ink-subtle dark:text-stone-500 ${className ?? ''}`}
         style={{ height }}
       >
         No data to chart
@@ -69,14 +69,14 @@ export function BarChart({
               x2={width - paddingRight}
               y1={y}
               y2={y}
-              className="stroke-slate-200 dark:stroke-slate-800"
+              className="stroke-stone-200 dark:stroke-stone-800"
               strokeWidth={1}
             />
             <text
               x={paddingLeft - 6}
               y={y + 3}
               textAnchor="end"
-              className="fill-slate-400 dark:fill-slate-500 text-[10px]"
+              className="fill-stone-400 dark:fill-stone-500 text-[10px]"
             >
               {t}
             </text>
@@ -110,7 +110,7 @@ export function BarChart({
                 x={x + barWidth / 2}
                 y={y - 4}
                 textAnchor="middle"
-                className="fill-ink dark:fill-slate-200 text-[10px] font-medium"
+                className="fill-ink dark:fill-stone-200 text-[10px] font-medium"
               >
                 {d.value}
               </text>
@@ -119,7 +119,7 @@ export function BarChart({
               x={x + barWidth / 2}
               y={height - paddingBottom + 16}
               textAnchor="middle"
-              className="fill-ink-muted dark:fill-slate-400 text-[11px]"
+              className="fill-ink-muted dark:fill-stone-400 text-[11px]"
             >
               {d.label}
             </text>

@@ -28,7 +28,7 @@ function StatCard({
   tone?: 'neutral' | 'success' | 'warn' | 'danger' | 'brand';
 }) {
   const ring: Record<typeof tone, string> = {
-    neutral: 'border-slate-200 dark:border-slate-800',
+    neutral: 'border-stone-200 dark:border-stone-800',
     success: 'border-emerald-200 dark:border-emerald-900/50',
     warn: 'border-amber-200 dark:border-amber-900/50',
     danger: 'border-red-200 dark:border-red-900/50',
@@ -37,12 +37,12 @@ function StatCard({
   return (
     <Card className={`border ${ring[tone]}`}>
       <CardBody className="space-y-1.5">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-slate-400">
+        <p className="font-mono text-[11px] tracking-wide text-ink-muted dark:text-stone-400">
           {label}
         </p>
-        <p className="text-3xl font-bold text-ink dark:text-slate-100">{value}</p>
+        <p className="font-display text-3xl font-semibold tracking-tight text-ink dark:text-stone-100">{value}</p>
         {hint && (
-          <p className="text-xs text-ink-muted dark:text-slate-400">{hint}</p>
+          <p className="text-xs text-ink-muted dark:text-stone-400">{hint}</p>
         )}
       </CardBody>
     </Card>
@@ -73,22 +73,22 @@ function StatCard({
             return (
               <div
                 key={q.platform}
-                className="rounded-md border border-slate-200 p-3 dark:border-slate-800"
+                className="rounded-md border border-stone-200 p-3 dark:border-stone-800"
                 data-testid={`quota-${q.platform}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold capitalize text-ink dark:text-slate-100">
+                    <span className="font-semibold capitalize text-ink dark:text-stone-100">
                       {q.platform}
                     </span>
                     {tone === 'warn' && <Badge tone="warn">approaching limit</Badge>}
                     {tone === 'danger' && <Badge tone="danger">exhausted</Badge>}
                   </div>
-                  <div className="text-xs text-ink-muted dark:text-slate-400">
+                  <div className="text-xs text-ink-muted dark:text-stone-400">
                     {q.used.toLocaleString()} / {q.limit.toLocaleString()} units
                   </div>
                 </div>
-                <div className="mt-2 h-2 w-full rounded-full bg-slate-200 dark:bg-slate-800">
+                <div className="mt-2 h-2 w-full rounded-full bg-stone-200 dark:bg-stone-800">
                   <div
                     className={
                       tone === 'danger'
@@ -100,7 +100,7 @@ function StatCard({
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <p className="mt-1 text-xs text-ink-muted dark:text-slate-400">
+                <p className="mt-1 text-xs text-ink-muted dark:text-stone-400">
                   Resets in {resetIn} min · {q.remaining.toLocaleString()} units remaining
                 </p>
               </div>
@@ -174,7 +174,7 @@ function UpcomingList() {
             description="Create an upload and pick a time to see it here."
           />
         ) : (
-          <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+          <ul className="divide-y divide-stone-200 dark:divide-stone-800">
             {upcoming.map((p) => (
               <UpcomingRow key={p.id} post={p} accountLabel={map.get(p.account_id)?.display_name ?? '?'} />
             ))}
@@ -190,17 +190,17 @@ function UpcomingRow({ post, accountLabel }: { post: ScheduledPostRow; accountLa
     <li className="flex items-center justify-between gap-3 py-2.5 text-sm">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-ink dark:text-slate-100">
+          <span className="font-medium text-ink dark:text-stone-100">
             {dayjs(post.scheduled_at).format('ddd MMM D, HH:mm')}
           </span>
           <Badge tone="pending">{post.status}</Badge>
         </div>
-        <p className="mt-0.5 truncate text-ink-muted dark:text-slate-400">
+        <p className="mt-0.5 truncate text-ink-muted dark:text-stone-400">
           {post.caption.split('\n')[0] || '(no caption)'}
         </p>
       </div>
-      <div className="shrink-0 text-right text-xs text-ink-muted dark:text-slate-400">
-        <div className="font-medium text-ink dark:text-slate-200">{accountLabel}</div>
+      <div className="shrink-0 text-right text-xs text-ink-muted dark:text-stone-400">
+        <div className="font-medium text-ink dark:text-stone-200">{accountLabel}</div>
         <div className="capitalize">{post.visibility}</div>
       </div>
     </li>
@@ -247,12 +247,12 @@ function FailureList() {
                 className="rounded border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm dark:border-amber-900/50 dark:bg-amber-950/30"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate font-medium text-ink dark:text-slate-100">
+                  <span className="truncate font-medium text-ink dark:text-stone-100">
                     {map.get(p.account_id)?.display_name ?? p.account_id.slice(0, 8)}
                   </span>
                   <Badge tone="failed">{p.status}</Badge>
                 </div>
-                <p className="mt-1 line-clamp-2 text-xs text-ink-muted dark:text-slate-400">
+                <p className="mt-1 line-clamp-2 text-xs text-ink-muted dark:text-stone-400">
                   {p.last_error ?? 'no error message'}
                 </p>
               </li>
@@ -276,8 +276,8 @@ export function DashboardPage() {
     <div className="space-y-6">
       <header className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-ink dark:text-slate-100">Dashboard</h1>
-          <p className="mt-1 text-sm text-ink-muted dark:text-slate-400">
+          <h1 className="text-2xl font-bold text-ink dark:text-stone-100">Dashboard</h1>
+          <p className="mt-1 text-sm text-ink-muted dark:text-stone-400">
             Overview of your scheduled and published content.
           </p>
         </div>
