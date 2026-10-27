@@ -47,7 +47,7 @@ export function LandingPage() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-bold">
             S
           </span>
-          <span className="text-lg font-semibold">Social Auto</span>
+          <span className="text-lg font-semibold">Omnicast</span>
         </div>
         <nav className="flex items-center gap-3">
           {isAuthenticated ? (
@@ -76,7 +76,7 @@ export function LandingPage() {
           Schedule once. Publish everywhere.
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted dark:text-slate-400">
-          Upload a video, pick a time, and Social Auto publishes it to YouTube, TikTok,
+          Upload a video, pick a time, and Omnicast publishes it to YouTube, TikTok,
           Instagram and Facebook — automatically, from your own infrastructure.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
@@ -140,7 +140,7 @@ export function LandingPage() {
       )}
 
       <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-ink-subtle md:px-8 dark:text-slate-500">
-        Social Auto — self-hosted video scheduling for YouTube, TikTok, Instagram &amp; Facebook.
+        Omnicast — self-hosted video scheduling for YouTube, TikTok, Instagram &amp; Facebook.
         {' · '}
         <Link to="/privacy" className="underline hover:text-ink dark:hover:text-slate-300">
           Privacy Policy

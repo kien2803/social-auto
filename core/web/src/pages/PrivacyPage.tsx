@@ -15,7 +15,7 @@ export function PrivacyPage() {
         <section className="mt-8 space-y-4 text-sm leading-relaxed">
           <h2 className="text-lg font-semibold">1. What we collect</h2>
           <p>
-            Social Auto stores your account credentials (email, hashed password), the videos you
+            Omnicast stores your account credentials (email, hashed password), the videos you
             upload, your scheduling preferences, and OAuth tokens for the social platforms you
             explicitly connect (YouTube, TikTok, Instagram, Facebook).
           </p>
@@ -50,7 +50,7 @@ export function PrivacyPage() {
 
         <p className="mt-10 text-sm">
           <Link to="/" className="text-indigo-600 hover:underline dark:text-indigo-400">
-            ← Back to Social Auto
+            ← Back to Omnicast
           </Link>
         </p>
       </main>

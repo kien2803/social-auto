@@ -41,8 +41,8 @@ export function Sidebar({
       <div className="mb-2 flex items-center justify-between px-3">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="social-auto" className="h-7 w-7 rounded-lg" />
-            <span className="text-sm font-semibold text-ink dark:text-slate-100">social-auto</span>
+            <img src="/logo.svg" alt="Omnicast" className="h-7 w-7 rounded-lg" />
+            <span className="text-sm font-semibold text-ink dark:text-slate-100">Omnicast</span>
           </div>
         )}
         <button

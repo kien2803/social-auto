@@ -34,7 +34,7 @@ export function Topbar({
             className="inline-block h-2.5 w-2.5 rounded-full bg-brand-600"
           />
           <span className="text-sm font-semibold text-ink dark:text-slate-100">
-            social-auto
+            Omnicast
           </span>
         </div>
       </div>
