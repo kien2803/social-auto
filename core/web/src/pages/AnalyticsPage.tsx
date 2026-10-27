@@ -47,7 +47,7 @@ function StatusTable({ row }: { row: AnalyticsRow }) {
       {STATUS_KEYS.map((k) => (
         <div
           key={k}
-          className="rounded-md border border-slate-200 bg-surface-muted px-3 py-2 text-center dark:border-slate-800 dark:bg-[#0f1729]"
+          className="rounded-md border border-slate-200 bg-surface-muted px-3 py-2 text-center dark:border-slate-800 dark:bg-[#211d18]"
         >
           <div className="text-xl font-semibold tabular-nums text-ink dark:text-slate-100">
             {row.by_status[k] ?? 0}
@@ -145,7 +145,7 @@ function SnapshotTile({
   value: string;
 }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-surface-muted px-2 py-1.5 text-center dark:border-slate-800 dark:bg-[#0f1729]">
+    <div className="rounded-md border border-slate-200 bg-surface-muted px-2 py-1.5 text-center dark:border-slate-800 dark:bg-[#211d18]">
       <div className="text-base font-semibold tabular-nums text-ink dark:text-slate-100">
         {value}
       </div>
@@ -238,7 +238,7 @@ function VideoListCard({ accountId }: { accountId: string }) {
       />
       <CardBody className="overflow-x-auto p-0">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#0f1729] dark:text-slate-400">
+          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-slate-400">
             <tr>
               <th className="px-4 py-2 font-medium">Title</th>
               <th className="px-4 py-2 font-medium text-right">Views</th>
@@ -398,7 +398,7 @@ function AllAccountsAnalytics({
         />
         <CardBody className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#0f1729] dark:text-slate-400">
+            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-slate-400">
               <tr>
                 <th className="px-4 py-2 font-medium">Account</th>
                 {STATUS_KEYS.map((k) => (
@@ -414,7 +414,7 @@ function AllAccountsAnalytics({
               {rows.map((r) => (
                 <tr
                   key={r.account_id}
-                  className="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-[#0f1729]"
+                  className="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-[#211d18]"
                   onClick={() => onFocusAccount(r.account_id)}
                 >
                   <td className="px-4 py-2">

@@ -122,7 +122,7 @@ export function HistoryPage() {
         <Card>
           <CardBody className="overflow-x-auto p-0">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#0f1729] dark:text-slate-400">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-muted dark:bg-[#211d18] dark:text-slate-400">
                 <tr>
                   <th className="px-4 py-2 font-medium">Scheduled</th>
                   <th className="px-4 py-2 font-medium">Account</th>

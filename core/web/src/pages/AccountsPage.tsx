@@ -135,7 +135,7 @@ function StatusBadge({ status }: { status: AccountRow['status'] }) {
 function MetaBadge({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted dark:border-slate-700 dark:bg-[#0f1729] dark:text-slate-400">
+    <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted dark:border-slate-700 dark:bg-[#211d18] dark:text-slate-400">
       <span className="text-ink-subtle dark:text-slate-500">{label}</span>
       <span className="text-ink dark:text-slate-200">{value}</span>
     </span>
@@ -325,7 +325,7 @@ function EditMetadataModal({
             aria-invalid={Boolean(linkError)}
           />
         </Field>
-        <p className="rounded border border-slate-200 bg-surface-muted px-3 py-2 text-xs text-ink-muted dark:border-slate-700 dark:bg-[#0f1729] dark:text-slate-400">
+        <p className="rounded border border-slate-200 bg-surface-muted px-3 py-2 text-xs text-ink-muted dark:border-slate-700 dark:bg-[#211d18] dark:text-slate-400">
           Credentials (OAuth tokens, passwords, API keys) are never edited here and cannot be
           changed through the UI.
         </p>
@@ -399,7 +399,7 @@ function AccountCard({
             <MetaBadge label="Cat" value={account.metadata.content_category} />
             <MetaBadge label="Lang" value={account.metadata.language_code} />
             {account.metadata.purpose && (
-              <span className="max-w-full truncate rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-ink-muted dark:border-slate-700 dark:bg-[#0f1729] dark:text-slate-400">
+              <span className="max-w-full truncate rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-ink-muted dark:border-slate-700 dark:bg-[#211d18] dark:text-slate-400">
                 {account.metadata.purpose}
               </span>
             )}
@@ -408,7 +408,7 @@ function AccountCard({
                 href={safeHref(account.metadata.link)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="max-w-[12rem] truncate rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-brand-600 underline dark:border-slate-700 dark:bg-[#0f1729] dark:text-brand-300"
+                className="max-w-[12rem] truncate rounded border border-slate-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-brand-600 underline dark:border-slate-700 dark:bg-[#211d18] dark:text-brand-300"
               >
                 {account.metadata.link}
               </a>
@@ -470,7 +470,7 @@ function AccountTable({
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
       <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-        <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-wide text-ink-subtle dark:bg-[#0f1729] dark:text-slate-500">
+        <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-wide text-ink-subtle dark:bg-[#211d18] dark:text-slate-500">
           <tr>
             <th className="px-3 py-2 font-medium">Account</th>
             <th className="px-3 py-2 font-medium">Platform</th>
@@ -485,7 +485,7 @@ function AccountTable({
         </thead>
         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
           {accounts.map((a) => (
-            <tr key={a.id} data-account-id={a.id} className="bg-surface hover:bg-surface-muted/60 dark:bg-[#111a2c]">
+            <tr key={a.id} data-account-id={a.id} className="bg-surface hover:bg-surface-muted/60 dark:bg-[#262019]">
               <td className="max-w-[16rem] truncate px-3 py-2">
                 <div className="flex items-center gap-2">
                   <PlatformAvatar platform={a.platform} avatarUrl={a.channel.avatar_url} />
@@ -977,7 +977,7 @@ export function AccountsPage() {
                   className={`px-2.5 py-1.5 text-xs font-medium ${
                     view === 'cards'
                       ? 'bg-brand-600 text-white'
-                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#0f1729] dark:text-slate-400'
+                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-slate-400'
                   }`}
                   aria-pressed={view === 'cards'}
                   onClick={() => setView('cards')}
@@ -989,7 +989,7 @@ export function AccountsPage() {
                   className={`border-l border-slate-300 px-2.5 py-1.5 text-xs font-medium dark:border-slate-700 ${
                     view === 'table'
                       ? 'bg-brand-600 text-white'
-                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#0f1729] dark:text-slate-400'
+                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-slate-400'
                   }`}
                   aria-pressed={view === 'table'}
                   onClick={() => setView('table')}

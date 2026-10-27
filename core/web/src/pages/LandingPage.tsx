@@ -5,32 +5,26 @@ const PLATFORMS = ['YouTube', 'TikTok', 'Instagram', 'Facebook'] as const;
 
 const FEATURES = [
   {
-    icon: '◉',
     title: 'Connect accounts',
     body: 'OAuth-secured linking for every platform. Multiple channels per platform, tokens encrypted at rest.',
   },
   {
-    icon: '↑',
     title: 'Upload once',
     body: 'Drop a video, get thumbnails and dedup automatically. Storage quota tracking included.',
   },
   {
-    icon: '⏱',
     title: 'Schedule posts',
     body: 'Pick the exact time, per-platform captions and visibility. The background worker publishes for you.',
   },
   {
-    icon: '↻',
     title: 'Retries built in',
     body: 'Transient failures back off and retry; revoked tokens are flagged so you know to reconnect.',
   },
   {
-    icon: '◐',
     title: 'Quota aware',
     body: 'Daily per-platform limits are tracked so a burst of uploads never burns your API quota.',
   },
   {
-    icon: '📊',
     title: 'Analytics',
     body: 'Publish history, per-platform performance and channel stats in one dashboard.',
   },
@@ -40,16 +34,14 @@ export function LandingPage() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-surface-muted text-ink dark:bg-[#0b1220] dark:text-slate-100">
+    <div className="min-h-screen bg-surface-muted font-sans text-ink dark:bg-[#1c1917] dark:text-stone-100">
       {/* Nav */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 md:px-8">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-bold">
-            S
-          </span>
-          <span className="text-lg font-semibold">Omnicast</span>
-        </div>
-        <nav className="flex items-center gap-3">
+      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
+        <Link to="/" className="flex items-center gap-2.5">
+          <img src="/logo.svg" alt="Omnicast" className="h-8 w-8" />
+          <span className="font-display text-lg font-semibold tracking-tight">Omnicast</span>
+        </Link>
+        <nav className="flex items-center gap-2">
           {isAuthenticated ? (
             <Link to="/dashboard" className="btn-primary">
               Open Dashboard
@@ -67,19 +59,22 @@ export function LandingPage() {
         </nav>
       </header>
 
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 pb-16 pt-12 text-center md:px-8 md:pt-20">
-        <span className="chip bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-100">
-          Self-hosted · Multi-platform
-        </span>
-        <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-bold tracking-tight md:text-5xl">
-          Schedule once. Publish everywhere.
-        </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted dark:text-slate-400">
-          Upload a video, pick a time, and Omnicast publishes it to YouTube, TikTok,
-          Instagram and Facebook — automatically, from your own infrastructure.
+      {/* Hero — left aligned, editorial */}
+      <section className="mx-auto max-w-5xl px-6 pb-14 pt-10 md:pt-16">
+        <p className="font-mono text-xs tracking-wide text-brand-600 dark:text-brand-500">
+          multi-platform video scheduler
         </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
+        <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl">
+          Upload once,
+          <br />
+          publish everywhere.
+        </h1>
+        <p className="mt-6 max-w-xl text-base leading-relaxed text-ink-muted dark:text-stone-400">
+          Drop a video, pick a time, and Omnicast publishes it to YouTube, TikTok,
+          Instagram and Facebook on schedule, with retries and quota tracking
+          handled for you.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
           {isAuthenticated ? (
             <Link to="/dashboard" className="btn-primary px-6 py-3 text-base">
               Open Dashboard
@@ -94,43 +89,36 @@ export function LandingPage() {
               </Link>
             </>
           )}
-        </div>
-
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
-          {PLATFORMS.map((p) => (
-            <span
-              key={p}
-              className="chip border border-slate-200 bg-surface text-ink-muted dark:border-slate-700 dark:bg-[#0f1729] dark:text-slate-300"
-            >
-              {p}
-            </span>
-          ))}
+          <span className="ml-1 font-mono text-xs text-ink-subtle dark:text-stone-500">
+            {PLATFORMS.join(' / ')}
+          </span>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="mx-auto max-w-6xl px-4 pb-20 md:px-8">
-        <h2 className="text-center text-2xl font-bold">Everything you need to publish at scale</h2>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Features — ruled list, no card grid */}
+      <section className="mx-auto max-w-5xl px-6 pb-20">
+        <h2 className="font-display text-xl font-semibold">What it does</h2>
+        <div className="mt-4 border-t border-stone-200 dark:border-stone-800">
           {FEATURES.map((f) => (
-            <div key={f.title} className="card p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-lg text-brand-600 dark:bg-brand-500/10 dark:text-brand-100">
-                {f.icon}
-              </div>
-              <h3 className="mt-4 font-semibold">{f.title}</h3>
-              <p className="mt-1.5 text-sm text-ink-muted dark:text-slate-400">{f.body}</p>
+            <div
+              key={f.title}
+              className="grid gap-1 border-b border-stone-200 py-5 sm:grid-cols-[220px_1fr] sm:gap-8 dark:border-stone-800"
+            >
+              <h3 className="font-display text-base font-medium">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-ink-muted dark:text-stone-400">{f.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
+      {/* CTA — hairline rule, no boxed section */}
       {!isAuthenticated && (
-        <section className="border-t border-slate-200 bg-surface dark:border-slate-800 dark:bg-[#0f1729]">
-          <div className="mx-auto max-w-6xl px-4 py-14 text-center md:px-8">
-            <h2 className="text-2xl font-bold">Ready to automate your posting?</h2>
-            <p className="mt-2 text-ink-muted dark:text-slate-400">
-              Create an account, connect a platform, and schedule your first post in minutes.
+        <section className="border-t border-stone-200 dark:border-stone-800">
+          <div className="mx-auto max-w-5xl px-6 py-14">
+            <h2 className="font-display text-2xl font-semibold">Start scheduling today</h2>
+            <p className="mt-2 max-w-md text-sm text-ink-muted dark:text-stone-400">
+              Create an account, connect a platform, and schedule your first post
+              in minutes.
             </p>
             <Link to="/register" className="btn-primary mt-6 inline-flex px-6 py-3 text-base">
               Get started
@@ -139,12 +127,13 @@ export function LandingPage() {
         </section>
       )}
 
-      <footer className="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-ink-subtle md:px-8 dark:text-slate-500">
-        Omnicast — self-hosted video scheduling for YouTube, TikTok, Instagram &amp; Facebook.
-        {' · '}
-        <Link to="/privacy" className="underline hover:text-ink dark:hover:text-slate-300">
-          Privacy Policy
-        </Link>
+      <footer className="border-t border-stone-200 dark:border-stone-800">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6 font-mono text-xs text-ink-subtle dark:text-stone-500">
+          <span>Omnicast · video scheduling for YouTube, TikTok, Instagram &amp; Facebook</span>
+          <Link to="/privacy" className="underline underline-offset-2 hover:text-ink dark:hover:text-stone-300">
+            Privacy
+          </Link>
+        </div>
       </footer>
     </div>
   );

@@ -29,13 +29,13 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4 dark:bg-[#0b1220]">
+    <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4 dark:bg-[#1c1917]">
       <div className="max-w-md w-full">
-        <div className="bg-surface rounded-lg shadow-lg p-8 dark:bg-[#111a2c] dark:border dark:border-slate-800 dark:shadow-none">
-          <h1 className="text-2xl font-bold mb-6 text-center text-ink dark:text-slate-100">Create Account</h1>
+        <div className="card p-8">
+          <h1 className="font-display text-2xl font-semibold mb-1 text-center text-ink dark:text-stone-100">Create Account</h1>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm dark:bg-red-500/10 dark:border-red-900/60 dark:text-red-300">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-sm text-red-800 text-sm dark:bg-red-500/10 dark:border-red-900/60 dark:text-red-300">
               {error}
             </div>
           )}

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,67 +10,75 @@
     height: 100%;
   }
   body {
-    @apply bg-surface-muted text-ink antialiased;
-    font-family:
-      ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Inter, sans-serif;
+    @apply bg-surface-muted text-ink antialiased font-sans;
   }
   .dark body {
-    @apply bg-[#0b1220] text-slate-100;
+    @apply bg-[#1c1917] text-stone-100;
+  }
+  h1, h2, h3 {
+    @apply font-display;
   }
   /* Default focus ring is invisible on dark surfaces — make it visible. */
   :focus-visible {
     @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-muted;
   }
   .dark :focus-visible {
-    @apply ring-offset-[#0b1220];
+    @apply ring-offset-[#1c1917];
   }
 }
 
 @layer components {
+  /* Flat hairline surfaces — grouping by whitespace + rules, not boxes. */
   .card {
-    @apply rounded-lg border border-slate-200 bg-surface shadow-soft;
+    @apply rounded-md border border-stone-200 bg-surface;
   }
   .dark .card {
-    @apply border-slate-800 bg-[#111a2c] shadow-none;
+    @apply border-stone-800 bg-[#262019];
   }
   .input {
-    @apply w-full rounded border border-slate-300 bg-surface px-3 py-2 text-sm placeholder:text-ink-subtle focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+    @apply w-full rounded-sm border border-stone-300 bg-surface px-3 py-2 text-sm placeholder:text-ink-subtle focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
   }
   .dark .input {
-    @apply border-slate-700 bg-[#0f1729] placeholder:text-slate-500;
+    @apply border-stone-700 bg-[#211d18] placeholder:text-stone-500;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-700;
   }
   .btn-secondary {
-    @apply btn bg-slate-100 text-ink hover:bg-slate-200;
+    @apply btn border border-stone-300 bg-surface text-ink hover:bg-surface-subtle;
   }
   .dark .btn-secondary {
-    @apply bg-slate-800 text-slate-100 hover:bg-slate-700;
+    @apply border-stone-700 bg-transparent text-stone-200 hover:bg-stone-800;
   }
   .btn-ghost {
-    @apply btn text-ink-muted hover:bg-slate-100;
+    @apply btn text-ink-muted hover:bg-surface-subtle;
   }
   .dark .btn-ghost {
-    @apply text-slate-300 hover:bg-slate-800;
+    @apply text-stone-300 hover:bg-stone-800;
   }
   .btn-danger {
     @apply btn border border-red-300 bg-surface text-red-700 hover:bg-red-50;
   }
   .dark .btn-danger {
-    @apply border-red-900/60 bg-[#0f1729] text-red-400 hover:bg-red-950/40;
+    @apply border-red-900/60 bg-transparent text-red-400 hover:bg-red-950/40;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-sm border border-stone-200 px-2 py-0.5 font-mono text-[11px] tracking-wide;
   }
 }
 
 /* Scrollbar polish — only matters on overflow surfaces, harmless elsewhere. */
-@layer utilities {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-  }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9c2b6;
+  border-radius: 5px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #44403a;
 }

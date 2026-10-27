@@ -227,7 +227,7 @@ export function UploadPage() {
             className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
               dragOver
                 ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/10'
-                : 'border-slate-300 bg-surface-muted dark:border-slate-700 dark:bg-[#0f1729]'
+                : 'border-slate-300 bg-surface-muted dark:border-slate-700 dark:bg-[#211d18]'
             }`}
           >
             <div className="mb-3 text-3xl">↑</div>

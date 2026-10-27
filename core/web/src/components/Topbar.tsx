@@ -18,7 +18,7 @@ export function Topbar({
       : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300';
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-surface/90 px-4 backdrop-blur dark:border-slate-800 dark:bg-[#0b1220]/85">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-surface/90 px-4 backdrop-blur dark:border-slate-800 dark:bg-[#1c1917]/85">
       <div className="flex items-center gap-3">
         <button
           type="button"

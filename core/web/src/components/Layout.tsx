@@ -34,11 +34,11 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [drawerOpen]);
 
   return (
-    <div className="min-h-screen bg-surface-muted text-ink dark:bg-[#0b1220] dark:text-slate-100">
+    <div className="min-h-screen bg-surface-muted text-ink dark:bg-[#1c1917] dark:text-slate-100">
       <div className="flex min-h-screen">
         <aside
           aria-label="Sidebar"
-          className={`hidden shrink-0 border-r border-slate-200 bg-surface transition-all duration-300 md:block dark:border-slate-800 dark:bg-[#0f1729] ${
+          className={`hidden shrink-0 border-r border-slate-200 bg-surface transition-all duration-300 md:block dark:border-slate-800 dark:bg-[#211d18] ${
             sidebarCollapsed ? 'w-16' : 'w-60'
           }`}
         >
