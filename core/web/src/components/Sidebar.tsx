@@ -40,8 +40,9 @@ export function Sidebar({
     <nav aria-label="Primary" className="flex h-full flex-col gap-1 px-3 py-4">
       <div className="mb-2 flex items-center justify-between px-3">
         {!collapsed && (
-          <div className="text-xs font-semibold uppercase tracking-wide text-ink-subtle dark:text-slate-500">
-            Workspace
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="social-auto" className="h-7 w-7 rounded-lg" />
+            <span className="text-sm font-semibold text-ink dark:text-slate-100">social-auto</span>
           </div>
         )}
         <button
