@@ -20,6 +20,10 @@
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
+    /* SMIL (animateMotion) ignores animation-duration — hide those dots. */
+    .motion-hide {
+      display: none;
+    }
   }
   body {
     @apply bg-surface-muted text-ink antialiased font-sans;
