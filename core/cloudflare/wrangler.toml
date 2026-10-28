@@ -51,6 +51,7 @@ crons = ["*/1 * * * *"]
 # Public origin for OAuth redirect_uri — must match platform consoles.
 WEB_ORIGIN = "https://omnicast.trunkynw2803.workers.dev"
 GOOGLE_REDIRECT_URI = "https://omnicast.trunkynw2803.workers.dev/auth/callback"
-SECURE_COOKIES = "false"
+# OAuth cookies are marked Secure whenever WEB_ORIGIN is https (cookieOpts
+# derives it) — SECURE_COOKIES was dead config here and has been removed.
 STORAGE_QUOTA_GB = "10"
 META_API_VERSION = "v24.0"

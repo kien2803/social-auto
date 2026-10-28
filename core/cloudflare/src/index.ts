@@ -7,11 +7,15 @@ import type { Env, PublishJob } from './env';
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Only the SPA's own origin may make credentialed calls. Reflecting the
+// request origin (the previous behaviour) meant any website could hit the
+// API with the user's cookies attached.
 app.use(
   '*',
   cors({
-    origin: (origin, c) => origin || c.env.WEB_ORIGIN,
+    origin: (origin, c) => (origin === c.env.WEB_ORIGIN ? origin : undefined),
     credentials: true,
+    allowHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 

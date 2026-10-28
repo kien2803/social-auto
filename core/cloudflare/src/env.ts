@@ -8,7 +8,6 @@ export interface Env {
 
   // Vars (wrangler.toml [vars])
   WEB_ORIGIN: string;
-  SECURE_COOKIES: string;
   STORAGE_QUOTA_GB: string;
   META_API_VERSION: string;
 
