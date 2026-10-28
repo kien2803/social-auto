@@ -72,7 +72,7 @@ export function LandingPage() {
           <circle cx="12" cy="19.5" r="1.9" />
           <path d="m6.2 6.9 3.7 3.3M17.8 6.9l-3.7 3.3M12 14.8v2.8" />
         </svg>
-        <p className="font-mono text-xs tracking-wide text-brand-600 dark:text-brand-500">
+        <p className="font-mono text-xs text-brand-600 dark:text-brand-500">
           multi-platform video scheduler
         </p>
         <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl">
@@ -140,7 +140,7 @@ export function LandingPage() {
 
       <footer className="border-t border-stone-200 dark:border-stone-800">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6 font-mono text-xs text-ink-subtle dark:text-stone-500">
-          <span>Omnicast · video scheduling for YouTube, TikTok, Instagram &amp; Facebook</span>
+          <span>Omnicast — video scheduling for YouTube, TikTok, Instagram &amp; Facebook</span>
           <Link to="/privacy" className="underline underline-offset-2 hover:text-ink dark:hover:text-stone-300">
             Privacy
           </Link>

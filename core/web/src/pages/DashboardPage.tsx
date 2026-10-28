@@ -37,7 +37,7 @@ function StatCard({
   return (
     <Card className={`border ${ring[tone]}`}>
       <CardBody className="space-y-1.5">
-        <p className="font-mono text-[11px] tracking-wide text-ink-muted dark:text-stone-400">
+        <p className="font-mono text-[11px] text-ink-muted dark:text-stone-400">
           {label}
         </p>
         <p className="font-display text-3xl font-semibold tracking-tight text-ink dark:text-stone-100">{value}</p>

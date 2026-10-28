@@ -9,6 +9,18 @@
   #root {
     height: 100%;
   }
+  html,
+  body {
+    overflow-x: clip;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
   body {
     @apply bg-surface-muted text-ink antialiased font-sans;
   }
@@ -79,7 +91,7 @@
     @apply border-red-900/60 bg-transparent text-red-400 hover:bg-red-950/40;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-sm border border-stone-200 px-2 py-0.5 font-mono text-[11px] tracking-wide;
+    @apply inline-flex items-center gap-1 rounded-sm border border-stone-200 px-2 py-0.5 font-mono text-[11px];
   }
 }
 
