@@ -159,11 +159,69 @@ export class ScheduledPostsRepo {
     return out;
   }
 
-  async lastPublishedAt(userId?: string): Promise<number | null> {
-    const q = userId
-      ? this.db.prepare(`SELECT MAX(updated_at) AS m FROM scheduled_posts WHERE status = 'published' AND user_id = ?`).bind(userId)
-      : this.db.prepare(`SELECT MAX(updated_at) AS m FROM scheduled_posts WHERE status = 'published'`);
-    const r = await q.first<{ m: number | null }>();
+  async lastPublishedAt(userId?: string, accountId?: string): Promise<number | null> {
+    let sql = `SELECT MAX(updated_at) AS m FROM scheduled_posts WHERE status = 'published'`;
+    const params: unknown[] = [];
+    if (userId) { sql += ' AND user_id = ?'; params.push(userId); }
+    if (accountId) { sql += ' AND account_id = ?'; params.push(accountId); }
+    const r = await this.db.prepare(sql).bind(...params).first<{ m: number | null }>();
     return r?.m ?? null;
+  }
+
+  async countByStatusForAccount(accountId: string): Promise<Record<ScheduledPostStatus, number>> {
+    const out = Object.fromEntries(STATUSES.map((s) => [s, 0])) as Record<ScheduledPostStatus, number>;
+    const rows = (
+      await this.db
+        .prepare('SELECT status, COUNT(*) AS n FROM scheduled_posts WHERE account_id = ? GROUP BY status')
+        .bind(accountId)
+        .all<{ status: ScheduledPostStatus; n: number }>()
+    ).results;
+    for (const r of rows) out[r.status] = r.n;
+    return out;
+  }
+
+  /** Per-account status rollups for the Analytics page. Joins accounts so
+   *  platform + display_name ride along; scoped to the owning user. */
+  async analyticsByAccount(accountId: string | undefined, userId: string) {
+    let sql = `SELECT a.id AS account_id, a.platform, a.display_name,
+         COUNT(sp.id) AS total,
+         SUM(CASE WHEN sp.status = 'pending' THEN 1 ELSE 0 END) AS pending,
+         SUM(CASE WHEN sp.status = 'uploading' THEN 1 ELSE 0 END) AS uploading,
+         SUM(CASE WHEN sp.status = 'published' THEN 1 ELSE 0 END) AS published,
+         SUM(CASE WHEN sp.status = 'failed' THEN 1 ELSE 0 END) AS failed,
+         SUM(CASE WHEN sp.status = 'dead' THEN 1 ELSE 0 END) AS dead,
+         MAX(CASE WHEN sp.status = 'published' THEN sp.updated_at END) AS last_published_at
+       FROM accounts a
+       LEFT JOIN scheduled_posts sp ON sp.account_id = a.id
+       WHERE a.user_id = ?`;
+    const params: unknown[] = [userId];
+    if (accountId) { sql += ' AND a.id = ?'; params.push(accountId); }
+    sql += ' GROUP BY a.id ORDER BY a.created_at DESC';
+    const { results } = await this.db.prepare(sql).bind(...params).all<{
+      account_id: string;
+      platform: string;
+      display_name: string;
+      total: number;
+      pending: number | null;
+      uploading: number | null;
+      published: number | null;
+      failed: number | null;
+      dead: number | null;
+      last_published_at: number | null;
+    }>();
+    return results.map((r) => ({
+      account_id: r.account_id,
+      platform: r.platform,
+      display_name: r.display_name,
+      by_status: {
+        pending: r.pending ?? 0,
+        uploading: r.uploading ?? 0,
+        published: r.published ?? 0,
+        failed: r.failed ?? 0,
+        dead: r.dead ?? 0,
+      },
+      total: r.total,
+      last_published_at: r.last_published_at,
+    }));
   }
 }

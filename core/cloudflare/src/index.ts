@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { userAuthRoutes } from './routes/userAuth';
 import { oauthRoutes } from './routes/oauth';
+import { accountRoutes } from './routes/accounts';
 import { ScheduledPostsRepo } from './repos/scheduledPosts';
 import type { Env, PublishJob } from './env';
 
@@ -27,6 +28,7 @@ app.route('/', userAuthRoutes);
 app.route('/api', userAuthRoutes);
 app.route('/', oauthRoutes);
 app.route('/api', oauthRoutes); // SPA calls /api/* same-origin
+app.route('/api', accountRoutes);
 
 // SPA fallback — assets layer returns 404 for unknown paths before the
 // worker runs, so serve index.html ourselves for non-API GETs.

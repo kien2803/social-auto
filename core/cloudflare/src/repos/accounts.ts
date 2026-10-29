@@ -15,6 +15,11 @@ export interface ListFilter {
   userId?: string;
   platform?: Platform;
   status?: AccountStatus;
+  search?: string;
+  contentCategory?: string;
+  languageCode?: string;
+  limit?: number;
+  offset?: number;
 }
 
 /** D1 rows come back keyed by column name — no positional mapping. */
@@ -65,13 +70,56 @@ export class AccountsRepo {
   }
 
   async list(filter: ListFilter = {}): Promise<AccountRow[]> {
-    let sql = 'SELECT * FROM accounts WHERE 1=1';
-    const params: unknown[] = [];
-    if (filter.userId) { sql += ' AND user_id = ?'; params.push(filter.userId); }
-    if (filter.platform) { sql += ' AND platform = ?'; params.push(filter.platform); }
-    if (filter.status) { sql += ' AND status = ?'; params.push(filter.status); }
-    sql += ' ORDER BY created_at DESC';
+    let sql = `SELECT * FROM accounts ${this.whereSql(filter)} ORDER BY created_at DESC`;
+    const params = this.whereParams(filter);
+    sql += ' LIMIT ? OFFSET ?';
+    params.push(filter.limit ?? 200, filter.offset ?? 0);
     return (await this.db.prepare(sql).bind(...params).all<AccountRow>()).results;
+  }
+
+  async count(filter: ListFilter = {}): Promise<number> {
+    const r = await this.db
+      .prepare(`SELECT COUNT(*) AS n FROM accounts ${this.whereSql(filter)}`)
+      .bind(...this.whereParams(filter))
+      .first<{ n: number }>();
+    return r?.n ?? 0;
+  }
+
+  private whereSql(f: ListFilter): string {
+    const parts = ['1=1'];
+    if (f.userId) parts.push('user_id = ?');
+    if (f.platform) parts.push('platform = ?');
+    if (f.status) parts.push('status = ?');
+    if (f.search) parts.push('(display_name LIKE ? OR external_id LIKE ?)');
+    if (f.contentCategory) parts.push('content_category = ?');
+    if (f.languageCode) parts.push('language_code = ?');
+    return `WHERE ${parts.join(' AND ')}`;
+  }
+
+  private whereParams(f: ListFilter): unknown[] {
+    const p: unknown[] = [];
+    if (f.userId) p.push(f.userId);
+    if (f.platform) p.push(f.platform);
+    if (f.status) p.push(f.status);
+    if (f.search) p.push(`%${f.search}%`, `%${f.search}%`);
+    if (f.contentCategory) p.push(f.contentCategory);
+    if (f.languageCode) p.push(f.languageCode);
+    return p;
+  }
+
+  async updateMetadata(
+    id: string,
+    patch: Partial<Pick<AccountRow, 'content_category' | 'language_code' | 'purpose' | 'link'>>,
+  ): Promise<void> {
+    const cols = ['content_category', 'language_code', 'purpose', 'link'] as const;
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    for (const c of cols) {
+      if (patch[c] !== undefined) { sets.push(`${c} = ?`); params.push(patch[c]); }
+    }
+    if (!sets.length) return;
+    params.push(id);
+    await this.db.prepare(`UPDATE accounts SET ${sets.join(', ')} WHERE id = ?`).bind(...params).run();
   }
 
   async updateStatus(id: string, status: AccountStatus): Promise<void> {
