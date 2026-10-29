@@ -228,7 +228,7 @@ export function LandingPage() {
       {/* Act II — the channels this station is tuned to */}
       <div className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 px-6 sm:grid-cols-4 sm:gap-x-0">
-          {STATIONS.map(({ name, freq, Icon }, i) => (
+          {STATIONS.map(({ name, freq, scope, Icon }, i) => (
             <Reveal
               key={name}
               variant="pop"
@@ -262,7 +262,10 @@ export function LandingPage() {
                 className="grid grid-cols-[88px_1fr_auto] items-baseline gap-4 border-b border-stone-200 py-4 sm:grid-cols-[100px_1fr_1fr] dark:border-stone-800"
               >
                 <span className="font-mono text-xs text-ink-subtle dark:text-stone-500">{s.freq}</span>
-                <span className="font-display font-medium">{s.name}</span>
+                <span className="flex items-center gap-2.5 font-display font-medium">
+                  <s.Icon className="h-4 w-4" />
+                  {s.name}
+                </span>
                 <span className="font-mono text-xs text-ink-muted dark:text-stone-400">{s.scope}</span>
               </Reveal>
             ))}

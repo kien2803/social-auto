@@ -380,7 +380,10 @@ function AccountCard({
             <StatusBadge status={account.status} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted dark:text-stone-400">
-            <span className="capitalize">{account.platform}</span>
+            <span className="flex items-center gap-1.5 capitalize">
+              <img src={`/icons/${account.platform}.svg`} alt="" className="h-3.5 w-3.5" />
+              {account.platform}
+            </span>
             <span aria-hidden="true">·</span>
             <code
               className="font-mono text-[11px]"
