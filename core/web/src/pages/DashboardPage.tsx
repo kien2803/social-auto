@@ -50,7 +50,7 @@ function ChannelLineup() {
   const accounts = useAccounts();
   const platforms = ['youtube', 'tiktok', 'instagram', 'facebook'];
   return (
-    <div className="grid grid-cols-2 border border-stone-200 bg-surface md:grid-cols-4 dark:border-stone-800">
+    <div className="grid grid-cols-2 border border-stone-200 bg-surface md:grid-cols-4 dark:border-stone-800 dark:bg-[#211d18]">
       {platforms.map((plat, i) => {
         const list = (accounts.data ?? []).filter((a) => a.platform === plat);
         const active = list.find((a) => a.status === 'active') ?? list[0];
@@ -307,7 +307,7 @@ export function DashboardPage() {
         </Link>
       </header>
 
-      <section className="grid grid-cols-2 border border-stone-200 bg-surface md:grid-cols-4 dark:border-stone-800">
+      <section className="grid grid-cols-2 border border-stone-200 bg-surface md:grid-cols-4 dark:border-stone-800 dark:bg-[#211d18]">
         <StatTile label="queued" value={counts.data?.by_status.pending ?? 0} />
         <StatTile label="aired · 7d" value={counts.data?.published_last_7d ?? 0} hint="last 7 days" />
         <StatTile label="faults" value={(counts.data?.by_status.failed ?? 0) + (counts.data?.by_status.dead ?? 0)} danger />
