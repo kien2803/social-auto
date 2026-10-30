@@ -16,36 +16,57 @@ interface DashboardCounts {
   published_last_7d: number;
 }
 
-function StatCard({
+function StatTile({
   label,
   value,
   hint,
-  tone = 'neutral',
+  danger,
 }: {
   label: string;
   value: number | string;
   hint?: string;
-  tone?: 'neutral' | 'success' | 'warn' | 'danger' | 'brand';
+  danger?: boolean;
 }) {
-  const ring: Record<typeof tone, string> = {
-    neutral: 'border-stone-200 dark:border-stone-800',
-    success: 'border-emerald-200 dark:border-emerald-900/50',
-    warn: 'border-amber-200 dark:border-amber-900/50',
-    danger: 'border-red-200 dark:border-red-900/50',
-    brand: 'border-brand-100 dark:border-brand-500/30',
-  } as const;
   return (
-    <Card className={`border ${ring[tone]}`}>
-      <CardBody className="space-y-1.5">
-        <p className="font-mono text-[11px] text-ink-muted dark:text-stone-400">
-          {label}
-        </p>
-        <p className="font-display text-3xl font-semibold tracking-tight text-ink dark:text-stone-100">{value}</p>
-        {hint && (
-          <p className="text-xs text-ink-muted dark:text-stone-400">{hint}</p>
-        )}
-      </CardBody>
-    </Card>
+    <div className="border-r border-stone-200 px-5 py-4 last:border-r-0 dark:border-stone-800">
+      <p className="font-mono text-[11px] text-ink-subtle dark:text-stone-500">{label}</p>
+      <p className={`mt-1.5 font-display text-4xl font-bold leading-none ${danger && Number(value) > 0 ? 'text-red-600 dark:text-red-400' : 'text-ink dark:text-stone-100'}`}>
+        {value}
+      </p>
+      {hint && <p className="mt-1 font-mono text-[10px] text-ink-subtle dark:text-stone-500">{hint}</p>}
+    </div>
+  );
+}
+
+const PLATFORM_META: Record<string, { label: string }> = {
+  youtube: { label: 'YouTube' },
+  tiktok: { label: 'TikTok' },
+  instagram: { label: 'Instagram' },
+  facebook: { label: 'Facebook' },
+};
+
+/** Channel lineup CH-01..04 — one tile per platform slot, on air vs standby. */
+function ChannelLineup() {
+  const accounts = useAccounts();
+  const platforms = ['youtube', 'tiktok', 'instagram', 'facebook'];
+  return (
+    <div className="grid grid-cols-2 border border-stone-200 bg-surface md:grid-cols-4 dark:border-stone-800">
+      {platforms.map((plat, i) => {
+        const list = (accounts.data ?? []).filter((a) => a.platform === plat);
+        const active = list.find((a) => a.status === 'active') ?? list[0];
+        return (
+          <div key={plat} className="border-r border-stone-200 px-4 py-3.5 last:border-r-0 dark:border-stone-800">
+            <div className="font-mono text-[10px] text-ink-subtle dark:text-stone-500">CH-{String(i + 1).padStart(2, '0')}</div>
+            <div className="mt-1 text-sm font-semibold capitalize text-ink dark:text-stone-100">
+              {PLATFORM_META[plat]?.label ?? plat}
+            </div>
+            <div className={`mt-1 font-mono text-[10px] ${active ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-subtle dark:text-stone-500'}`}>
+              {active ? `● on air · ${active.display_name}` : '○ standby'}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -286,30 +307,14 @@ export function DashboardPage() {
         </Link>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard
-          label="Pending"
-          value={counts.data?.by_status.pending ?? 0}
-          tone="neutral"
-        />
-        <StatCard
-          label="Published (7d)"
-          value={counts.data?.published_last_7d ?? 0}
-          tone="success"
-          hint="Last 7 days"
-        />
-        <StatCard
-          label="Failed"
-          value={counts.data?.by_status.failed ?? 0}
-          tone="warn"
-        />
-        <StatCard
-          label="Accounts"
-          value={accounts.data?.length ?? 0}
-          tone="brand"
-          hint={`${accounts.data?.filter((a) => a.status === 'active').length ?? 0} active`}
-        />
+      <section className="grid grid-cols-2 border border-stone-200 bg-surface md:grid-cols-4 dark:border-stone-800">
+        <StatTile label="queued" value={counts.data?.by_status.pending ?? 0} />
+        <StatTile label="aired · 7d" value={counts.data?.published_last_7d ?? 0} hint="last 7 days" />
+        <StatTile label="faults" value={(counts.data?.by_status.failed ?? 0) + (counts.data?.by_status.dead ?? 0)} danger />
+        <StatTile label="channels" value={accounts.data?.length ?? 0} hint={`${accounts.data?.filter((a) => a.status === 'active').length ?? 0} active`} />
       </section>
+
+      <ChannelLineup />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <QuotaSection />

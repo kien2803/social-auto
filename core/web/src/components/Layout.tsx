@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Sidebar } from './Sidebar.js';
 import { Topbar } from './Topbar.js';
 import { Drawer } from './Drawer.js';
+import { Dock } from './Dock.js';
 import { Skeleton } from './ui/Skeleton.js';
 
 function detectEnv(): { label: string; tone: 'mock' | 'live' } {
@@ -23,7 +24,6 @@ export function PageFallback() {
 
 export function Layout({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const env = detectEnv();
 
   useEffect(() => {
@@ -36,14 +36,6 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-surface-muted text-ink dark:bg-[#1c1917] dark:text-stone-100">
       <div className="flex min-h-screen">
-        <aside
-          aria-label="Sidebar"
-          className={`hidden shrink-0 border-r border-stone-200 bg-surface transition-all duration-300 md:block dark:border-stone-800 dark:bg-[#211d18] ${
-            sidebarCollapsed ? 'w-16' : 'w-60'
-          }`}
-        >
-          <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-        </aside>
         <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <Sidebar collapsed={false} onNavigate={() => setDrawerOpen(false)} />
         </Drawer>
@@ -53,11 +45,13 @@ export function Layout({ children }: { children: ReactNode }) {
             envLabel={env.label}
             envTone={env.tone}
           />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8">
+          {/* pb-24 keeps content clear of the fixed bottom dock */}
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 md:px-8">
             <Suspense fallback={<PageFallback />}>{children}</Suspense>
           </main>
         </div>
       </div>
+      <Dock />
     </div>
   );
 }

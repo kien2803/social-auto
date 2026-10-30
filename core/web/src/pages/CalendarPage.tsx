@@ -43,6 +43,23 @@ interface Filters {
   status: string;
 }
 
+/** Daypart bands — the "thời khóa biểu" structure. Posts land in a band
+ *  by their hour; hovering a slot offers a "+" that opens quick-schedule
+ *  preset to the band's start. khuya ends at 23:59 so bands never span
+ *  midnight into the next day. */
+const BANDS: { id: string; label: string; range: string; from: number; to: number }[] = [
+  { id: 'sang', label: 'sáng', range: '05:00–11:00', from: 5, to: 11 },
+  { id: 'trua', label: 'trưa', range: '11:00–14:00', from: 11, to: 14 },
+  { id: 'chieu', label: 'chiều', range: '14:00–18:00', from: 14, to: 18 },
+  { id: 'toi', label: 'tối', range: '18:00–22:00', from: 18, to: 22 },
+  { id: 'khuya', label: 'khuya', range: '22:00–23:59', from: 22, to: 24 },
+];
+
+function bandOf(d: dayjs.Dayjs): (typeof BANDS)[number] {
+  const h = d.hour();
+  return BANDS.find((b) => h >= b.from && h < b.to) ?? BANDS[BANDS.length - 1]!;
+}
+
 /** Calendar range for the current view — month needs the full 6-week grid
  *  so boundary weeks fetch correctly. */
 function rangeFor(view: ViewMode, anchor: dayjs.Dayjs): { from: number; to: number } {
@@ -582,12 +599,23 @@ export function CalendarPage() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-7 border-x border-t border-stone-200 text-center font-mono text-[11px] text-ink-subtle dark:border-stone-800 dark:text-stone-500">
-        {['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((d) => (
-          <div key={d} className="border-b border-r border-stone-200 py-1.5 last:border-r-0 dark:border-stone-800">
-            {d}
-          </div>
-        ))}
+      {/* weekday header row — week view also shows the date number */}
+      <div className={`grid ${view === 'week' ? 'grid-cols-[7rem_repeat(7,1fr)]' : 'grid-cols-7'} border-x border-t border-stone-200 text-center font-mono text-[11px] text-ink-subtle dark:border-stone-800 dark:text-stone-500`}>
+        {view === 'week' && <div className="border-b border-r border-stone-200 py-1.5 dark:border-stone-800" />}
+        {view === 'week'
+          ? days.map((d) => (
+              <div key={d.format('DD')} className="border-b border-r border-stone-200 py-1.5 last:border-r-0 dark:border-stone-800">
+                <span className="capitalize">{d.format('ddd')}</span>
+                <span className={`mt-0.5 block text-[10px] ${d.isSame(dayjs(), 'day') ? 'font-semibold text-brand-600' : ''}`}>
+                  {d.format('D')}
+                </span>
+              </div>
+            ))
+          : ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((d) => (
+              <div key={d} className="border-b border-r border-stone-200 py-1.5 last:border-r-0 dark:border-stone-800">
+                {d}
+              </div>
+            ))}
       </div>
 
       {scheduleQuery.isLoading ? (
@@ -603,8 +631,49 @@ export function CalendarPage() {
           description={scheduleQuery.error instanceof Error ? scheduleQuery.error.message : 'unknown_error'}
           action={<Button size="sm" onClick={() => void scheduleQuery.refetch()}>Retry</Button>}
         />
+      ) : view === 'week' ? (
+        /* Thời khóa biểu: 5 daypart bands × 7 days */
+        <div className="border-b border-stone-200 dark:border-stone-800">
+          {BANDS.map((band) => (
+            <div key={band.id} className="grid grid-cols-[7rem_repeat(7,1fr)]">
+              <div className="border-r border-stone-200 bg-surface-muted px-3 py-3 dark:border-stone-800 dark:bg-[#211d18]/60">
+                <div className="text-[13px] font-semibold capitalize text-ink dark:text-stone-200">{band.label}</div>
+                <div className="mt-0.5 font-mono text-[10px] text-ink-subtle dark:text-stone-500">{band.range}</div>
+              </div>
+              {days.map((d) => {
+                const bandPosts = (postsByDay.get(d.format('YYYY-MM-DD')) ?? []).filter(
+                  (p) => bandOf(dayjs(p.scheduled_at)).id === band.id,
+                );
+                return (
+                  <div
+                    key={d.format('YYYY-MM-DD') + band.id}
+                    className="group relative flex min-h-[5.5rem] flex-col gap-1 border-r border-stone-200 p-1.5 last:border-r-0 dark:border-stone-800"
+                  >
+                    {bandPosts.map((p) => (
+                      <PostChip
+                        key={p.id}
+                        post={p}
+                        account={accountById.get(p.account_id)}
+                        onClick={() => setPostModal(p)}
+                      />
+                    ))}
+                    {/* hover "+" → quick schedule preset to the band start */}
+                    <button
+                      type="button"
+                      aria-label={`Schedule on ${d.format('ddd MMM D')} ${band.label}`}
+                      onClick={() => setDayModal(d.hour(band.from).minute(0))}
+                      className="absolute inset-0 flex items-center justify-center bg-surface/80 text-xl font-bold text-brand-600 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-[#1e1a15]/85 dark:text-brand-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className={`grid grid-cols-7 ${view === 'month' ? '' : 'items-stretch'}`}>
+        <div className="grid grid-cols-7">
           {days.map((d) => (
             <DayCell
               key={d.format('YYYY-MM-DD')}
