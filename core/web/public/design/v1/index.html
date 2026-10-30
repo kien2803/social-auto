@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V1 — Editorial ruled</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#faf7f2;--ink:#1c1917;--muted:#78716c;--line:#e7e0d6;--verm:#c93f0b;--surf:#fff}
+*{margin:0;box-sizing:border-box}body{font-family:'IBM Plex Sans',sans-serif;background:var(--paper);color:var(--ink);display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+aside{border-right:1px solid var(--line);padding:28px 20px;display:flex;flex-direction:column;gap:4px}
+aside .logo{display:flex;align-items:center;gap:10px;margin-bottom:32px}
+aside .logo img{width:28px;height:28px}
+aside .logo b{font-family:'Space Grotesk';font-size:17px}
+nav a{display:block;padding:8px 10px;font-size:14px;color:var(--muted);text-decoration:none;border-left:2px solid transparent}
+nav a.on{color:var(--ink);border-left-color:var(--verm);font-weight:600}
+nav a:hover{color:var(--ink)}
+main{padding:40px 48px;max-width:1100px}
+.kick{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);margin-bottom:6px}
+h1{font-family:'Space Grotesk';font-size:32px;font-weight:700;letter-spacing:-.02em}
+.head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:0}
+.btn{background:var(--verm);color:#fff;border:0;padding:9px 16px;font:600 13px 'IBM Plex Sans';cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(4,1fr)}
+.stat{padding:26px 24px;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat .l{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted)}
+.stat .v{font-family:'Space Grotesk';font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-top:6px}
+.stat .v.red{color:var(--verm)}
+.sec{margin-top:44px}
+.sec h2{font-family:'Space Grotesk';font-size:18px;margin-bottom:4px}
+.sec .sub{font-size:13px;color:var(--muted);margin-bottom:14px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.row .t{font-family:'IBM Plex Mono';font-size:12px;color:var(--verm);font-weight:600;min-width:120px}
+.row .cap{flex:1;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .acc{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);min-width:150px;text-align:right}
+.qrow{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.qrow .plat{font-weight:600;text-transform:capitalize}
+.bar{height:3px;background:var(--line);width:160px;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--verm)}
+.cols{display:grid;grid-template-columns:1.4fr 1fr;gap:48px}
+.tag{font-family:'IBM Plex Mono';font-size:10px;color:var(--muted)}
+.warn{color:#b45309;font-family:'IBM Plex Mono';font-size:11px}
+</style></head><body>
+<aside>
+<div class="logo"><img src="/logo.svg" alt=""><b>Omnicast</b></div>
+<nav>
+<a href="#">dashboard</a><a href="#">upload</a><a href="#" class="on">calendar</a><a href="#">history</a><a href="#">analytics</a><a href="#">accounts</a><a href="#">settings</a>
+</nav>
+</aside>
+<main>
+<div class="head"><div><div class="kick">station overview</div><h1>Broadcast log</h1></div><button class="btn">New upload</button></div>
+<div class="stats">
+<div class="stat"><div class="l">queued</div><div class="v">4</div></div>
+<div class="stat"><div class="l">aired · 7d</div><div class="v">12</div></div>
+<div class="stat"><div class="l">failed</div><div class="v red">1</div></div>
+<div class="stat"><div class="l">channels</div><div class="v">1</div></div>
+</div>
+<div class="cols">
+<div class="sec">
+<h2>On deck</h2><div class="sub">next transmissions, soonest first</div>
+<div class="row"><span class="t">fri 18:30</span><span class="cap">Studio tour — behind the desk</span><span class="acc">youtube · kian p</span></div>
+<div class="row"><span class="t">sat 09:00</span><span class="cap">Weekly recap ep. 14</span><span class="acc">youtube · kian p</span></div>
+<div class="row"><span class="t">sun 20:15</span><span class="cap">Quick tip: export presets</span><span class="acc">youtube · kian p</span></div>
+<div class="row"><span class="t">mon 12:00</span><span class="cap">Q&A answers, part two</span><span class="acc">youtube · kian p</span></div>
+</div>
+<div class="sec">
+<h2>Quota</h2><div class="sub">today, resets 00:00 utc</div>
+<div class="qrow"><div><span class="plat">youtube</span><div class="bar"><i style="width:8%"></i></div></div><span class="tag">160 / 10,000</span></div>
+<div class="qrow"><div><span class="plat">tiktok</span><div class="bar"><i style="width:0%"></i></div></div><span class="tag">0 / 500</span></div>
+<div class="qrow"><div><span class="plat">instagram</span><div class="bar"><i style="width:0%"></i></div></div><span class="tag">0 / 25</span></div>
+<div class="sec" style="margin-top:28px"><h2>Faults</h2>
+<div class="row"><span class="warn">failed</span><span class="cap">token expired — reconnect youtube</span><span class="acc">retry 2</span></div>
+</div>
+</div>
+</div>
+</main></body></html>

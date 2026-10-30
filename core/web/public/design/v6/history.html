@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V6 — History</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#faf6ef;--ink:#221d18;--muted:#8a8177;--line:#e6ddcf;--verm:#c93f0b;--surf:#fffdf9}
+*{margin:0;box-sizing:border-box}body{font-family:'IBM Plex Sans';background:var(--paper);color:var(--ink);min-height:100vh;padding-bottom:110px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--surf)}
+.top .logo{display:flex;align-items:center;gap:9px;font:700 16px 'Space Grotesk'}.top .logo img{width:24px;height:24px}
+.top .user{font:11px 'IBM Plex Mono';color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 28px}
+.kick{font:11px 'IBM Plex Mono';color:var(--verm)}h1{font:700 30px 'Space Grotesk';margin:8px 0 26px}
+.log{background:var(--surf);border:1px solid var(--line)}
+.log .hd,.log .r{display:grid;grid-template-columns:110px 130px 1fr 140px 100px;padding:10px 16px;border-bottom:1px solid var(--line);align-items:center}
+.log .hd{font:10px 'IBM Plex Mono';color:var(--muted);background:var(--paper)}
+.log .r{font-size:13px}.log .r:last-child{border:0}
+.log .time{font:600 12px 'IBM Plex Mono'}.log .ch2{font:11px 'IBM Plex Mono';color:var(--muted)}
+.log .acc{font-size:12px;color:var(--muted)}
+.st-pill{font:600 10px 'IBM Plex Mono';padding:3px 8px;text-align:center}
+.st-pill.ok{background:#e4efe2;color:#3a7d44}.st-pill.err{background:#f8e3dc;color:var(--verm)}
+.dock{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:10px 14px;background:rgba(255,253,249,.88);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 32px rgba(60,45,30,.14)}
+.dock a{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:var(--paper);border:1px solid var(--line);color:var(--muted);transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+.dock a svg{width:24px;height:24px}
+.dock a:hover{transform:translateY(-10px) scale(1.18);background:#fff}
+.dock a.on{color:var(--verm);background:#fdf1ea;border-color:#eccfbf}
+.dock a.on::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--verm)}
+.dock .sep{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
+</style></head><body>
+<div class="top"><a class="logo" href="index.html" style="text-decoration:none;color:inherit"><img src="/logo.svg" alt="">Omnicast</a><div class="user">demo@omnicast.dev</div></div>
+<div class="wrap"><div class="kick">archive · aired + faults</div><h1>Transmission history</h1>
+<div class="log">
+<div class="hd"><span>aired</span><span>channel</span><span>transmission</span><span>account</span><span>status</span></div>
+<div class="r"><span class="time">wed 19:00</span><span class="ch2">CH-01</span><span>Field test: new camera gear</span><span class="acc">kian p</span><span class="st-pill ok">aired</span></div>
+<div class="r"><span class="time">thu 07:42</span><span class="ch2">CH-01</span><span>Upload #6 — no title</span><span class="acc">kian p</span><span class="st-pill err">fault</span></div>
+<div class="r"><span class="time">tue 21:10</span><span class="ch2">CH-01</span><span>Color grading walkthrough</span><span class="acc">kian p</span><span class="st-pill ok">aired</span></div>
+<div class="r"><span class="time">mon 18:00</span><span class="ch2">CH-01</span><span>Studio setup vlog</span><span class="acc">kian p</span><span class="st-pill ok">aired</span></div>
+</div></div>
+<div class="dock">
+<a href="index.html" data-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></a>
+<a href="upload.html" data-label="Upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg></a>
+<a href="index.html" data-label="Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+<a href="history.html" class="on" data-label="History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 109-9 9 9 0 00-9 9z"/><path d="M12 7v5l3 3"/></svg></a>
+<div class="sep"></div>
+<a href="accounts.html" data-label="Accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6.5 7.4L10 10m7.5-2.6L14 10m-2 5v3"/></svg></a>
+<a href="analytics.html" data-label="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10m5.5 10V4M15 20v-8m5.5 8v-4"/></svg></a>
+<a href="settings.html" data-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 01-2 1.2L14 21h-4l-.5-2.6a7 7 0 01-2-1.2l-2.4 1-2-3.4 2 3.4-2 1.6c.06.4.1.8.1 1.2z"/></svg></a>
+</div></body></html>

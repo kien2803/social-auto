@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V3 — Swiss austere</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--ink:#111;--muted:#8a8a8a;--line:#ededed;--verm:#c93f0b}
+*{margin:0;box-sizing:border-box}body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--ink)}
+.top{display:flex;justify-content:space-between;align-items:center;padding:22px 32px;border-bottom:1px solid var(--line)}
+.top .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px}
+.top .logo img{width:24px;height:24px}
+nav{display:flex;gap:22px}
+nav a{font-size:13px;color:var(--muted);text-decoration:none}
+nav a.on{color:var(--ink);font-weight:600}
+.wrap{max-width:1240px;margin:0 auto;padding:56px 32px}
+h1{font-size:64px;font-weight:700;letter-spacing:-.035em;line-height:1;margin-bottom:8px}
+.sub{font-size:15px;color:var(--muted);margin-bottom:48px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:0 32px}
+.kpis{grid-column:span 12;display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--ink)}
+.kpi{padding:20px 0 28px;border-bottom:1px solid var(--line)}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:56px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.kpi .v em{font-style:normal;font-size:20px;color:var(--muted);font-weight:500}
+.kpi.hot .v{color:var(--verm)}
+.deck{grid-column:span 8;padding-top:44px}
+.deck h2, .side h2{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:18px}
+.row{display:flex;align-items:baseline;gap:20px;padding:14px 0;border-bottom:1px solid var(--line)}
+.row .t{font-weight:600;font-size:14px;min-width:96px}
+.row .cap{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .acc{font-size:12px;color:var(--muted)}
+.side{grid-column:span 4;padding-top:44px}
+.q{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px}
+.q .num{font-weight:600}
+.fault{margin-top:36px;padding:18px;background:#faf4ef;font-size:13px}
+.fault b{color:var(--verm)}
+.btn{display:inline-block;background:var(--ink);color:#fff;padding:10px 20px;font:600 13px 'Space Grotesk';text-decoration:none}
+.foot{margin-top:64px;padding-top:16px;border-top:2px solid var(--ink);display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+</style></head><body>
+<div class="top">
+<div class="logo"><img src="/logo.svg" alt="">Omnicast</div>
+<nav><a href="#">Overview</a><a href="#">Upload</a><a href="#" class="on">Calendar</a><a href="#">History</a><a href="#">Accounts</a><a href="#">Settings</a></nav>
+<a class="btn" href="#">New upload</a>
+</div>
+<div class="wrap">
+<h1>Broadcast<br>log.</h1>
+<p class="sub">4 posts queued · 12 aired this week · 1 fault needs attention</p>
+<div class="grid">
+<div class="kpis">
+<div class="kpi"><div class="l">Queued</div><div class="v">4</div></div>
+<div class="kpi"><div class="l">Aired, 7 days</div><div class="v">12</div></div>
+<div class="kpi hot"><div class="l">Faults</div><div class="v">1</div></div>
+<div class="kpi"><div class="l">Channels</div><div class="v">1<em>/4 slots</em></div></div>
+</div>
+<div class="deck"><h2>On deck — next transmissions</h2>
+<div class="row"><span class="t">Fri 18:30</span><span class="cap">Studio tour — behind the desk</span><span class="acc">youtube / kian p</span></div>
+<div class="row"><span class="t">Sat 09:00</span><span class="cap">Weekly recap ep. 14</span><span class="acc">youtube / kian p</span></div>
+<div class="row"><span class="t">Sun 20:15</span><span class="cap">Quick tip: export presets</span><span class="acc">youtube / kian p</span></div>
+<div class="row"><span class="t">Mon 12:00</span><span class="cap">Q&A answers, part two</span><span class="acc">youtube / kian p</span></div>
+<div class="row"><span class="t">Tue 16:45</span><span class="cap">Field test: new camera gear</span><span class="acc">youtube / kian p</span></div>
+</div>
+<div class="side"><h2>Quota today</h2>
+<div class="q"><span>YouTube</span><span class="num">160 / 10,000</span></div>
+<div class="q"><span>TikTok</span><span class="num">0 / 500</span></div>
+<div class="q"><span>Instagram</span><span class="num">0 / 25</span></div>
+<div class="fault"><b>Fault.</b> YouTube token expired — reconnect required. Retry scheduled 09:12.</div>
+</div>
+</div>
+<div class="foot"><span>Omnicast — broadcast station</span><span>demo@omnicast.dev</span></div>
+</div></body></html>

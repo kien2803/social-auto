@@ -1,0 +1,137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V6 — Timetable</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#faf6ef;--ink:#221d18;--muted:#8a8177;--line:#e6ddcf;--verm:#c93f0b;--surf:#fffdf9}
+*{margin:0;box-sizing:border-box}body{font-family:'IBM Plex Sans';background:var(--paper);color:var(--ink);min-height:100vh;padding-bottom:110px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--surf)}
+.top .logo{display:flex;align-items:center;gap:9px;font:700 16px 'Space Grotesk'}.top .logo img{width:24px;height:24px}
+.top .user{font:11px 'IBM Plex Mono';color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 28px}
+.head{display:flex;justify-content:space-between;align-items:end;margin-bottom:24px}
+.kick{font:11px 'IBM Plex Mono';color:var(--verm)}h1{font:700 30px 'Space Grotesk';margin:8px 0 0}
+.nav button{background:var(--surf);border:1px solid var(--line);padding:7px 14px;font:600 12px 'IBM Plex Sans';cursor:pointer}
+.nav .pri{background:var(--verm);color:#fff;border-color:var(--verm)}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surf);border:1px solid var(--line);margin-bottom:28px}
+.kpi{padding:18px 20px;border-right:1px solid var(--line)}.kpi:last-child{border-right:0}
+.kpi .l{font:10px 'IBM Plex Mono';color:var(--muted)}
+.kpi .v{font:700 34px 'Space Grotesk';line-height:1.1;margin-top:6px}
+.kpi .v.red{color:var(--verm)}.kpi .v.ok{color:#3a7d44}
+.kpi .d{font:10px 'IBM Plex Mono';color:var(--muted);margin-top:4px}
+.channels{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surf);border:1px solid var(--line);margin-bottom:28px}
+.ch{padding:14px 18px;border-right:1px solid var(--line)}.ch:last-child{border:0}
+.ch .id{font:10px 'IBM Plex Mono';color:var(--muted)}
+.ch .name{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px;margin-top:4px}.ch .name img{width:16px;height:16px}
+.ch .st{font:10px 'IBM Plex Mono';margin-top:6px}.ch .st.on{color:#3a7d44}.ch .st.off{color:var(--muted)}
+/* daypart timetable: 5 bands x 7 days */
+.tt{display:grid;grid-template-columns:120px repeat(7,1fr);background:var(--surf);border:1px solid var(--line)}
+.tt .corner{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tt .dh{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:10px 0;text-align:center}
+.tt .dh:last-child{border-right:0}
+.tt .dh .d{font:600 13px 'IBM Plex Sans'}.tt .dh .n{font:11px 'IBM Plex Mono';color:var(--muted);margin-top:2px}
+.tt .dh.today .n{color:var(--verm);font-weight:600}
+.band{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 10px;background:var(--paper)}
+.band .bn{font:600 13px 'IBM Plex Sans';text-transform:capitalize}
+.band .br{font:10px 'IBM Plex Mono';color:var(--muted);margin-top:2px}
+.slot{border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-height:96px;padding:6px;position:relative;display:flex;flex-direction:column;gap:4px}
+.slot:nth-child(8n),.tt>*:last-child{border-right:0}
+.slot .add{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 20px 'IBM Plex Sans';color:var(--verm);background:rgba(255,253,249,.85);opacity:0;transition:opacity .15s;cursor:pointer;text-decoration:none}
+.slot:hover .add{opacity:1}
+.cls{border-left:3px solid var(--verm);background:#f8e3dc;padding:5px 7px;font-size:11px;line-height:1.3}
+.cls .ct{font:600 10px 'IBM Plex Mono';display:block}
+.cls .cc{display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cls.tt2{background:#e8e4de;border-left-color:#44403a}
+.cls.ig{background:#fbe3ee;border-left-color:#d33682}
+.cls.fb{background:#e2eafa;border-left-color:#2563c9}
+.cls.aired{opacity:.5}
+.dock{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:10px 14px;background:rgba(255,253,249,.88);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 32px rgba(60,45,30,.14)}
+.dock a{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:var(--paper);border:1px solid var(--line);color:var(--muted);transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+.dock a svg{width:24px;height:24px}
+.dock a:hover{transform:translateY(-10px) scale(1.18);background:#fff}
+.dock a.on{color:var(--verm);background:#fdf1ea;border-color:#eccfbf}
+.dock a.on::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--verm)}
+.dock .sep{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
+</style></head><body>
+<div class="top"><a class="logo" href="index.html" style="text-decoration:none;color:inherit"><img src="/logo.svg" alt="">Omnicast</a><div class="user">demo@omnicast.dev</div></div>
+<div class="wrap">
+<div class="head"><div><div class="kick">week 44 · CH-01–04</div><h1>Broadcast timetable</h1></div>
+<div class="nav"><button>‹</button><button class="pri">this week</button><button>›</button></div></div>
+<div class="kpis">
+<div class="kpi"><div class="l">queued</div><div class="v">4</div><div class="d">next 7 days</div></div>
+<div class="kpi"><div class="l">aired · 7d</div><div class="v ok">12</div><div class="d">▲ +3 vs prior</div></div>
+<div class="kpi"><div class="l">faults</div><div class="v red">1</div><div class="d">retry 09:12</div></div>
+<div class="kpi"><div class="l">quota today</div><div class="v" style="font-size:24px;margin-top:14px">160<small style="font-size:14px;color:var(--muted)">/10k</small></div><div class="d">youtube units</div></div>
+</div>
+<div class="channels">
+<div class="ch"><div class="id">CH-01</div><div class="name"><img src="/icons/youtube.svg" alt="">YouTube</div><div class="st on">● on air · kian p</div></div>
+<div class="ch"><div class="id">CH-02</div><div class="name"><img src="/icons/tiktok.svg" alt="">TikTok</div><div class="st off">○ standby</div></div>
+<div class="ch"><div class="id">CH-03</div><div class="name"><img src="/icons/instagram.svg" alt="">Instagram</div><div class="st off">○ standby</div></div>
+<div class="ch"><div class="id">CH-04</div><div class="name"><img src="/icons/facebook.svg" alt="">Facebook</div><div class="st off">○ standby</div></div>
+</div>
+<h2 style="font:600 13px 'Space Grotesk';margin-bottom:14px">This week</h2>
+<div class="tt">
+<div class="corner"></div>
+<div class="dh"><div class="d">Mon</div><div class="n">27</div></div>
+<div class="dh"><div class="d">Tue</div><div class="n">28</div></div>
+<div class="dh"><div class="d">Wed</div><div class="n">29</div></div>
+<div class="dh"><div class="d">Thu</div><div class="n">30</div></div>
+<div class="dh today"><div class="d">Fri</div><div class="n">31</div></div>
+<div class="dh"><div class="d">Sat</div><div class="n">1</div></div>
+<div class="dh"><div class="d">Sun</div><div class="n">2</div></div>
+<!-- SÁNG 05–11 -->
+<div class="band"><div class="bn">sáng</div><div class="br">05:00–11:00</div></div>
+<div class="slot"><a class="add" href="upload.html" title="Upload">+</a></div>
+<div class="slot"><div class="cls fb"><span class="ct">07:15</span><span class="cc">Morning vlog</span></div><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls yt aired"><span class="ct">07:42</span><span class="cc">Upload #6 — fault</span></div><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls yt"><span class="ct">09:00</span><span class="cc">Weekly recap ep. 14</span></div><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<!-- TRƯA 11–14 -->
+<div class="band"><div class="bn">trưa</div><div class="br">11:00–14:00</div></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls fb"><span class="ct">12:00</span><span class="cc">Q&A answers pt. 2</span></div><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<!-- CHIỀU 14–18 -->
+<div class="band"><div class="bn">chiều</div><div class="br">14:00–18:00</div></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls tt2"><span class="ct">15:30</span><span class="cc">Behind the edit</span></div><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<!-- TỐI 18–22 -->
+<div class="band"><div class="bn">tối</div><div class="br">18:00–22:00</div></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls yt aired"><span class="ct">19:00</span><span class="cc">Field test: camera</span></div><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls yt"><span class="ct">18:30</span><span class="cc">Studio tour — desk</span></div><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls tt2"><span class="ct">20:15</span><span class="cc">Export presets tip</span></div><a class="add" href="upload.html">+</a></div>
+<!-- KHUYA 22–05 -->
+<div class="band"><div class="bn">khuya</div><div class="br">22:00–23:59</div></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><a class="add" href="upload.html">+</a></div>
+<div class="slot"><div class="cls ig"><span class="ct">23:30</span><span class="cc">Late cut reel</span></div><a class="add" href="upload.html">+</a></div>
+</div></div>
+<div class="dock">
+<a href="index.html" data-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></a>
+<a href="upload.html" data-label="Upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg></a>
+<a href="index.html" class="on" data-label="Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+<a href="pipeline.html" data-label="Pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg></a>
+<a href="history.html" data-label="History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 109-9 9 9 0 00-9 9z"/><path d="M12 7v5l3 3"/></svg></a>
+<div class="sep"></div>
+<a href="accounts.html" data-label="Accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6.5 7.4L10 10m7.5-2.6L14 10m-2 5v3"/></svg></a>
+<a href="analytics.html" data-label="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10m5.5 10V4M15 20v-8m5.5 8v-4"/></svg></a>
+<a href="settings.html" data-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 01-2 1.2L14 21h-4l-.5-2.6a7 7 0 01-2-1.2l-2.4 1-2-3.4 2 3.4-2 1.6c.06.4.1.8.1 1.2z"/></svg></a>
+</div></body></html>

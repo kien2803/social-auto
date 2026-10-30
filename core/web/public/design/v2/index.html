@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V2 — Control room</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#16130f;--panel:#1e1a15;--line:#2c2721;--ink:#e8e2d8;--muted:#8a8178;--verm:#e8510f;--ok:#5ca872}
+*{margin:0;box-sizing:border-box}body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink);display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+aside{border-right:1px solid var(--line);padding:28px 18px}
+aside .logo{display:flex;align-items:center;gap:10px;margin-bottom:34px}
+aside .logo img{width:28px;height:28px}
+aside .logo b{font-family:'Space Grotesk';font-size:17px}
+nav a{display:flex;justify-content:space-between;padding:9px 10px;font-family:'IBM Plex Mono';font-size:12px;color:var(--muted);text-decoration:none}
+nav a.on{color:var(--ink);background:var(--panel)}
+nav a .n{color:var(--verm)}
+main{padding:36px 44px;max-width:1150px}
+.head{display:flex;justify-content:space-between;align-items:end;margin-bottom:28px}
+.kick{font-family:'IBM Plex Mono';font-size:11px;color:var(--verm)}
+h1{font-family:'Space Grotesk';font-size:30px;letter-spacing:-.02em}
+.live{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono';font-size:11px;color:var(--ok)}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:p 1.6s infinite}
+@keyframes p{50%{opacity:.3}}
+.btn{background:var(--verm);color:#fff;border:0;padding:9px 16px;font:600 13px 'IBM Plex Sans';cursor:pointer}
+.panel{background:var(--panel);padding:22px 24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);margin-bottom:28px}
+.stat{background:var(--bg);padding:22px 20px}
+.stat .l{font-family:'IBM Plex Mono';font-size:10px;color:var(--muted)}
+.stat .v{font-family:'Space Grotesk';font-size:42px;font-weight:700;line-height:1.05;margin-top:8px}
+.stat .v.red{color:var(--verm)}.stat .v.ok{color:var(--ok)}
+.cols{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}
+.sec h2{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.04em}
+.row{display:grid;grid-template-columns:110px 1fr auto;gap:12px;align-items:center;padding:11px 2px;font-size:13px;border-bottom:1px solid var(--line)}
+.row .t{font-family:'IBM Plex Mono';font-size:12px;color:var(--verm)}
+.row .acc{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted)}
+.q{margin-bottom:16px}
+.q .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.q .tag{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted)}
+.meter{height:4px;background:var(--line)}
+.meter i{display:block;height:100%;background:var(--ok)}
+.meter i.hot{background:var(--verm)}
+.fault{border-left:2px solid var(--verm);padding:10px 14px;margin-bottom:10px;font-size:13px;background:#231a14}
+.fault .e{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);margin-top:4px}
+</style></head><body>
+<aside>
+<div class="logo"><img src="/logo.svg" alt=""><b>Omnicast</b></div>
+<nav>
+<a href="#">overview <span class="n"></span></a><a href="#">upload</a><a href="#" class="on">calendar <span class="n">4</span></a><a href="#">history</a><a href="#">analytics</a><a href="#">accounts <span class="n">1</span></a><a href="#">settings</a>
+</nav>
+</aside>
+<main>
+<div class="head"><div><div class="kick">// transmission control</div><h1>Broadcast log</h1></div>
+<div style="display:flex;align-items:center;gap:18px"><span class="live"><i></i> relay live</span><button class="btn">New upload</button></div></div>
+<div class="stats">
+<div class="stat"><div class="l">queued</div><div class="v">4</div></div>
+<div class="stat"><div class="l">aired 7d</div><div class="v ok">12</div></div>
+<div class="stat"><div class="l">faults</div><div class="v red">1</div></div>
+<div class="stat"><div class="l">channels</div><div class="v">1</div></div>
+</div>
+<div class="cols">
+<div class="panel">
+<div class="sec"><h2>on_deck — next transmissions</h2>
+<div class="row"><span class="t">18:30 fri</span><span>Studio tour — behind the desk</span><span class="acc">yt/kianp</span></div>
+<div class="row"><span class="t">09:00 sat</span><span>Weekly recap ep. 14</span><span class="acc">yt/kianp</span></div>
+<div class="row"><span class="t">20:15 sun</span><span>Quick tip: export presets</span><span class="acc">yt/kianp</span></div>
+<div class="row"><span class="t">12:00 mon</span><span>Q&A answers, part two</span><span class="acc">yt/kianp</span></div>
+<div class="row" style="border:0"><span class="t">16:45 tue</span><span>Field test: new camera</span><span class="acc">yt/kianp</span></div>
+</div></div>
+<div>
+<div class="panel"><div class="sec"><h2>quota — today</h2>
+<div class="q"><div class="top"><span>YouTube</span><span class="tag">160/10k</span></div><div class="meter"><i style="width:8%"></i></div></div>
+<div class="q"><div class="top"><span>TikTok</span><span class="tag">0/500</span></div><div class="meter"><i style="width:0%"></i></div></div>
+<div class="q"><div class="top"><span>Instagram</span><span class="tag">0/25</span></div><div class="meter"><i style="width:0%"></i></div></div>
+</div></div>
+<div class="panel" style="margin-top:20px"><div class="sec"><h2>faults</h2>
+<div class="fault">token expired — reconnect youtube<div class="e">retry 2 · next 09:12</div></div>
+</div></div>
+</div>
+</div>
+</main></body></html>

@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V6 — Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#faf6ef;--ink:#221d18;--muted:#8a8177;--line:#e6ddcf;--verm:#c93f0b;--surf:#fffdf9}
+*{margin:0;box-sizing:border-box}body{font-family:'IBM Plex Sans';background:var(--paper);color:var(--ink);min-height:100vh;padding-bottom:110px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--surf)}
+.top .logo{display:flex;align-items:center;gap:9px;font:700 16px 'Space Grotesk'}.top .logo img{width:24px;height:24px}
+.top .user{font:11px 'IBM Plex Mono';color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 28px}
+.kick{font:11px 'IBM Plex Mono';color:var(--verm)}h1{font:700 30px 'Space Grotesk';margin:8px 0 26px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surf);border:1px solid var(--line);margin-bottom:28px}
+.kpi{padding:18px 20px;border-right:1px solid var(--line)}.kpi:last-child{border-right:0}
+.kpi .l{font:10px 'IBM Plex Mono';color:var(--muted)}
+.kpi .v{font:700 34px 'Space Grotesk';line-height:1.1;margin-top:6px}
+.kpi .d{font:10px 'IBM Plex Mono';margin-top:4px}.kpi .d.up{color:#3a7d44}.kpi .d.dn{color:var(--verm)}
+.panel{background:var(--surf);border:1px solid var(--line);padding:20px 22px;margin-bottom:28px}
+.panel h2{font:600 13px 'Space Grotesk';margin-bottom:16px}
+/* bar chart — broadcasts per day, mono axis */
+.bars{display:flex;align-items:flex-end;gap:8px;height:160px;border-bottom:1px solid var(--line);padding-bottom:0}
+.b{flex:1;background:var(--verm);position:relative;min-height:4px}
+.b.off{background:var(--line)}
+.b span{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font:9px 'IBM Plex Mono';color:var(--muted)}
+.bl{display:flex;gap:8px;margin-top:6px}
+.bl span{flex:1;text-align:center;font:9px 'IBM Plex Mono';color:var(--muted)}
+/* channel table */
+.ctab{width:100%;border-collapse:collapse}
+.ctab td{padding:10px 8px;font:12px 'IBM Plex Mono';border-bottom:1px solid var(--line)}
+.ctab tr:last-child td{border:0}
+.ctab .nm{font:600 13px 'IBM Plex Sans'}
+.ctab .num{text-align:right}
+.dock{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:10px 14px;background:rgba(255,253,249,.88);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 32px rgba(60,45,30,.14)}
+.dock a{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:var(--paper);border:1px solid var(--line);color:var(--muted);transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+.dock a svg{width:24px;height:24px}
+.dock a:hover{transform:translateY(-10px) scale(1.18);background:#fff}
+.dock a.on{color:var(--verm);background:#fdf1ea;border-color:#eccfbf}
+.dock a.on::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--verm)}
+.dock .sep{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
+</style></head><body>
+<div class="top"><a class="logo" href="index.html" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:9px"><img src="/logo.svg" alt="">Omnicast</a><div class="user">demo@omnicast.dev</div></div>
+<div class="wrap">
+<div class="kick">signal metrics · CH-01</div><h1>Analytics</h1>
+<div class="kpis">
+<div class="kpi"><div class="l">subs</div><div class="v">3</div><div class="d up">▲ +1 / 7d</div></div>
+<div class="kpi"><div class="l">views</div><div class="v">3,954</div><div class="d up">▲ +212 / 7d</div></div>
+<div class="kpi"><div class="l">videos</div><div class="v">6</div><div class="d">— flat</div></div>
+<div class="kpi"><div class="l">likes</div><div class="v">33</div><div class="d up">▲ +4 / 7d</div></div>
+</div>
+<div class="panel"><h2>Broadcasts per day — last 14d</h2>
+<div class="bars">
+<div class="b" style="height:30%"><span>1</span></div><div class="b off" style="height:4%"></div><div class="b" style="height:60%"><span>2</span></div><div class="b off" style="height:4%"></div><div class="b off" style="height:4%"></div><div class="b" style="height:90%"><span>3</span></div><div class="b off" style="height:4%"></div><div class="b" style="height:30%"><span>1</span></div><div class="b off" style="height:4%"></div><div class="b" style="height:60%"><span>2</span></div><div class="b off" style="height:4%"></div><div class="b" style="height:30%"><span>1</span></div><div class="b off" style="height:4%"></div><div class="b" style="height:30%"><span>1</span></div>
+</div>
+<div class="bl"><span>m20</span><span>t21</span><span>w22</span><span>t23</span><span>f24</span><span>s25</span><span>s26</span><span>m27</span><span>t28</span><span>w29</span><span>t30</span><span>f31</span><span>s1</span><span>s2</span></div>
+</div>
+<div class="panel"><h2>Channels</h2>
+<table class="ctab">
+<tr><td class="nm">CH-01 · YouTube · kian p</td><td class="num">12 aired</td><td class="num">1 fault</td><td class="num">3,954 views</td><td class="num" style="color:#3a7d44">healthy</td></tr>
+<tr><td class="nm" style="color:var(--muted)">CH-02 · TikTok</td><td class="num">0 aired</td><td class="num">—</td><td class="num">—</td><td class="num">standby</td></tr>
+<tr><td class="nm" style="color:var(--muted)">CH-03 · Instagram</td><td class="num">0 aired</td><td class="num">—</td><td class="num">—</td><td class="num">standby</td></tr>
+<tr><td class="nm" style="color:var(--muted)">CH-04 · Facebook</td><td class="num">0 aired</td><td class="num">—</td><td class="num">—</td><td class="num">standby</td></tr>
+</table>
+</div></div>
+<div class="dock">
+<a href="index.html" data-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></a>
+<a href="upload.html" data-label="Upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg></a>
+<a href="index.html" data-label="Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+<a href="pipeline.html" data-label="Pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg></a>
+<a href="history.html" data-label="History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 109-9 9 9 0 00-9 9z"/><path d="M12 7v5l3 3"/></svg></a>
+<div class="sep"></div>
+<a href="accounts.html" data-label="Accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6.5 7.4L10 10m7.5-2.6L14 10m-2 5v3"/></svg></a>
+<a href="#" class="on" data-label="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10m5.5 10V4M15 20v-8m5.5 8v-4"/></svg></a>
+<a href="settings.html" data-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 01-2 1.2L14 21h-4l-.5-2.6a7 7 0 01-2-1.2l-2.4 1-2-3.4 2 3.4-2 1.6c.06.4.1.8.1 1.2z"/></svg></a>
+</div></body></html>

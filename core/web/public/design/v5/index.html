@@ -1,0 +1,93 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V5 — Transmission board + dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#faf6ef;--ink:#221d18;--muted:#8a8177;--line:#e6ddcf;--verm:#c93f0b;--surf:#fffdf9}
+*{margin:0;box-sizing:border-box}body{font-family:'IBM Plex Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;padding-bottom:110px}
+.dial{display:flex;align-items:flex-end;height:34px;border-bottom:1px solid var(--line);background:var(--surf)}
+.dial i{flex:1;border-left:1px solid var(--line);height:10px}.dial i.t5{height:20px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--surf)}
+.top .logo{display:flex;align-items:center;gap:9px;font:700 16px 'Space Grotesk'}.top .logo img{width:24px;height:24px}
+.top .user{font:11px 'IBM Plex Mono';color:var(--muted)}
+.btn{background:var(--verm);color:#fff;border:0;padding:9px 16px;font:600 13px 'IBM Plex Sans';cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 28px}
+.channels{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);background:var(--surf);margin-bottom:36px}
+.ch{padding:16px 18px;border-right:1px solid var(--line)}.ch:last-child{border-right:0}
+.ch .id{font:10px 'IBM Plex Mono';color:var(--muted)}
+.ch .name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;margin-top:4px}
+.ch .name img{width:16px;height:16px}
+.ch .st{font:10px 'IBM Plex Mono';margin-top:6px}.ch .st.on{color:#3a7d44}.ch .st.off{color:var(--muted)}
+h1{font:700 30px 'Space Grotesk';letter-spacing:-.02em;margin:8px 0 26px}
+.kick{font:11px 'IBM Plex Mono';color:var(--verm)}
+.log{background:var(--surf);border:1px solid var(--line)}
+.log .hd,.log .r{display:grid;grid-template-columns:90px 130px 1fr 140px 90px;padding:10px 16px;border-bottom:1px solid var(--line);align-items:center}
+.log .hd{font:10px 'IBM Plex Mono';color:var(--muted);background:var(--paper)}
+.log .r{font-size:13px}.log .r:last-child{border:0}
+.log .time{font:600 12px 'IBM Plex Mono';color:var(--verm)}
+.log .ch2{font:11px 'IBM Plex Mono';color:var(--muted)}
+.log .acc{font-size:12px;color:var(--muted)}
+.st-pill{font:600 10px 'IBM Plex Mono';padding:3px 8px;text-align:center}
+.st-pill.q{background:#f3ead9;color:#92600a}.st-pill.ok{background:#e4efe2;color:#3a7d44}.st-pill.err{background:#f8e3dc;color:var(--verm)}
+.cols{display:grid;grid-template-columns:1.6fr 1fr;gap:28px;margin-top:28px}
+.panel{background:var(--surf);border:1px solid var(--line);padding:20px 22px}
+.panel h2{font:600 13px 'Space Grotesk';margin-bottom:14px}
+.kv{display:flex;justify-content:space-between;font:12px 'IBM Plex Mono';padding:9px 0;border-bottom:1px solid var(--line)}.kv:last-child{border:0}
+.kv b{font-size:15px}
+/* ── macOS dock ─────────────────────────────────────────── */
+.dock{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:6px;padding:10px 14px;background:rgba(255,253,249,.88);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 32px rgba(60,45,30,.14)}
+.dock a{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:var(--paper);border:1px solid var(--line);color:var(--muted);transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .15s}
+.dock a svg{width:24px;height:24px;transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+.dock a:hover{transform:translateY(-10px) scale(1.18);background:#fff}
+.dock a:hover svg{transform:scale(1.05)}
+.dock a::after{content:attr(data-label);position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);font:500 11px 'IBM Plex Sans';padding:4px 9px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
+.dock a:hover::after{opacity:1}
+.dock a.on{color:var(--verm);background:#fdf1ea;border-color:#eccfbf}
+.dock a.on::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--verm)}
+.dock .sep{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
+</style></head><body>
+<div class="dial"><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i><i></i><i></i><i></i><i></i><i class="t5"></i></div>
+<div class="top">
+<div class="logo"><img src="/logo.svg" alt="">Omnicast</div>
+<div class="user">demo@omnicast.dev</div>
+</div>
+<div class="wrap">
+<div class="kick">CH-01 · youtube · @kianp-283 · signal locked</div>
+<h1>Transmission board</h1>
+<div class="channels">
+<div class="ch"><div class="id">CH-01</div><div class="name"><img src="/icons/youtube.svg" alt="">YouTube</div><div class="st on">● on air · kian p</div></div>
+<div class="ch"><div class="id">CH-02</div><div class="name"><img src="/icons/tiktok.svg" alt="">TikTok</div><div class="st off">○ standby</div></div>
+<div class="ch"><div class="id">CH-03</div><div class="name"><img src="/icons/instagram.svg" alt="">Instagram</div><div class="st off">○ standby</div></div>
+<div class="ch"><div class="id">CH-04</div><div class="name"><img src="/icons/facebook.svg" alt="">Facebook</div><div class="st off">○ standby</div></div>
+</div>
+<div class="log">
+<div class="hd"><span>time</span><span>channel</span><span>transmission</span><span>account</span><span>status</span></div>
+<div class="r"><span class="time">18:30</span><span class="ch2">CH-01 fri</span><span>Studio tour — behind the desk</span><span class="acc">kian p</span><span class="st-pill q">queued</span></div>
+<div class="r"><span class="time">09:00</span><span class="ch2">CH-01 sat</span><span>Weekly recap ep. 14</span><span class="acc">kian p</span><span class="st-pill q">queued</span></div>
+<div class="r"><span class="time">20:15</span><span class="ch2">CH-01 sun</span><span>Quick tip: export presets</span><span class="acc">kian p</span><span class="st-pill q">queued</span></div>
+<div class="r"><span class="time">07:42</span><span class="ch2">CH-01 thu</span><span>Upload #6 — no title</span><span class="acc">kian p</span><span class="st-pill err">fault</span></div>
+<div class="r"><span class="time">19:00</span><span class="ch2">CH-01 wed</span><span>Field test: new camera gear</span><span class="acc">kian p</span><span class="st-pill ok">aired</span></div>
+</div>
+<div class="cols">
+<div class="panel"><h2>Next 7 days</h2>
+<div class="kv"><span>queued</span><b>4 posts</b></div>
+<div class="kv"><span>aired this week</span><b>12 posts</b></div>
+<div class="kv"><span>faults open</span><b style="color:var(--verm)">1 post</b></div>
+<div class="kv"><span>quota used today</span><b>160 / 10,000</b></div>
+</div>
+<div class="panel"><h2>Signal</h2>
+<div class="kv"><span>youtube relay</span><b style="color:#3a7d44">strong</b></div>
+<div class="kv"><span>token health</span><b style="color:#3a7d44">valid</b></div>
+<div class="kv"><span>last sync</span><b>00:09 utc</b></div>
+<div class="kv"><span>next retry</span><b>09:12</b></div>
+</div>
+</div>
+</div>
+<div class="dock">
+<a href="#" data-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></a>
+<a href="#" data-label="Upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg></a>
+<a href="#" class="on" data-label="Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+<a href="#" data-label="History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 109-9 9 9 0 00-9 9z"/><path d="M12 7v5l3 3"/></svg></a>
+<div class="sep"></div>
+<a href="#" data-label="Accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6.5 7.4L10 10m7.5-2.6L14 10m-2 5v3"/></svg></a>
+<a href="#" data-label="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10m5.5 10V4M15 20v-8m5.5 8v-4"/></svg></a>
+<a href="#" data-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 01-2 1.2L14 21h-4l-.5-2.6a7 7 0 01-2-1.2l-2.4 1-2-3.4 2-1.6A7 7 0 015 12a7 7 0 01.1-1.2l-2-1.6 2-3.4 2.4 1a7 7 0 012-1.2L10 3h4l.5 2.6a7 7 0 012 1.2l2.4-1 2 3.4-2 1.6c.06.4.1.8.1 1.2z"/></svg></a>
+</div></body></html>

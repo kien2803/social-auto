@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V6 — Upload &amp; Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#faf6ef;--ink:#221d18;--muted:#8a8177;--line:#e6ddcf;--verm:#c93f0b;--surf:#fffdf9}
+*{margin:0;box-sizing:border-box}body{font-family:'IBM Plex Sans';background:var(--paper);color:var(--ink);min-height:100vh;padding-bottom:110px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--surf)}
+.top .logo{display:flex;align-items:center;gap:9px;font:700 16px 'Space Grotesk'}.top .logo img{width:24px;height:24px}
+.top .user{font:11px 'IBM Plex Mono';color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 28px}
+.kick{font:11px 'IBM Plex Mono';color:var(--verm)}h1{font:700 30px 'Space Grotesk';margin:8px 0 26px}
+.drop{border:1.5px dashed var(--muted);background:var(--surf);padding:48px 20px;text-align:center;margin-bottom:28px;cursor:pointer}
+.drop:hover{border-color:var(--verm)}
+.drop .big{font:600 17px 'Space Grotesk'}.drop .sub{font:12px 'IBM Plex Mono';color:var(--muted);margin-top:6px}
+/* upload card with schedule form */
+.ucard{background:var(--surf);border:1px solid var(--line);margin-bottom:18px}
+.ucard .uh{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.ucard .th{width:52px;height:32px;background:var(--line);display:flex;align-items:center;justify-content:center;font:10px 'IBM Plex Mono';color:var(--muted)}
+.ucard .fn{font:600 14px 'IBM Plex Sans';flex:1}
+.ucard .fs{font:11px 'IBM Plex Mono';color:var(--muted)}
+.ucard .body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ucard .col{padding:16px 18px}
+.ucard .col:first-child{border-right:1px solid var(--line)}
+.fl{display:block;font:10px 'IBM Plex Mono';color:var(--muted);margin:0 0 6px}
+.inp{width:100%;background:var(--paper);border:1px solid var(--line);padding:8px 10px;font:13px 'IBM Plex Sans';margin-bottom:12px}
+textarea.inp{resize:vertical;min-height:64px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--paper);padding:6px 10px;font:600 11px 'IBM Plex Mono';cursor:pointer;display:flex;gap:6px;align-items:center}
+.chip.on{border-color:var(--verm);background:#fdf1ea;color:var(--verm)}
+.prog{height:3px;background:var(--line);margin:8px 0 2px}
+.prog i{display:block;height:100%;background:var(--verm)}
+.ptxt{font:10px 'IBM Plex Mono';color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center}
+.btn{background:var(--verm);color:#fff;border:0;padding:9px 18px;font:600 13px 'IBM Plex Sans'}
+.ghost{background:none;border:1px solid var(--line);padding:9px 14px;font:600 12px 'IBM Plex Sans'}
+/* library */
+.lib{background:var(--surf);border:1px solid var(--line);margin-top:30px}
+.lib .hd,.lib .r{display:grid;grid-template-columns:56px 1fr 110px 90px 120px;padding:10px 16px;border-bottom:1px solid var(--line);align-items:center}
+.lib .hd{font:10px 'IBM Plex Mono';color:var(--muted);background:var(--paper)}
+.lib .r{font-size:13px}.lib .r:last-child{border:0}
+.lib .num{font:11px 'IBM Plex Mono';color:var(--muted)}
+.dock{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:10px 14px;background:rgba(255,253,249,.88);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 32px rgba(60,45,30,.14)}
+.dock a{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:var(--paper);border:1px solid var(--line);color:var(--muted);transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+.dock a svg{width:24px;height:24px}
+.dock a:hover{transform:translateY(-10px) scale(1.18);background:#fff}
+.dock a.on{color:var(--verm);background:#fdf1ea;border-color:#eccfbf}
+.dock a.on::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--verm)}
+.dock .sep{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
+</style></head><body>
+<div class="top"><a class="logo" href="index.html" style="text-decoration:none;color:inherit"><img src="/logo.svg" alt="">Omnicast</a><div class="user">demo@omnicast.dev</div></div>
+<div class="wrap">
+<div class="kick">intake → broadcast queue</div><h1>Upload &amp; schedule</h1>
+<div class="drop"><div class="big">Drop video files here</div><div class="sub">or click to browse · mp4 / mov / webm · max 2 GB</div></div>
+
+<!-- uploading card -->
+<div class="ucard">
+<div class="uh"><span class="th">▸</span><span class="fn">studio_tour_v2.mp4</span><span class="fs">412 MB · 4:12</span>
+<span class="ptxt">uploading… 67%</span></div>
+<div class="prog" style="margin:0"><i style="width:67%"></i></div>
+<div class="body">
+<div class="col">
+<label class="fl">caption</label><textarea class="inp" placeholder="What should this post say?">Studio tour — behind the desk</textarea>
+<label class="fl">visibility</label><select class="inp"><option>private</option><option>unlisted</option><option>public</option></select>
+</div>
+<div class="col">
+<label class="fl">channels</label>
+<div class="chips">
+<span class="chip on"><img src="/icons/youtube.svg" width="12" alt=""> CH-01 · kian p</span>
+<span class="chip"><img src="/icons/tiktok.svg" width="12" alt=""> CH-02</span>
+<span class="chip"><img src="/icons/instagram.svg" width="12" alt=""> CH-03</span>
+</div>
+<label class="fl">air time — picked from calendar slot</label>
+<input type="datetime-local" class="inp" value="2025-10-31T18:30">
+<div class="row"><button class="ghost">Save draft</button><button class="btn">Queue broadcast</button></div>
+</div></div></div>
+
+<!-- ready card -->
+<div class="ucard">
+<div class="uh"><span class="th">▸</span><span class="fn">qa_answers_pt2.mp4</span><span class="fs">521 MB · 8:31</span><span class="ptxt" style="color:#3a7d44">ready</span></div>
+<div class="body">
+<div class="col">
+<label class="fl">caption</label><textarea class="inp" placeholder="What should this post say?"></textarea>
+<label class="fl">visibility</label><select class="inp"><option>private</option><option>unlisted</option><option>public</option></select>
+</div>
+<div class="col">
+<label class="fl">channels</label>
+<div class="chips"><span class="chip"><img src="/icons/youtube.svg" width="12" alt=""> CH-01 · kian p</span></div>
+<label class="fl">air time</label>
+<input type="datetime-local" class="inp">
+<div class="row"><button class="ghost">Save draft</button><button class="btn">Queue broadcast</button></div>
+</div></div></div>
+
+<div class="lib">
+<div class="hd"><span></span><span>file</span><span>size</span><span>duration</span><span>received</span></div>
+<div class="r"><span class="th" style="width:40px;height:24px;background:var(--line);display:flex;align-items:center;justify-content:center;font:9px 'IBM Plex Mono';color:var(--muted)">▸</span><span>weekly_recap_ep14.mov</span><span class="num">288 MB</span><span class="num">6:47</span><span class="num">wed 22:03</span></div>
+<div class="r"><span class="th" style="width:40px;height:24px;background:var(--line);display:flex;align-items:center;justify-content:center;font:9px 'IBM Plex Mono';color:var(--muted)">▸</span><span>export_presets_tip.mp4</span><span class="num">96 MB</span><span class="num">1:58</span><span class="num">wed 15:20</span></div>
+</div></div>
+<div class="dock">
+<a href="index.html" data-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></a>
+<a href="upload.html" class="on" data-label="Upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 20h16"/></svg></a>
+<a href="index.html" data-label="Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+<a href="pipeline.html" data-label="Pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg></a>
+<a href="history.html" data-label="History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 109-9 9 9 0 00-9 9z"/><path d="M12 7v5l3 3"/></svg></a>
+<div class="sep"></div>
+<a href="accounts.html" data-label="Accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6.5 7.4L10 10m7.5-2.6L14 10m-2 5v3"/></svg></a>
+<a href="analytics.html" data-label="Analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10m5.5 10V4M15 20v-8m5.5 8v-4"/></svg></a>
+<a href="settings.html" data-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 01-.1 1.2l2 1.6-2 3.4-2.4-1a7 7 0 01-2 1.2L14 21h-4l-.5-2.6a7 7 0 01-2-1.2l-2.4 1-2-3.4 2 3.4-2 1.6c.06.4.1.8.1 1.2z"/></svg></a>
+</div></body></html>
