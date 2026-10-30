@@ -10,6 +10,10 @@ not_found_handling = "single-page-application"
 # Serve literal .html paths (Google site-verification file) instead of
 # clean-URL redirecting them to the extensionless path.
 html_handling = "none"
+# API + OAuth paths must reach the Worker even for browser navigations —
+# without this, the assets layer's SPA fallback answers /api/auth/youtube/start
+# with index.html (Accept: text/html) and the OAuth redirect never happens.
+run_worker_first = ["/api/*", "/auth/*"]
 
 # ── D1 (SQLite) ─────────────────────────────────────────────────────
 [[d1_databases]]
