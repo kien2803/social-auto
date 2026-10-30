@@ -82,7 +82,7 @@ function PostChip({
         onClick();
       }}
       title={`${account?.display_name ?? ''} — ${post.caption.split('\n')[0]}`}
-      className={`block w-full truncate rounded border-l-2 px-1.5 py-0.5 text-left text-[11px] leading-tight text-ink dark:text-stone-200 ${colors} ${dim ? 'opacity-50 line-through' : ''} ${post.status === 'pending' ? 'cursor-grab' : 'cursor-pointer'}`}
+      className={`block w-full truncate border-l-2 px-1.5 py-0.5 text-left font-mono text-[11px] leading-tight text-ink dark:text-stone-200 ${colors} ${dim ? 'opacity-50 line-through' : ''} ${post.status === 'pending' ? 'cursor-grab' : 'cursor-pointer'}`}
     >
       <span className="font-mono font-semibold">{dayjs(post.scheduled_at).format('HH:mm')}</span>{' '}
       {account?.display_name ?? 'account'}
@@ -133,11 +133,11 @@ function DayCell({
         const id = e.dataTransfer.getData('text/post-id');
         if (id) onDropPost(id, date);
       }}
-      className={`flex min-h-[6.5rem] flex-col gap-1 border border-stone-200 p-1.5 text-left align-top dark:border-stone-800 ${
-        inMonth ? 'bg-surface' : 'bg-surface-muted/50 text-ink-subtle dark:bg-[#211d18]/50'
-      } ${over ? 'ring-2 ring-brand-500' : ''} hover:bg-surface-muted/60 dark:hover:bg-stone-800/40`}
+      className={`flex min-h-[6.5rem] flex-col gap-1 border-b border-r border-stone-200 p-1.5 text-left align-top dark:border-stone-800 ${
+        inMonth ? 'bg-surface' : 'bg-surface-muted/40 text-ink-subtle dark:bg-[#211d18]/40'
+      } ${over ? 'bg-brand-50 dark:bg-brand-950/30' : ''} transition-colors hover:bg-surface-muted/50 dark:hover:bg-stone-800/40`}
     >
-      <div className={`text-xs font-medium ${isToday ? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-white' : 'text-ink-muted dark:text-stone-400'}`}>
+      <div className={`font-mono text-xs ${isToday ? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 font-semibold text-white' : 'text-ink-muted dark:text-stone-400'}`}>
         {date.date()}
       </div>
       <div className="flex flex-col gap-1">
@@ -505,14 +505,14 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-200 pb-4 dark:border-stone-800">
         <div>
-          <h1 className="text-2xl font-bold text-ink dark:text-stone-100">Calendar</h1>
-          <p className="mt-1 text-sm text-ink-muted dark:text-stone-400">
+          <p className="font-mono text-[11px] text-ink-subtle dark:text-stone-500">content schedule</p>
+          <h1 className="font-display text-2xl font-bold text-ink dark:text-stone-100">
             {view === 'week'
               ? `${days[0]!.format('MMM D')} – ${days[6]!.format('MMM D, YYYY')}`
               : anchor.format('MMMM YYYY')}
-          </p>
+          </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="secondary" onClick={() => setAnchor(dayjs())}>
@@ -582,9 +582,9 @@ export function CalendarPage() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-7 gap-0 border-x border-t border-stone-200 text-center text-[11px] font-medium uppercase tracking-wide text-ink-subtle dark:border-stone-800 dark:text-stone-500">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <div key={d} className="border-b border-stone-200 py-1.5 dark:border-stone-800">
+      <div className="grid grid-cols-7 border-x border-t border-stone-200 text-center font-mono text-[11px] text-ink-subtle dark:border-stone-800 dark:text-stone-500">
+        {['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((d) => (
+          <div key={d} className="border-b border-r border-stone-200 py-1.5 last:border-r-0 dark:border-stone-800">
             {d}
           </div>
         ))}
