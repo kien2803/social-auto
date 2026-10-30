@@ -26,8 +26,8 @@ const DashboardPage = lazy(() =>
 const UploadPage = lazy(() =>
   import('./pages/UploadPage.js').then((m) => ({ default: m.UploadPage })),
 );
-const SchedulePage = lazy(() =>
-  import('./pages/SchedulePage.js').then((m) => ({ default: m.SchedulePage })),
+const CalendarPage = lazy(() =>
+  import('./pages/CalendarPage.js').then((m) => ({ default: m.CalendarPage })),
 );
 const HistoryPage = lazy(() =>
   import('./pages/HistoryPage.js').then((m) => ({ default: m.HistoryPage })),
@@ -78,7 +78,8 @@ ReactDOM.createRoot(root).render(
                   <Route element={<ProtectedShell />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/upload" element={<UploadPage />} />
-                    <Route path="/schedule" element={<SchedulePage />} />
+                    <Route path="/schedule" element={<CalendarPage />} />
+                    <Route path="/calendar" element={<CalendarPage />} />
                     <Route path="/history" element={<HistoryPage />} />
                     <Route path="/accounts" element={<AccountsPage />} />
                     <Route path="/analytics" element={<AnalyticsPage />} />

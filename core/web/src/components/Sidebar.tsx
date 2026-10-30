@@ -20,7 +20,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: IconDashboard },
   { to: '/upload', label: 'Upload & Schedule', icon: IconUpload },
-  { to: '/schedule', label: 'Schedule', icon: IconSchedule },
+  { to: '/calendar', label: 'Calendar', icon: IconSchedule },
   { to: '/history', label: 'History', icon: IconHistory },
   { to: '/analytics', label: 'Analytics', icon: IconAnalytics },
   { to: '/accounts', label: 'Accounts', icon: IconAccounts },

@@ -256,10 +256,12 @@ export const api = {
     uploadFile('/videos', file, onProgress, uploadId),
   cancelUpload: (uploadId: string) =>
     req<{ success: boolean }>(`/videos/${uploadId}/cancel`, { method: 'POST' }),
-  listSchedule: (q?: { status?: string; account_id?: string }) => {
+  listSchedule: (q?: { status?: string; account_id?: string; from?: number; to?: number }) => {
     const params = new URLSearchParams();
     if (q?.status) params.set('status', q.status);
     if (q?.account_id) params.set('account_id', q.account_id);
+    if (q?.from !== undefined) params.set('from', String(q.from));
+    if (q?.to !== undefined) params.set('to', String(q.to));
     const qs = params.toString();
     return req<{ posts: ScheduledPostRow[] }>(`/schedule${qs ? `?${qs}` : ''}`);
   },
