@@ -302,9 +302,13 @@ export const api = {
   syncAccount: (id: string) =>
     req<SyncAccountResponse>(`/accounts/${id}/sync`, { method: 'POST', body: '' }),
 
-  analytics: (accountId?: string) => {
-    const q = accountId ? `?account_id=${encodeURIComponent(accountId)}` : '';
-    return req<{ rows: AnalyticsRow[] }>(`/analytics${q}`);
+  analytics: (accountId?: string, range?: { from?: number; to?: number }) => {
+    const p = new URLSearchParams();
+    if (accountId) p.set('account_id', accountId);
+    if (range?.from !== undefined) p.set('from', String(range.from));
+    if (range?.to !== undefined) p.set('to', String(range.to));
+    const q = p.toString();
+    return req<{ rows: AnalyticsRow[] }>(`/analytics${q ? `?${q}` : ''}`);
   },
   listHistory: (q?: {
     platform?: string;

@@ -119,7 +119,14 @@ accountRoutes.get('/analytics', async (c) => {
   const userId = await bearerUserId(c);
   if (!userId) return c.json({ error: 'Unauthorized' }, 401);
   const accountId = c.req.query('account_id') || undefined;
-  const rows = await new ScheduledPostsRepo(c.env.DB).analyticsByAccount(accountId, userId);
+  const num = (v: string | undefined): number | undefined => {
+    const n = Number(v);
+    return v !== undefined && v !== '' && !Number.isNaN(n) ? n : undefined;
+  };
+  const rows = await new ScheduledPostsRepo(c.env.DB).analyticsByAccount(accountId, userId, {
+    from: num(c.req.query('from')),
+    to: num(c.req.query('to')),
+  });
   return c.json({ rows });
 });
 

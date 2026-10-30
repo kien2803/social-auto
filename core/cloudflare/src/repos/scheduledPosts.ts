@@ -184,7 +184,12 @@ export class ScheduledPostsRepo {
 
   /** Per-account status rollups for the Analytics page. Joins accounts so
    *  platform + display_name ride along; scoped to the owning user. */
-  async analyticsByAccount(accountId: string | undefined, userId: string) {
+  async analyticsByAccount(accountId: string | undefined, userId: string, range?: { from?: number; to?: number }) {
+    // Optional scheduled_at window applied inside the JOIN so accounts
+    // with no posts in range still appear with zeroed counts.
+    const rangeJoin = range?.from !== undefined || range?.to !== undefined
+      ? ` AND sp.scheduled_at >= ? AND sp.scheduled_at <= ?`
+      : '';
     let sql = `SELECT a.id AS account_id, a.platform, a.display_name,
          COUNT(sp.id) AS total,
          SUM(CASE WHEN sp.status = 'pending' THEN 1 ELSE 0 END) AS pending,
@@ -194,9 +199,12 @@ export class ScheduledPostsRepo {
          SUM(CASE WHEN sp.status = 'dead' THEN 1 ELSE 0 END) AS dead,
          MAX(CASE WHEN sp.status = 'published' THEN sp.updated_at END) AS last_published_at
        FROM accounts a
-       LEFT JOIN scheduled_posts sp ON sp.account_id = a.id
+       LEFT JOIN scheduled_posts sp ON sp.account_id = a.id${rangeJoin}
        WHERE a.user_id = ?`;
-    const params: unknown[] = [userId];
+    const params: unknown[] = [];
+    if (range?.from !== undefined) params.push(range.from);
+    if (range?.to !== undefined) params.push(range.to);
+    params.push(userId);
     if (accountId) { sql += ' AND a.id = ?'; params.push(accountId); }
     sql += ' GROUP BY a.id ORDER BY a.created_at DESC';
     const { results } = await this.db.prepare(sql).bind(...params).all<{

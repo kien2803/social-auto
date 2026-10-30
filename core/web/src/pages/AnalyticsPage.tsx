@@ -1,5 +1,5 @@
 import { IconAnalytics } from '../components/icons.js';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {
@@ -69,10 +69,23 @@ export function AnalyticsPage() {
   });
   const fullAccounts: AccountRow[] = accountsQuery.data?.accounts ?? [];
   const [accountId, setAccountId] = useState<string>('');
+  const [range, setRange] = useState<'day' | 'month' | 'year' | 'custom'>('month');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
+  const window = useMemo((): { from?: number; to?: number } => {
+    const now = dayjs();
+    if (range === 'day') return { from: now.startOf('day').valueOf(), to: now.endOf('day').valueOf() };
+    if (range === 'month') return { from: now.startOf('month').valueOf(), to: now.endOf('month').valueOf() };
+    if (range === 'year') return { from: now.startOf('year').valueOf(), to: now.endOf('year').valueOf() };
+    const f = customFrom ? new Date(customFrom).getTime() : undefined;
+    const t = customTo ? new Date(customTo).getTime() : undefined;
+    return { from: f, to: t };
+  }, [range, customFrom, customTo]);
 
   const q = useQuery({
-    queryKey: ['analytics', accountId],
-    queryFn: () => api.analytics(accountId || undefined),
+    queryKey: ['analytics', accountId, window.from, window.to],
+    queryFn: () => api.analytics(accountId || undefined, window),
     refetchInterval: 30_000,
   });
 
@@ -94,12 +107,27 @@ export function AnalyticsPage() {
   const focused = focusedRow;
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink dark:text-stone-100">Analytics</h1>
           <p className="mt-1 text-sm text-ink-muted dark:text-stone-400">
             All-time stats per account. Pick a channel to drill in.
           </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={range} onChange={(e) => setRange(e.target.value as typeof range)} aria-label="Date range">
+            <option value="day">Today</option>
+            <option value="month">This month</option>
+            <option value="year">This year</option>
+            <option value="custom">Custom…</option>
+          </Select>
+          {range === 'custom' && (
+            <>
+              <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="input !w-auto" aria-label="From" />
+              <span className="text-xs text-ink-muted dark:text-stone-400">→</span>
+              <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="input !w-auto" aria-label="To" />
+            </>
+          )}
         </div>
       </header>
       <Card>
