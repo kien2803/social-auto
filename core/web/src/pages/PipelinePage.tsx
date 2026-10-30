@@ -13,10 +13,10 @@ import type { ScheduledPostRow } from '@social-auto/shared';
  *  (failed + dead). `intake` is a videos-side lane, shown once upload
  *  (R2) lands. */
 const LANES: { id: string; label: string; statuses: ScheduledPostRow['status'][] }[] = [
-  { id: 'queued', label: 'queued', statuses: ['pending'] },
-  { id: 'airing', label: 'airing', statuses: ['uploading'] },
-  { id: 'aired', label: 'aired', statuses: ['published'] },
-  { id: 'fault', label: 'fault', statuses: ['failed', 'dead'] },
+  { id: 'queued', label: 'scheduled', statuses: ['pending'] },
+  { id: 'airing', label: 'publishing', statuses: ['uploading'] },
+  { id: 'aired', label: 'published', statuses: ['published'] },
+  { id: 'fault', label: 'failed', statuses: ['failed', 'dead'] },
 ];
 
 function LaneCard({ post, accountName }: { post: ScheduledPostRow; accountName: string }) {
@@ -72,7 +72,7 @@ export function PipelinePage() {
   return (
     <div className="space-y-4">
       <header className="border-b border-stone-200 pb-4 dark:border-stone-800">
-        <p className="font-mono text-[11px] text-ink-subtle dark:text-stone-500">relay flow · live</p>
+        <p className="font-mono text-[11px] text-ink-subtle dark:text-stone-500">post flow · live</p>
         <h1 className="font-display text-2xl font-bold text-ink dark:text-stone-100">Pipeline</h1>
       </header>
 

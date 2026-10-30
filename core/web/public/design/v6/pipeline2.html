@@ -53,35 +53,35 @@
 <div class="top"><a class="logo" href="index.html" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:9px"><img src="/logo.svg" alt="">Omnicast</a><div class="user">demo@omnicast.dev</div></div>
 <div class="wrap">
 <div class="head" style="display:flex;justify-content:space-between;align-items:end;margin-bottom:20px">
-<div><div class="kick">relay flow · live</div><h1>Pipeline</h1></div>
-<button style="background:none;border:1px solid var(--line);padding:8px 14px;font:600 12px 'IBM Plex Sans';cursor:pointer">pause relay</button>
+<div><div class="kick">post flow · live</div><h1>Posts pipeline</h1></div>
+<button style="background:none;border:1px solid var(--line);padding:8px 14px;font:600 12px 'IBM Plex Sans';cursor:pointer">pause publishing</button>
 </div>
 <div class="quota">
-<span class="l">upload capacity today</span>
+<span class="l">uploads left today</span>
 <div class="bar"><i></i></div>
 <span class="n">160/10k units · <b>6 uploads left</b></span>
 </div>
-<div class="flow"><span>intake</span><span>queued</span><span>airing</span><span>aired</span><span>fault</span></div>
+<div class="flow"><span>videos</span><span>scheduled</span><span>publishing</span><span>published</span><span>failed</span></div>
 <div class="pipe">
-<div class="lane"><div class="lh"><span class="n">intake</span><span class="c">3</span></div><div class="lc">
+<div class="lane"><div class="lh"><span class="n">videos</span><span class="c">3</span></div><div class="lc">
 <div class="card intake"><div class="cap">qa_answers_pt2.mp4</div><div class="meta">521 MB · ready</div><div class="actions"><button>schedule</button></div></div>
 <div class="card intake"><div class="cap">studio_tour_v2.mp4</div><div class="meta">412 MB · uploading 67%</div><div class="bar"><i style="width:67%"></i></div></div>
 <div class="card intake"><div class="cap">field_test.mp4</div><div class="meta">unscheduled · 2d old</div><div class="actions"><button>schedule</button></div></div>
 </div></div>
-<div class="lane"><div class="lh"><span class="n">queued</span><span class="c">4</span></div><div class="lc">
+<div class="lane"><div class="lh"><span class="n">scheduled</span><span class="c">4</span></div><div class="lc">
 <div class="card"><div class="t">fri 18:30</div><div class="cap">Studio tour — desk</div><div class="meta">CH-01 · kian p</div><div class="eta">in ~2h 14m</div></div>
 <div class="card"><div class="t">sat 09:00</div><div class="cap">Weekly recap ep. 14</div><div class="meta">CH-01 · kian p</div><div class="eta">in ~16h</div></div>
 <div class="card"><div class="t">sun 20:15</div><div class="cap">Export presets tip</div><div class="meta">CH-02 · tiktok</div><div class="eta">in ~2d</div></div>
 <div class="card"><div class="t">mon 12:00</div><div class="cap">Q&A answers pt. 2</div><div class="meta">CH-04 · fb</div><div class="eta">in ~3d</div></div>
 </div></div>
-<div class="lane"><div class="lh"><span class="n">airing</span><span class="c">1</span></div><div class="lc">
-<div class="card live"><div class="t">now · 41%</div><div class="cap">Setup walkthrough</div><div class="meta">CH-01 · resumable upload</div><div class="bar"><i style="width:41%"></i></div><div class="eta">eta ~6 min</div></div>
+<div class="lane"><div class="lh"><span class="n">publishing</span><span class="c">1</span></div><div class="lc">
+<div class="card live"><div class="t">now · 41%</div><div class="cap">Setup walkthrough</div><div class="meta">CH-01 · uploading to youtube</div><div class="bar"><i style="width:41%"></i></div><div class="eta">eta ~6 min</div></div>
 </div></div>
-<div class="lane"><div class="lh"><span class="n">aired</span><span class="c">12</span></div><div class="lc">
-<div class="card ok"><div class="t">wed 19:00</div><div class="cap">Field test: camera</div><div class="meta">CH-01 · ✓ watch ↗</div></div>
-<div class="card ok"><div class="t">tue 21:10</div><div class="cap">Color grading</div><div class="meta">CH-01 · ✓ watch ↗</div></div>
+<div class="lane"><div class="lh"><span class="n">published</span><span class="c">12</span></div><div class="lc">
+<div class="card ok"><div class="t">wed 19:00</div><div class="cap">Field test: camera</div><div class="meta">CH-01 · ✓ watch</div></div>
+<div class="card ok"><div class="t">tue 21:10</div><div class="cap">Color grading</div><div class="meta">CH-01 · ✓ watch</div></div>
 </div></div>
-<div class="lane fault"><div class="lh"><span class="n">fault</span><span class="c">2</span></div><div class="lc">
+<div class="lane fault"><div class="lh"><span class="n">failed</span><span class="c">2</span></div><div class="lc">
 <div class="card err"><div class="t">thu 07:42</div><div class="cap">Upload #6</div><div class="meta">token expired · retry 09:12</div><div class="actions"><button class="retry">retry now</button><button>cancel</button></div></div>
 <div class="card err"><div class="t">wed 03:11</div><div class="cap">Old draft</div><div class="meta">dead · quota exhausted</div><div class="actions"><button class="retry">revive</button><button>remove</button></div></div>
 </div></div>
