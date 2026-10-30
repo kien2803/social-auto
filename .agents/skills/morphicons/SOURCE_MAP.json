@@ -1,0 +1,91 @@
+{
+  "source": "Pasted markdown.md",
+  "segments": {
+    "references/overview-install.md": [
+      1,
+      48
+    ],
+    "references/frameworks/react.md": [
+      50,
+      69
+    ],
+    "references/frameworks/vue.md": [
+      70,
+      97
+    ],
+    "references/frameworks/svelte.md": [
+      98,
+      122
+    ],
+    "references/frameworks/react-native.md": [
+      123,
+      143
+    ],
+    "references/shared-lifecycle.md": [
+      144,
+      151
+    ],
+    "references/bindings/dom.md": [
+      152,
+      166
+    ],
+    "references/core/api.md": [
+      167,
+      179
+    ],
+    "references/compatibility/icon-libraries.md": [
+      180,
+      201
+    ],
+    "references/core/architecture.md": [
+      202,
+      229
+    ],
+    "references/core/math/01-normalization.md": [
+      230,
+      243
+    ],
+    "references/core/math/02-resampling.md": [
+      244,
+      256
+    ],
+    "references/core/math/03-correspondence.md": [
+      257,
+      264
+    ],
+    "references/core/math/04-alignment.md": [
+      265,
+      290
+    ],
+    "references/core/math/05-polar-interpolation.md": [
+      291,
+      319
+    ],
+    "references/core/math/06-serialization.md": [
+      320,
+      323
+    ],
+    "references/core/math/07-spring.md": [
+      324,
+      341
+    ],
+    "references/performance/runtime-source.md": [
+      342,
+      348
+    ],
+    "references/performance/size.md": [
+      349,
+      362
+    ],
+    "references/operations/playground-development.md": [
+      363,
+      385
+    ]
+  },
+  "added_guidance": [
+    "references/performance/decision-guide.md",
+    "references/performance/cpu-gpu-guide.md",
+    "scripts/select-references.mjs",
+    "scripts/performance-audit.mjs"
+  ]
+}

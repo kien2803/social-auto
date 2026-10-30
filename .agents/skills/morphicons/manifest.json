@@ -1,0 +1,270 @@
+{
+  "name": "morphicons",
+  "version": "2.0.0",
+  "defaultMaxFiles": 4,
+  "mandatoryForCodeChanges": [
+    "references/performance/decision-guide.md"
+  ],
+  "topics": [
+    {
+      "id": "react",
+      "file": "references/frameworks/react.md",
+      "signals": [
+        "react",
+        "next.js",
+        "nextjs",
+        "tsx",
+        "jsx",
+        "morphicons/react"
+      ]
+    },
+    {
+      "id": "vue",
+      "file": "references/frameworks/vue.md",
+      "signals": [
+        "vue",
+        "nuxt",
+        ".vue",
+        "morphicons/vue"
+      ]
+    },
+    {
+      "id": "svelte",
+      "file": "references/frameworks/svelte.md",
+      "signals": [
+        "svelte",
+        "sveltekit",
+        ".svelte",
+        "morphicons/svelte"
+      ]
+    },
+    {
+      "id": "react-native",
+      "file": "references/frameworks/react-native.md",
+      "signals": [
+        "react native",
+        "react-native",
+        "react-native-svg",
+        "metro",
+        ".native.tsx",
+        "morphicons/react-native"
+      ]
+    },
+    {
+      "id": "dom",
+      "file": "references/bindings/dom.md",
+      "signals": [
+        "createmorph",
+        "path element",
+        "pathel",
+        "vanilla dom",
+        "morphicons/dom",
+        "seek("
+      ]
+    },
+    {
+      "id": "core",
+      "file": "references/core/api.md",
+      "signals": [
+        "resampleicon",
+        "buildplan",
+        "interppolar",
+        "allocoutputs",
+        "serialize(",
+        "pure core",
+        "custom renderer"
+      ]
+    },
+    {
+      "id": "compatibility",
+      "file": "references/compatibility/icon-libraries.md",
+      "signals": [
+        "fiticon",
+        "viewbox",
+        "icon pack",
+        "filled icon",
+        "lucide",
+        "tabler",
+        "heroicons",
+        "iconoir",
+        "carbon",
+        "teenyicons",
+        "bad morph"
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "file": "references/shared-lifecycle.md",
+      "signals": [
+        "lazy driver",
+        "controlled wins",
+        "re-entry",
+        "late icon",
+        "mix modes",
+        "morphto before",
+        "from and to"
+      ]
+    },
+    {
+      "id": "performance",
+      "file": "references/performance/cpu-gpu-guide.md",
+      "signals": [
+        "performance",
+        "cpu",
+        "gpu",
+        "fps",
+        "jank",
+        "slow",
+        "many icons",
+        "scroll",
+        "drag",
+        "gesture",
+        "profile",
+        "paint",
+        "rendering",
+        "optimize",
+        "optimization",
+        "latency",
+        "frame time",
+        "long frame"
+      ]
+    },
+    {
+      "id": "runtime-source",
+      "file": "references/performance/runtime-source.md",
+      "signals": [
+        "benchmark",
+        "allocation",
+        "cache",
+        "raf",
+        "scheduler",
+        "timing"
+      ]
+    },
+    {
+      "id": "size",
+      "file": "references/performance/size.md",
+      "signals": [
+        "bundle",
+        "gzip",
+        "size-limit",
+        "kilobyte",
+        "kb"
+      ]
+    },
+    {
+      "id": "architecture",
+      "file": "references/core/architecture.md",
+      "signals": [
+        "architecture",
+        "layers",
+        "pipeline",
+        "plan artifact"
+      ]
+    },
+    {
+      "id": "normalization",
+      "file": "references/core/math/01-normalization.md",
+      "signals": [
+        "normalize",
+        "parser",
+        "bezier",
+        "arc",
+        "quadratic",
+        "svg command"
+      ]
+    },
+    {
+      "id": "resampling",
+      "file": "references/core/math/02-resampling.md",
+      "signals": [
+        "resample",
+        "arc length",
+        "corner",
+        "gauss-legendre"
+      ]
+    },
+    {
+      "id": "correspondence",
+      "file": "references/core/math/03-correspondence.md",
+      "signals": [
+        "correspondence",
+        "orientation",
+        "closed path",
+        "subpath matching",
+        "surjective"
+      ]
+    },
+    {
+      "id": "alignment",
+      "file": "references/core/math/04-alignment.md",
+      "signals": [
+        "procrustes",
+        "alignment",
+        "residual",
+        "rotation",
+        "scale",
+        "tie-break"
+      ]
+    },
+    {
+      "id": "interpolation",
+      "file": "references/core/math/05-polar-interpolation.md",
+      "signals": [
+        "polar interpolation",
+        "shear",
+        "shrink",
+        "block transport",
+        "chord"
+      ]
+    },
+    {
+      "id": "serialization",
+      "file": "references/core/math/06-serialization.md",
+      "signals": [
+        "canonical snap",
+        "serialization",
+        "hydration mismatch",
+        "precision",
+        "d string"
+      ]
+    },
+    {
+      "id": "spring",
+      "file": "references/core/math/07-spring.md",
+      "signals": [
+        "spring",
+        "stiffness",
+        "damping",
+        "bouncy",
+        "snappy",
+        "smooth",
+        "velocity"
+      ]
+    },
+    {
+      "id": "operations",
+      "file": "references/operations/playground-development.md",
+      "signals": [
+        "playground",
+        "development",
+        "tests",
+        "typecheck",
+        "build",
+        "license",
+        "credits"
+      ]
+    },
+    {
+      "id": "overview",
+      "file": "references/overview-install.md",
+      "signals": [
+        "install",
+        "peer dependency",
+        "esm",
+        "why morphicons",
+        "overview"
+      ]
+    }
+  ]
+}

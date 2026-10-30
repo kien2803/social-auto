@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "morphicons": {
+      "source": "kawixh/skills",
+      "sourceType": "github",
+      "skillPath": "morphicons-skill/SKILL.md",
+      "computedHash": "403110d60298f1a06df752f213ace6239a3e36868dd6e99116fe0e1342586eb9"
+    }
+  }
+}
