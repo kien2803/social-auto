@@ -163,7 +163,7 @@ The app currently runs in **mock mode** (no real credentials needed). To use rea
 
 ## License
 
-MIT License - Copyright (c) 2026
+Proprietary — Copyright (c) 2026 Phan Trung Kien. All rights reserved.
 
 ## Security
 
