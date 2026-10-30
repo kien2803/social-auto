@@ -28,7 +28,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4 dark:bg-[#1c1917]">
+    <div className="min-h-dvh flex items-center justify-center bg-surface-muted px-4 dark:bg-[#1c1917]">
       <div className="max-w-md w-full">
         <div className="card p-8">
           <h1 className="font-display text-2xl font-semibold mb-1 text-center text-ink dark:text-stone-100">Sign In</h1>

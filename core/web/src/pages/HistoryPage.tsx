@@ -160,7 +160,7 @@ export function HistoryPage() {
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-2 font-mono text-xs text-ink-subtle dark:text-stone-500">
+                      <td className="px-4 py-2 text-xs tabular-nums text-ink-subtle dark:text-stone-500">
                         {p.external_post_id ?? '—'}
                       </td>
                     </tr>

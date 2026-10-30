@@ -21,7 +21,7 @@ export function CardHeader({
 }) {
   return (
     <div
-      className={`flex items-start justify-between gap-4 border-b border-stone-200 px-5 py-4 dark:border-stone-800 ${className ?? ''}`}
+      className={`flex items-start justify-between gap-4 px-5 py-4 ${className ?? ''}`}
     >
       <div>
         <h3 className="text-sm font-semibold text-ink dark:text-stone-100">{title}</h3>
@@ -45,7 +45,7 @@ export function CardBody({ className, children, ...rest }: HTMLAttributes<HTMLDi
 export function CardFooter({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`border-t border-stone-200 px-5 py-3 dark:border-stone-800 ${className ?? ''}`}
+      className={`bg-surface-muted/40 px-5 py-3 dark:bg-[#211d18]/60 ${className ?? ''}`}
       {...rest}
     >
       {children}
