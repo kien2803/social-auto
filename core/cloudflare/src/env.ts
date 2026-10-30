@@ -19,8 +19,10 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string;
   TIKTOK_CLIENT_KEY?: string;
   TIKTOK_CLIENT_SECRET?: string;
+  TIKTOK_REDIRECT_URI?: string;
   META_APP_ID?: string;
   META_APP_SECRET?: string;
+  META_REDIRECT_URI?: string;
 }
 
 /** Message sent through the publish queue (replaces the poll-claim loop). */
