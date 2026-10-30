@@ -92,6 +92,12 @@ export function registerTiktokAuthRoutes(app: FastifyInstance, deps: TiktokAuthD
       const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
       return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error }));
     }
+    // Session can expire mid-OAuth — without this, userId: undefined would
+    // reach reassignOwner/insert as a runtime-only type hole.
+    if (!userId) {
+      const webRedirect = `${deps.webOrigin}/accounts?error=session_expired`;
+      return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error: 'session_expired' }));
+    }
     if (!code || !state) {
       return reply.code(400).send({ error: 'missing code or state' });
     }
@@ -119,7 +125,7 @@ export function registerTiktokAuthRoutes(app: FastifyInstance, deps: TiktokAuthD
     let accountId: string;
     if (existing) {
       if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
-      deps.accounts.updateDisplayName(existing.id, user.display_name);
+      deps.accounts.updateDisplayName(existing.id, user.display_name ?? existing.display_name ?? 'Account');
       deps.accounts.updateStatus(existing.id, 'active');
       deps.accounts.updateTokens(existing.id, {
         access_token: encryptedAccess,

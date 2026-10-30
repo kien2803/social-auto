@@ -83,6 +83,12 @@ export function registerMetaAuthRoutes(app: FastifyInstance, deps: MetaAuthDeps)
       const webRedirect = `${deps.webOrigin}/accounts?error=${encodeURIComponent(error)}`;
       return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error }));
     }
+    // Session can expire mid-OAuth — without this, userId: undefined would
+    // reach reassignOwner/insert as a runtime-only type hole.
+    if (!userId) {
+      const webRedirect = `${deps.webOrigin}/accounts?error=session_expired`;
+      return reply.redirect(buildAuthRedirect(popupMode, webRedirect, { error: 'session_expired' }));
+    }
     if (!code || !state) {
       return reply.code(400).send({ error: 'missing code or state' });
     }
@@ -129,7 +135,7 @@ export function registerMetaAuthRoutes(app: FastifyInstance, deps: MetaAuthDeps)
       const existing = deps.accounts.findByPlatformExternal(r.platform, r.externalId);
       if (existing) {
         if (existing.user_id !== userId) deps.accounts.reassignOwner(existing.id, userId);
-        deps.accounts.updateDisplayName(existing.id, r.displayName);
+        deps.accounts.updateDisplayName(existing.id, r.displayName ?? existing.display_name ?? 'Account');
         deps.accounts.updateStatus(existing.id, 'active');
         deps.accounts.updateTokens(existing.id, {
           access_token: encryptedAccess,

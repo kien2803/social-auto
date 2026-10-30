@@ -4,14 +4,12 @@ import dayjs from 'dayjs';
 import {
   api,
   type CreateScheduleInput,
-  type UpdateScheduleInput,
   type VideoWire,
 } from '../lib/api.js';
 import type { Platform, ScheduledPostRow } from '@social-auto/shared';
 import { useAccounts, type AccountInfo } from '../lib/accounts.js';
 import { Button } from '../components/ui/Button.js';
 import { Field, Select, TextArea } from '../components/ui/Field.js';
-import { Badge } from '../components/ui/Badge.js';
 import { EmptyState } from '../components/ui/EmptyState.js';
 import { Skeleton } from '../components/ui/Skeleton.js';
 import { Modal } from '../components/ui/Modal.js';

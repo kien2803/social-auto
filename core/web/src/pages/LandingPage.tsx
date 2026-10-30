@@ -228,7 +228,7 @@ export function LandingPage() {
       {/* Act II — the channels this station is tuned to */}
       <div className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 px-6 sm:grid-cols-4 sm:gap-x-0">
-          {STATIONS.map(({ name, freq, scope, Icon }, i) => (
+          {STATIONS.map(({ name, freq, Icon }, i) => (
             <Reveal
               key={name}
               variant="pop"

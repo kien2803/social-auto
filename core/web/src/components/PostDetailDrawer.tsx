@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { api, type UpdateScheduleInput, type VideoWire } from '../lib/api.js';
 import type { AccountInfo } from '../lib/accounts.js';
@@ -7,7 +7,7 @@ import { useToast } from './ui/Toast.js';
 import { Button } from './ui/Button.js';
 import { Badge } from './ui/Badge.js';
 import { Field, Select, TextArea } from './ui/Field.js';
-import type { ScheduledPostRow, Visibility } from '@social-auto/shared';
+import type { ScheduledPostRow } from '@social-auto/shared';
 
 const STATUS_TONES: Record<string, 'success' | 'warn' | 'danger' | 'neutral'> = {
   pending: 'warn',

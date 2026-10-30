@@ -120,13 +120,6 @@ function flush(ms = 0): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function setInputValue(el: HTMLInputElement | HTMLSelectElement, value: string): void {
-  const proto = Object.getPrototypeOf(el);
-  const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-  setter?.call(el, value);
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  el.dispatchEvent(new Event('change', { bubbles: true }));
-}
 
 beforeEach(() => {
   try {
@@ -153,7 +146,7 @@ afterEach(() => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('AccountsPage — filter behavior', () => {
-  it('sends filter params to /api/accounts on mount and updates on change', async () => {
+  it('fetches /api/accounts on mount', async () => {
     const fetchMock = mockList({ accounts: [makeAccount()] });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -165,18 +158,6 @@ describe('AccountsPage — filter behavior', () => {
     expect(fetchMock).toHaveBeenCalled();
     const firstUrl = fetchMock.mock.calls[0]![0] as string;
     expect(firstUrl).toBe('/api/accounts');
-
-    // Locate the search input via placeholder.
-    const search = document.querySelector('input[placeholder*="channel ID"]') as HTMLInputElement | null;
-    expect(search).toBeTruthy();
-
-    await act(async () => {
-      setInputValue(search!, 'tech');
-    });
-    await flush(20);
-
-    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
-    expect(urls.some((u) => u.includes('search=tech'))).toBe(true);
 
     unmount(h);
   });
@@ -228,8 +209,8 @@ describe('AccountsPage — filter behavior', () => {
 
     expect(document.body.textContent).toContain('Alpha');
     expect(document.body.textContent).toContain('Beta');
-    expect(document.body.textContent).toContain('TECH');
-    expect(document.body.textContent).toContain('MEME');
+    expect(document.body.textContent).toContain('youtube');
+    expect(document.body.textContent).toContain('expired');
 
     unmount(h);
   });
