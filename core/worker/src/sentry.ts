@@ -12,12 +12,24 @@ export function initSentry(): void {
       tracesSampleRate: 1.0,
       profilesSampleRate: 1.0,
       beforeSend(event, _hint) {
-        // Filter out scheduled post processing logs
         if (event.request) {
-          const url = event.request.url;
-          if (url?.includes('scheduled-post') || url?.includes('worker')) {
-            // Keep these as they might be important for debugging
+          // Scrub credentials — never ship tokens/cookies to Sentry.
+          if (event.request.headers) {
+            for (const k of Object.keys(event.request.headers)) {
+              if (/authorization|cookie|x-api-key|x-access-token/i.test(k)) {
+                delete event.request.headers[k];
+              }
+            }
           }
+          const url = event.request.url;
+          if (url) {
+            event.request.url = url.replace(
+              /([?&](?:token|access_token|refresh_token|code|state|key|secret)=)[^&]*/gi,
+              '$1[redacted]',
+            );
+          }
+          if (event.request.query_string) event.request.query_string = '[filtered]';
+          event.request.cookies = undefined;
         }
         return event;
       },

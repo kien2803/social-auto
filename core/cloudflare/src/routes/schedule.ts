@@ -152,6 +152,17 @@ scheduleRoutes.patch('/schedule/:id', async (c) => {
   return c.json(await r.posts.findById(r.post.id));
 });
 
+/** Manual retry for failed/dead posts — powers the pipeline retry button. */
+scheduleRoutes.post('/schedule/:id/retry', async (c) => {
+  const r = await ownedPost(c, c.req.param('id'));
+  if ('error' in r) return r.error;
+  if (r.post.status !== 'failed' && r.post.status !== 'dead') {
+    return c.json({ error: `cannot_retry_post_in_status_${r.post.status}` }, 400);
+  }
+  await r.posts.retry(r.post.id);
+  return c.json(await r.posts.findById(r.post.id));
+});
+
 scheduleRoutes.delete('/schedule/:id', async (c) => {
   const r = await ownedPost(c, c.req.param('id'));
   if ('error' in r) return r.error;

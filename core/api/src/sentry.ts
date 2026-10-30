@@ -18,6 +18,22 @@ export function initSentry(): void {
           if (url?.includes('/health') || url?.includes('/static/')) {
             return null;
           }
+          // Scrub credentials — never ship tokens/cookies to Sentry.
+          if (event.request.headers) {
+            for (const k of Object.keys(event.request.headers)) {
+              if (/authorization|cookie|x-api-key|x-access-token/i.test(k)) {
+                delete event.request.headers[k];
+              }
+            }
+          }
+          if (url) {
+            event.request.url = url.replace(
+              /([?&](?:token|access_token|refresh_token|code|state|key|secret)=)[^&]*/gi,
+              '$1[redacted]',
+            );
+          }
+          if (event.request.query_string) event.request.query_string = '[filtered]';
+          event.request.cookies = undefined;
         }
         return event;
       },

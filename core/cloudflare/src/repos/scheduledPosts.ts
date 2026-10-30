@@ -124,6 +124,14 @@ export class ScheduledPostsRepo {
       .run();
   }
 
+  /** User-initiated retry: failed/dead post back to pending, flags cleared. */
+  async retry(id: string): Promise<void> {
+    await this.db
+      .prepare(`UPDATE scheduled_posts SET status = 'pending', is_dead = 0, last_error = NULL, next_retry_at = NULL, retry_count = 0, updated_at = ? WHERE id = ? AND status IN ('failed', 'dead')`)
+      .bind(Date.now(), id)
+      .run();
+  }
+
   async unstickUploading(olderThanMs: number, now: number): Promise<void> {
     await this.db
       .prepare(`UPDATE scheduled_posts SET status = 'pending', last_error = 'worker_crash_recovery', retry_count = retry_count + 1, updated_at = ? WHERE status = 'uploading' AND updated_at < ?`)

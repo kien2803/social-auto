@@ -25,7 +25,11 @@ userAuthRoutes.post('/auth/register', async (c) => {
     return c.json({ error: 'Missing required fields: email, password, name' }, 400);
   }
   if (!EMAIL_RE.test(body.email)) return c.json({ error: 'Invalid email format' }, 400);
-  if (body.password.length < 6) return c.json({ error: 'Password must be at least 6 characters' }, 400);
+  // Minimum bar for a SaaS facing real users: 8+ chars with a letter and
+  // a digit — blocks 'password1'-tier and pure-letter/numeric choices.
+  if (body.password.length < 8 || !/[a-zA-Z]/.test(body.password) || !/\d/.test(body.password)) {
+    return c.json({ error: 'Password must be at least 8 characters with a letter and a number' }, 400);
+  }
 
   const users = new UsersRepo(c.env.DB);
   if (await users.findByEmail(body.email)) {
