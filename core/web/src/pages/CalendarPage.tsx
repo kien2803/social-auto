@@ -88,7 +88,7 @@ function PostChip({
         onClick();
       }}
       title={`${account?.display_name ?? ''} — ${post.caption.split('\n')[0]}`}
-      className={`block w-full border-l-2 px-1.5 py-1 text-left text-[11px] leading-tight ${PLATFORM_COLORS[platform] ?? 'border-stone-300 bg-surface-muted'} ${post.status === 'dead' ? 'opacity-60' : ''} ${post.status === 'pending' ? 'cursor-grab' : 'cursor-pointer'}`}
+      className={`block w-full border-l-2 px-1.5 py-1 text-left text-[11px] leading-tight ${PLATFORM_COLORS[platform] ?? 'border-stone-300 bg-surface-muted dark:border-stone-700 dark:bg-stone-800/60'} ${post.status === 'dead' ? 'opacity-60' : ''} ${post.status === 'pending' ? 'cursor-grab' : 'cursor-pointer'}`}
     >
       <span className="font-mono font-semibold text-ink dark:text-stone-100">{dayjs(post.scheduled_at).format('HH:mm')}</span>{' '}
       <span className="capitalize text-ink-muted dark:text-stone-400">{platform || 'platform'}</span>
@@ -139,7 +139,7 @@ function DayCell({
         if (id) onDropPost(id, date);
       }}
       className={`flex min-h-[6.5rem] flex-col gap-1 border-b border-r border-stone-200 p-1.5 text-left align-top dark:border-stone-800 ${
-        inMonth ? 'bg-surface' : 'bg-surface-muted/40 text-ink-subtle dark:bg-[#211d18]/40'
+        inMonth ? 'bg-surface dark:bg-[#211d18]' : 'bg-surface-muted/40 text-ink-subtle dark:bg-[#211d18]/40'
       } ${over ? 'bg-brand-50 dark:bg-brand-950/30' : ''} transition-colors hover:bg-surface-muted/50 dark:hover:bg-stone-800/40`}
     >
       <div className={`font-mono text-xs ${isToday ? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 font-semibold text-white' : 'text-ink-muted dark:text-stone-400'}`}>

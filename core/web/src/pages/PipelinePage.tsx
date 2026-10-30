@@ -102,7 +102,7 @@ export function PipelinePage() {
             return (
               <section
                 key={lane.id}
-                className="min-h-[20rem] border border-stone-200 bg-surface dark:border-stone-800"
+                className="min-h-[20rem] border border-stone-200 bg-surface dark:border-stone-800 dark:bg-[#211d18]"
                 aria-label={lane.label}
               >
                 <header className="flex items-center justify-between border-b border-stone-200 bg-surface-muted px-3 py-2 dark:border-stone-800 dark:bg-[#211d18]/60">
