@@ -1,5 +1,4 @@
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useMutation,
   useQuery,
@@ -8,21 +7,15 @@ import {
 } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {
-  ACCOUNT_CONTENT_CATEGORIES,
-  ACCOUNT_LANGUAGE_CODES,
   api,
   stageOAuthTokenCookie,
-  type AccountContentCategory,
-  type AccountLanguageCode,
-  type AccountListFilter,
   type AccountListResponse,
-  type AccountMetadata,
   type AccountRow,
   type UpdateAccountInput,
 } from '../lib/api.js';
 import { Card, CardBody } from '../components/ui/Card.js';
 import { Button } from '../components/ui/Button.js';
-import { Field, Select, TextInput } from '../components/ui/Field.js';
+import { Field, TextInput } from '../components/ui/Field.js';
 import { Badge } from '../components/ui/Badge.js';
 import { EmptyState } from '../components/ui/EmptyState.js';
 import { Skeleton } from '../components/ui/Skeleton.js';
@@ -32,11 +25,6 @@ import { track, warnValidation } from '../lib/telemetry.js';
 import { extractOAuthResultFromMessage } from '../lib/oAuthPopup.js';
 import { safeHref } from '../lib/safeHref.js';
 import type { Platform } from '@social-auto/shared';
-const SearchInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  function SearchInput({ className, ...rest }, ref) {
-    return <input ref={ref} {...rest} className={`input ${className ?? ''}`} />;
-  },
-);
 
 /**
  * Connect a platform via OAuth. We deliberately use full-tab navigation
@@ -132,33 +120,11 @@ function StatusBadge({ status }: { status: AccountRow['status'] }) {
   return <Badge tone={tone}>{status}</Badge>;
 }
 
-function MetaBadge({ label, value }: { label: string; value: string }) {
-  if (!value) return null;
-  return (
-    <span className="inline-flex items-center gap-1 rounded border border-stone-200 bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted dark:border-stone-700 dark:bg-[#211d18] dark:text-stone-400">
-      <span className="text-ink-subtle dark:text-stone-500">{label}</span>
-      <span className="text-ink dark:text-stone-200">{value}</span>
-    </span>
-  );
-}
-
-
-function isValidUrl(v: string): boolean {
-  if (!v) return true;
-  try {
-    const u = new URL(v);
-    return u.protocol === 'https:' || u.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}
-
 // ────────────────────────────────────────────────────────────────────────────
-// Edit metadata modal — edits display_name, content_category, language_code,
-// purpose, link. Pure UI; never accepts OAuth tokens or passwords.
+// Edit modal — display name only. Never accepts OAuth tokens or passwords.
 // ────────────────────────────────────────────────────────────────────────────
 
-function EditMetadataModal({
+function EditAccountModal({
   account,
   onClose,
 }: {
@@ -168,12 +134,6 @@ function EditMetadataModal({
   const toast = useToast();
   const qc = useQueryClient();
   const [displayName, setDisplayName] = useState(account.display_name);
-  const [meta, setMeta] = useState<AccountMetadata>({
-    content_category: account.metadata?.content_category ?? '',
-    language_code: account.metadata?.language_code ?? '',
-    purpose: account.metadata?.purpose ?? '',
-    link: account.metadata?.link ?? '',
-  });
   const [touched, setTouched] = useState(false);
 
   const trimmedName = displayName.trim();
@@ -183,10 +143,7 @@ function EditMetadataModal({
       : trimmedName.length > 100
         ? 'Display name must be 100 characters or fewer.'
         : '';
-  const linkError = !isValidUrl(meta.link) ? 'Must be a valid http(s) URL.' : '';
-  const purposeError =
-    meta.purpose && meta.purpose.length > 200 ? 'Purpose must be 200 characters or fewer.' : '';
-  const hasError = Boolean(nameError || linkError || purposeError);
+  const hasError = Boolean(nameError);
 
   const update = useMutation({
     mutationFn: (patch: UpdateAccountInput) => api.updateAccount(account.id, patch),
@@ -209,19 +166,12 @@ function EditMetadataModal({
     if (hasError) {
       warnValidation('edit account blocked', {
         account_id: account.id,
-        reason: nameError || linkError || purposeError,
+        reason: nameError,
       });
       setTouched(true);
       return;
     }
-    const patch: UpdateAccountInput = {
-      display_name: trimmedName,
-      content_category: (meta.content_category || '') as AccountContentCategory | '',
-      language_code: (meta.language_code || '') as AccountLanguageCode,
-      purpose: meta.purpose ?? '',
-      link: meta.link ?? '',
-    };
-    update.mutate(patch);
+    update.mutate({ display_name: trimmedName });
   };
 
   return (
@@ -260,69 +210,6 @@ function EditMetadataModal({
             maxLength={100}
             autoFocus
             aria-invalid={Boolean(nameError)}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Content">
-            <Select
-              value={meta.content_category}
-              onChange={(e) =>
-                setMeta((m) => ({
-                  ...m,
-                  content_category: e.target.value as AccountContentCategory | '',
-                }))
-              }
-            >
-              <option value="">— none —</option>
-              {ACCOUNT_CONTENT_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Language">
-            <Select
-              value={meta.language_code}
-              onChange={(e) =>
-                setMeta((m) => ({
-                  ...m,
-                  language_code: e.target.value as AccountLanguageCode,
-                }))
-              }
-            >
-              <option value="">— none —</option>
-              {ACCOUNT_LANGUAGE_CODES.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-        <Field
-          label="Purpose"
-          hint="What kind of content does this account publish?"
-          error={touched ? purposeError : undefined}
-        >
-          <TextInput
-            value={meta.purpose}
-            onChange={(e) => setMeta((m) => ({ ...m, purpose: e.target.value }))}
-            maxLength={200}
-            placeholder="e.g. Tech reviews & unboxings"
-          />
-        </Field>
-        <Field
-          label="Link"
-          hint="Public URL for the channel or its website."
-          error={touched ? linkError : undefined}
-        >
-          <TextInput
-            type="url"
-            value={meta.link}
-            onChange={(e) => setMeta((m) => ({ ...m, link: e.target.value }))}
-            placeholder="https://youtube.com/@example"
-            aria-invalid={Boolean(linkError)}
           />
         </Field>
         <p className="rounded border border-stone-200 bg-surface-muted px-3 py-2 text-xs text-ink-muted dark:border-stone-700 dark:bg-[#211d18] dark:text-stone-400">
@@ -398,25 +285,6 @@ function AccountCard({
               </>
             )}
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <MetaBadge label="Cat" value={account.metadata.content_category} />
-            <MetaBadge label="Lang" value={account.metadata.language_code} />
-            {account.metadata.purpose && (
-              <span className="max-w-full truncate rounded border border-stone-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-ink-muted dark:border-stone-700 dark:bg-[#211d18] dark:text-stone-400">
-                {account.metadata.purpose}
-              </span>
-            )}
-            {account.metadata.link && safeHref(account.metadata.link) && (
-              <a
-                href={safeHref(account.metadata.link)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="max-w-[12rem] truncate rounded border border-stone-200 bg-surface-muted px-1.5 py-0.5 text-[10px] text-brand-600 underline dark:border-stone-700 dark:bg-[#211d18] dark:text-brand-300"
-              >
-                {account.metadata.link}
-              </a>
-            )}
-          </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           <Button size="sm" variant="secondary" onClick={() => onEdit(account)}>
@@ -479,7 +347,6 @@ function AccountTable({
             <th className="px-3 py-2 font-medium">Platform</th>
             <th className="px-3 py-2 font-medium">Channel</th>
             <th className="px-3 py-2 font-medium">Status</th>
-            <th className="px-3 py-2 font-medium">Cat / Lang</th>
             <th className="px-3 py-2 font-medium text-right">Subs</th>
             <th className="px-3 py-2 font-medium text-right">Videos</th>
             <th className="px-3 py-2 font-medium">Last sync</th>
@@ -508,11 +375,6 @@ function AccountTable({
               </td>
               <td className="px-3 py-2">
                 <StatusBadge status={a.status} />
-              </td>
-              <td className="px-3 py-2 text-xs text-ink-muted dark:text-stone-400">
-                {a.metadata.content_category || '—'}
-                {' · '}
-                {a.metadata.language_code || '—'}
               </td>
               <td className="px-3 py-2 text-right tabular-nums">
                 {formatBigNumber(a.channel.subscribers)}
@@ -706,14 +568,12 @@ function ConnectMenu({
 export function AccountsPage() {
   const toast = useToast();
   const qc = useQueryClient();
-  const searchRef = useRef<HTMLInputElement | null>(null);
 
-  const [filter, setFilter] = useState<AccountListFilter>({});
   const [view, setView] = usePersistedViewMode();
   const [editing, setEditing] = useState<AccountRow | null>(null);
   const accountsQuery: UseQueryResult<AccountListResponse> = useQuery({
-    queryKey: ['accounts-list', filter],
-    queryFn: () => api.listAccounts(filter),
+    queryKey: ['accounts-list'],
+    queryFn: () => api.listAccounts(),
     refetchInterval: 60_000,
     retry: 1,
   });
@@ -815,7 +675,7 @@ export function AccountsPage() {
     (platform: Platform): void => startConnect(platform),
     [],
   );
-  // Keyboard shortcuts: "/" focuses search, "n" triggers connect.
+  // Keyboard shortcut: "n" triggers connect.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const target = e.target as HTMLElement | null;
@@ -826,10 +686,7 @@ export function AccountsPage() {
           target.tagName === 'SELECT' ||
           target.isContentEditable);
       if (inField) return;
-      if (e.key === '/') {
-        e.preventDefault();
-        searchRef.current?.focus();
-      } else if (e.key === 'n') {
+      if (e.key === 'n') {
         e.preventDefault();
         handleConnect('youtube');
       }
@@ -859,16 +716,8 @@ export function AccountsPage() {
     return { active: a, expired: e, counts: c };
   }, [list]);
 
-  const hasFilter = useMemo(
-    () =>
-      Boolean(
-        filter.search || filter.platform || filter.content || filter.language || filter.status,
-      ),
-    [filter],
-  );
-  const clearFilters = (): void => setFilter({});
   const subtitle =
-    list.length === 0 && !hasFilter
+    list.length === 0
       ? 'Add a YouTube account to start posting. You can connect multiple channels on the same platform.'
       : `${total} total · ${active} active · ${expired} expired`;
 
@@ -884,131 +733,38 @@ export function AccountsPage() {
         </div>
       </header>
 
-      <Card>
-        <CardBody>
-          <div
-            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,9rem))_auto]"
-            role="toolbar"
-            aria-label="Account filters"
+      <div className="flex justify-end">
+        <div
+          role="group"
+          aria-label="View density"
+          className="inline-flex rounded border border-stone-300 dark:border-stone-700"
+        >
+          <button
+            type="button"
+            className={`px-2.5 py-1.5 text-xs font-medium ${
+              view === 'cards'
+                ? 'bg-brand-600 text-white'
+                : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
+            }`}
+            aria-pressed={view === 'cards'}
+            onClick={() => setView('cards')}
           >
-            <Field label="Search">
-              <SearchInput
-                ref={searchRef}
-                placeholder="Name, link, channel ID — press / to focus"
-                value={filter.search ?? ''}
-                onChange={(e) => setFilter((f) => ({ ...f, search: e.target.value }))}
-                aria-label="Search accounts"
-              />
-            </Field>
-            <Field label="Platform">
-              <Select
-                value={filter.platform ?? ''}
-                onChange={(e) =>
-                  setFilter((f) => ({
-                    ...f,
-                    platform: e.target.value as AccountListFilter['platform'],
-                  }))
-                }
-              >
-                <option value="">All</option>
-                <option value="youtube">YouTube</option>
-                <option value="tiktok">TikTok</option>
-                <option value="instagram">Instagram</option>
-                <option value="facebook">Facebook</option>
-              </Select>
-            </Field>
-            <Field label="Content">
-              <Select
-                value={filter.content ?? ''}
-                onChange={(e) =>
-                  setFilter((f) => ({
-                    ...f,
-                    content: e.target.value as AccountListFilter['content'],
-                  }))
-                }
-              >
-                <option value="">All</option>
-                {ACCOUNT_CONTENT_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Language">
-              <Select
-                value={filter.language ?? ''}
-                onChange={(e) =>
-                  setFilter((f) => ({
-                    ...f,
-                    language: e.target.value as AccountListFilter['language'],
-                  }))
-                }
-              >
-                <option value="">All</option>
-                {ACCOUNT_LANGUAGE_CODES.map((l) => (
-                  <option key={l} value={l}>
-                    {l}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Status">
-              <Select
-                value={filter.status ?? ''}
-                onChange={(e) =>
-                  setFilter((f) => ({
-                    ...f,
-                    status: e.target.value as AccountListFilter['status'],
-                  }))
-                }
-              >
-                <option value="">All</option>
-                <option value="active">active</option>
-                <option value="expired">expired</option>
-                <option value="revoked">revoked</option>
-              </Select>
-            </Field>
-            <div className="flex items-end justify-end gap-2">
-              <div
-                role="group"
-                aria-label="View density"
-                className="inline-flex rounded border border-stone-300 dark:border-stone-700"
-              >
-                <button
-                  type="button"
-                  className={`px-2.5 py-1.5 text-xs font-medium ${
-                    view === 'cards'
-                      ? 'bg-brand-600 text-white'
-                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
-                  }`}
-                  aria-pressed={view === 'cards'}
-                  onClick={() => setView('cards')}
-                >
-                  Cards
-                </button>
-                <button
-                  type="button"
-                  className={`border-l border-stone-300 px-2.5 py-1.5 text-xs font-medium dark:border-stone-700 ${
-                    view === 'table'
-                      ? 'bg-brand-600 text-white'
-                      : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
-                  }`}
-                  aria-pressed={view === 'table'}
-                  onClick={() => setView('table')}
-                >
-                  Table
-                </button>
-              </div>
-              {hasFilter && (
-                <Button size="sm" variant="ghost" onClick={clearFilters}>
-                  Clear
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+            Cards
+          </button>
+          <button
+            type="button"
+            className={`border-l border-stone-300 px-2.5 py-1.5 text-xs font-medium dark:border-stone-700 ${
+              view === 'table'
+                ? 'bg-brand-600 text-white'
+                : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
+            }`}
+            aria-pressed={view === 'table'}
+            onClick={() => setView('table')}
+          >
+            Table
+          </button>
+        </div>
+      </div>
 
       {accountsQuery.isLoading ? (
         <div className="grid gap-3 md:grid-cols-2">
@@ -1035,22 +791,12 @@ export function AccountsPage() {
       ) : list.length === 0 ? (
         <EmptyState
           icon={<span>◉</span>}
-          title={hasFilter ? 'No accounts match these filters' : 'No accounts connected yet'}
-          description={
-            hasFilter
-              ? 'Adjust the filters above or clear them to see every account.'
-              : "Click Add account above and pick a platform to walk through OAuth. You can connect more than one YouTube channel — each one becomes its own row."
-          }
+          title="No accounts connected yet"
+          description="Click Add account above and pick a platform to walk through OAuth. You can connect more than one YouTube channel — each one becomes its own row."
           action={
-            hasFilter ? (
-              <Button size="sm" variant="secondary" onClick={clearFilters}>
-                Clear filters
-              </Button>
-            ) : (
-              <Button size="sm" onClick={() => handleConnect('youtube')}>
-                Add YouTube account
-              </Button>
-            )
+            <Button size="sm" onClick={() => handleConnect('youtube')}>
+              Add YouTube account
+            </Button>
           }
         />
       ) : view === 'cards' ? (
@@ -1079,7 +825,7 @@ export function AccountsPage() {
         </p>
       )}
 
-      {editing && <EditMetadataModal account={editing} onClose={() => setEditing(null)} />}
+      {editing && <EditAccountModal account={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }

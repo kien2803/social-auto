@@ -66,12 +66,32 @@ oauthRoutes.get('/auth/callback', async (c) => {
     return c.redirect(`${origin}/accounts?error=${encodeURIComponent(tokens.error ?? 'token_exchange_failed')}`);
   }
 
-  const chRes = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+  const chRes = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true', {
     headers: { authorization: `Bearer ${tokens.access_token}` },
   });
-  const ch = (await chRes.json()) as { items?: Array<{ id: string; snippet: { title: string } }> };
+  const ch = (await chRes.json()) as {
+    items?: Array<{
+      id: string;
+      snippet: { title: string; customUrl?: string; thumbnails?: Record<string, { url?: string }> };
+      statistics?: { subscriberCount?: string; viewCount?: string; videoCount?: string };
+    }>;
+  };
   const channel = ch.items?.[0];
   if (!channel) return c.redirect(`${origin}/accounts?error=no_youtube_channel`);
+
+  // Persist the channel snapshot on connect so the row lands with real
+  // stats instead of waiting for a manual sync click.
+  const t = channel.snippet.thumbnails ?? {};
+  const handle = channel.snippet.customUrl ?? '';
+  const stat = channel.statistics ?? {};
+  const snapshot = {
+    channel_handle: handle ? (handle.startsWith('@') ? handle : `@${handle}`) : '',
+    avatar_url: t.high?.url ?? t.medium?.url ?? t.default?.url ?? '',
+    subscribers: stat.subscriberCount != null ? Number(stat.subscriberCount) : null,
+    views: stat.viewCount != null ? Number(stat.viewCount) : null,
+    video_count: stat.videoCount != null ? Number(stat.videoCount) : null,
+    last_sync_at: Date.now(),
+  };
 
   const accounts = new AccountsRepo(c.env.DB);
   const encAccess = await encrypt(tokens.access_token, c.env.TOKEN_ENCRYPTION_KEY);
@@ -83,8 +103,9 @@ oauthRoutes.get('/auth/callback', async (c) => {
   if (existing) {
     await c.env.DB.prepare('UPDATE accounts SET oauth_access_token = ?, oauth_refresh_token = ?, status = ? WHERE id = ?')
       .bind(encAccess, encRefresh, 'active', existing.id).run();
+    await accounts.updateChannelSnapshot(existing.id, snapshot);
   } else {
-    await accounts.insert({
+    const row = await accounts.insert({
       user_id: userId,
       platform: 'youtube',
       external_id: channel.id,
@@ -92,6 +113,7 @@ oauthRoutes.get('/auth/callback', async (c) => {
       oauth_refresh_token: encRefresh,
       oauth_access_token: encAccess,
     });
+    await accounts.updateChannelSnapshot(row.id, snapshot);
   }
   return c.redirect(`${origin}/accounts?connected=youtube`);
 });
