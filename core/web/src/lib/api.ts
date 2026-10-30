@@ -256,12 +256,13 @@ export const api = {
     uploadFile('/videos', file, onProgress, uploadId),
   cancelUpload: (uploadId: string) =>
     req<{ success: boolean }>(`/videos/${uploadId}/cancel`, { method: 'POST' }),
-  listSchedule: (q?: { status?: string; account_id?: string; from?: number; to?: number }) => {
+  listSchedule: (q?: { status?: string; account_id?: string; from?: number; to?: number; q?: string }) => {
     const params = new URLSearchParams();
     if (q?.status) params.set('status', q.status);
     if (q?.account_id) params.set('account_id', q.account_id);
     if (q?.from !== undefined) params.set('from', String(q.from));
     if (q?.to !== undefined) params.set('to', String(q.to));
+    if (q?.q) params.set('q', q.q);
     const qs = params.toString();
     return req<{ posts: ScheduledPostRow[] }>(`/schedule${qs ? `?${qs}` : ''}`);
   },
@@ -277,6 +278,7 @@ export const api = {
       body: JSON.stringify(patch),
     }),
   deleteSchedule: (id: string) => req<{ ok: true }>(`/schedule/${id}`, { method: 'DELETE' }),
+  retrySchedule: (id: string) => req<ScheduledPostRow>(`/schedule/${id}/retry`, { method: 'POST', body: '' }),
   dashboardCounts: () => req<DashboardCounts>('/dashboard/counts'),
   health: () => req<HealthResponse>('/health'),
   quota: () => req<QuotaResponse>('/quota'),

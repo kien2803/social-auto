@@ -104,6 +104,7 @@ scheduleRoutes.get('/schedule', async (c) => {
     accountId: q.account_id || undefined,
     from: num(q.from),
     to: num(q.to),
+    q: q.q?.trim() || undefined,
     limit: Math.min(Math.max(Number(q.limit) || 500, 1), 500),
     offset: Math.max(Number(q.offset) || 0, 0),
   });

@@ -80,7 +80,7 @@ export class ScheduledPostsRepo {
     return { ...post, account, video } as unknown as ClaimedPost;
   }
 
-  async list(filters?: { status?: ScheduledPostStatus; accountId?: string; userId?: string; from?: number; to?: number; limit?: number; offset?: number }): Promise<ScheduledPostRow[]> {
+  async list(filters?: { status?: ScheduledPostStatus; accountId?: string; userId?: string; from?: number; to?: number; q?: string; limit?: number; offset?: number }): Promise<ScheduledPostRow[]> {
     const where: string[] = [];
     const params: unknown[] = [];
     if (filters?.status) { where.push('status = ?'); params.push(filters.status); }
@@ -88,6 +88,7 @@ export class ScheduledPostsRepo {
     if (filters?.userId) { where.push('user_id = ?'); params.push(filters.userId); }
     if (filters?.from !== undefined) { where.push('scheduled_at >= ?'); params.push(filters.from); }
     if (filters?.to !== undefined) { where.push('scheduled_at <= ?'); params.push(filters.to); }
+    if (filters?.q) { where.push('caption LIKE ?'); params.push(`%${filters.q.slice(0, 100)}%`); }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     return (await this.db
       .prepare(`SELECT * FROM scheduled_posts ${whereSql} ORDER BY scheduled_at DESC LIMIT ? OFFSET ?`)
