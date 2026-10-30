@@ -33,6 +33,8 @@ app.route('/api', oauthRoutes); // SPA calls /api/* same-origin
 app.route('/api', accountRoutes);
 app.route('/api', scheduleRoutes);
 app.route('/api', quotaRoutes);
+// /api/health aliases the root /health — the SPA probes the API path.
+app.get('/api/health', (c) => c.json({ status: 'ok', service: 'omnicast', timestamp: Date.now() }));
 
 // SPA fallback — assets layer returns 404 for unknown paths before the
 // worker runs, so serve index.html ourselves for non-API GETs.
