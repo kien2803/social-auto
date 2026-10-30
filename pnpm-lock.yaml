@@ -149,6 +149,9 @@ importers:
       '@social-auto/shared':
         specifier: workspace:*
         version: link:../packages/shared
+      '@tabler/icons-react':
+        specifier: ^3.50.0
+        version: 3.50.0(react@18.3.1)
       '@tanstack/react-query':
         specifier: ^5.102.8
         version: 5.102.8(react@18.3.1)
@@ -1664,6 +1667,14 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
+
+  '@tabler/icons-react@3.50.0':
+    resolution: {integrity: sha512-X9XhFbxAmSNimQ71VAd7opfd4z84x1pLrEbBT33VCIEsFs8zWVqdhh5r/Jyi/3iJjQ861kE5Wm9ixiJfS2nwBA==}
+    peerDependencies:
+      react: '>= 16'
+
+  '@tabler/icons@3.50.0':
+    resolution: {integrity: sha512-HflLxyrH1cqC7s7jzQGSjpsTAVIoaf7+/yHjbdM59rJQBMjliibp+LYhDPFxOMcwa1M8DNpOk6ENzQiWn9a1Dg==}
 
   '@tanstack/query-core@5.102.8':
     resolution: {integrity: sha512-ZNjkJ33CqvPNec/6lZBnHqLc3EVGPZ9ySLhYahU9TcuRFdmwXewuj0c4hwSWcGHqEUwcSrKeZ+oGcvPBqXcQcg==}
@@ -5060,6 +5071,13 @@ snapshots:
   '@speed-highlight/core@1.2.24': {}
 
   '@standard-schema/utils@0.3.0': {}
+
+  '@tabler/icons-react@3.50.0(react@18.3.1)':
+    dependencies:
+      '@tabler/icons': 3.50.0
+      react: 18.3.1
+
+  '@tabler/icons@3.50.0': {}
 
   '@tanstack/query-core@5.102.8': {}
 
