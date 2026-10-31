@@ -68,9 +68,9 @@ export function registerUserAuthRoutes(app: FastifyInstance, deps: UserAuthRoute
         return reply.status(400).send({ error: 'Invalid email format' });
       }
 
-      if (body.password.length < 6) {
+      if (body.password.length < 8 || !/[a-zA-Z]/.test(body.password) || !/\d/.test(body.password)) {
         return reply.status(400).send({
-          error: 'Password must be at least 6 characters',
+          error: 'Password must be at least 8 characters with a letter and a number',
         });
       }
 
@@ -130,8 +130,8 @@ export function registerUserAuthRoutes(app: FastifyInstance, deps: UserAuthRoute
       if (!body.current_password || !body.new_password) {
         return reply.status(400).send({ error: 'Missing current_password or new_password' });
       }
-      if (body.new_password.length < 6) {
-        return reply.status(400).send({ error: 'Password must be at least 6 characters' });
+      if (body.new_password.length < 8 || !/[a-zA-Z]/.test(body.new_password) || !/\d/.test(body.new_password)) {
+        return reply.status(400).send({ error: 'Password must be at least 8 characters with a letter and a number' });
       }
       const hash = authService.getPasswordHash(userId);
       if (!hash || !(await authService.verifyPassword(body.current_password, hash))) {

@@ -105,9 +105,9 @@ export function SettingsPage() {
           <input
             className="input w-full"
             type="password"
-            placeholder="New password (min 6 chars)"
+            placeholder="New password (min 8 chars, letter + number)"
             value={newPw}
-            minLength={6}
+            minLength={8}
             onChange={(e) => setNewPw(e.target.value)}
             autoComplete="new-password"
           />
@@ -122,7 +122,7 @@ export function SettingsPage() {
           <button
             className="btn-primary"
             type="submit"
-            disabled={password.isPending || !curPw || newPw.length < 6 || newPw !== confirmPw}
+            disabled={password.isPending || !curPw || newPw.length < 8 || newPw !== confirmPw}
           >
             Change password
           </button>

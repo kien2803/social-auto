@@ -26,6 +26,7 @@ quotaRoutes.get('/quota', async (c) => {
       used: q.used,
       limit: q.limit,
       remaining: q.remaining,
+      mine: await quotas.getUserUsage(userId, platform, now),
       reset_at: nextMidnightUtc(now),
       warning: q.used / q.limit > 0.8,
     });
