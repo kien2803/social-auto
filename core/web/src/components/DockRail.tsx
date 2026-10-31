@@ -68,13 +68,14 @@ function RailEntry({ to, label, icon: Icon, matchPrefix }: RailItem) {
   );
 }
 
-/** Vertical macOS-dock rail — icon rail on desktop, hidden on mobile
- *  (the bottom Dock covers it there). */
+/** Vertical macOS-dock — same floating-pill language as the mobile
+ *  bottom dock (rounded, blurred, shadowed) so both form factors feel
+ *  like one component rotated 90°. */
 export function DockRail() {
   return (
     <nav
       aria-label="Primary"
-      className="flex h-full w-16 flex-col items-center gap-1.5 border-r border-stone-200 bg-surface/90 py-3 dark:border-stone-800 dark:bg-[#1e1a15]/90"
+      className="sticky top-3 m-3 flex h-[calc(100vh-1.5rem)] w-16 flex-col items-center gap-1.5 rounded-2xl border border-stone-200 bg-surface/90 py-3 shadow-float backdrop-blur-md dark:border-stone-800 dark:bg-[#1e1a15]/90"
     >
       <img src="/logo.svg" alt="Omnicast" className="mb-2 h-8 w-8 rounded-lg" />
       {ITEMS.map((it) => (

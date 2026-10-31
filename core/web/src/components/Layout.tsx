@@ -40,8 +40,8 @@ export function Layout({ children }: { children: ReactNode }) {
         <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <Sidebar collapsed={false} onNavigate={() => setDrawerOpen(false)} />
         </Drawer>
-        {/* Desktop nav — macOS-dock style icon rail on the left */}
-        <aside className="sticky top-0 hidden h-screen shrink-0 md:block">
+        {/* Desktop nav — floating dock rail on the left */}
+        <aside className="hidden shrink-0 md:block">
           <DockRail />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
