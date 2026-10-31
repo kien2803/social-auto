@@ -184,7 +184,7 @@ scheduleRoutes.post('/schedule/:id/retry', async (c) => {
 scheduleRoutes.delete('/schedule/:id', async (c) => {
   const r = await ownedPost(c, c.req.param('id'));
   if ('error' in r) return r.error;
-  if (r.post.status !== 'pending') {
+  if (r.post.status !== 'pending' && r.post.status !== 'draft') {
     return c.json({ error: `cannot_delete_post_in_status_${r.post.status}` }, 400);
   }
   await r.posts.delete(r.post.id);

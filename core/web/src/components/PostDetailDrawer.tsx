@@ -59,9 +59,14 @@ export function PostDetailDrawer({
   });
 
   const pending = post.status === 'pending';
+  const draft = post.status === 'draft';
+  const editable = pending || draft;
   const actions = (
     <>
-      {pending && !editing && (
+      {draft && !editing && (
+        <Button onClick={() => setEditing(true)}>Schedule post</Button>
+      )}
+      {editable && !editing && (
             <>
               <Button variant="danger" loading={del.isPending} onClick={() => del.mutate()}>
                 Cancel post

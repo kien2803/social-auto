@@ -143,7 +143,10 @@ export function ComposePage() {
                       .then((r) => {
                         toast.push({ tone: 'success', title: 'Uploaded' });
                         void qc.invalidateQueries({ queryKey: ['videos'] });
-                        const vid = (r as { video?: { id: string } }).video?.id;
+                        // Upload responses differ across backends — read the
+                        // first available id shape instead of assuming one.
+                        const resp = r as { video?: { id?: string }; video_id?: string; id?: string };
+                        const vid = resp.video?.id ?? resp.video_id ?? resp.id;
                         if (vid) setVideoId(vid);
                       })
                       .catch((err) => toast.push({ tone: 'error', title: 'Upload failed', description: err instanceof Error ? err.message : 'unknown_error' }))

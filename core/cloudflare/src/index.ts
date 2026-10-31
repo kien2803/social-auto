@@ -122,11 +122,11 @@ export default {
         msg.ack();
         continue;
       }
-      // TODO(P5): port publisher dispatch — call the platform publisher for
-      // post.account.platform with decrypted tokens, then markPublished /
-      // releaseToPending (classifyPublishError decides retry vs dead).
-      // Blocked on R2 video storage; until then re-queue via queue retries.
-      msg.retry();
+      // Publisher dispatch isn't ported yet (blocked on R2 video storage).
+      // Fail fast and visibly — infinite msg.retry() would burn the queue's
+      // retries and silently DLQ the post instead of telling the user why.
+      await posts.markFailed(postId, 'publisher_not_deployed');
+      msg.ack();
     }
   },
 };
