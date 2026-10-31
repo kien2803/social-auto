@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { AccountsRepo } from '../repos/accounts';
 import { ScheduledPostsRepo } from '../repos/scheduledPosts';
-import { verifyToken } from '../lib/jwt';
+import { bearerUserId } from '../lib/auth';
 import { decrypt, encrypt } from '../lib/crypto';
 import { getMyChannel, listRecentVideos, refreshAccessToken } from '../lib/google';
 import type { AccountRow, Platform, AccountStatus } from '../repos/types';
@@ -15,16 +15,6 @@ const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 
 export const accountRoutes = new Hono<{ Bindings: Env }>();
 
-/** Bearer JWT → userId, or null. */
-async function bearerUserId(c: { req: { header: (n: string) => string | undefined }; env: Env }): Promise<string | null> {
-  const h = c.req.header('authorization');
-  if (!h?.startsWith('Bearer ')) return null;
-  try {
-    return await verifyToken(h.slice(7), c.env.JWT_SECRET);
-  } catch {
-    return null;
-  }
-}
 
 /** Wire shape — never includes tokens. `snapshot_at` matches the SPA type. */
 function toWire(row: AccountRow) {

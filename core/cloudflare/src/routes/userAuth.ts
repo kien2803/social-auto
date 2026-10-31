@@ -1,7 +1,9 @@
 import { Hono } from 'hono';
 import bcrypt from 'bcryptjs';
 import { UsersRepo } from '../repos/users';
-import { signToken, verifyToken } from '../lib/jwt';
+import { signToken } from '../lib/jwt';
+import { bearerUserId } from '../lib/auth';
+import { rateLimit, clientIp } from '../lib/rateLimit';
 import type { Env } from '../env';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -18,6 +20,8 @@ function getDummyHash(): string {
 export const userAuthRoutes = new Hono<{ Bindings: Env }>();
 
 userAuthRoutes.post('/auth/register', async (c) => {
+  const limited = await rateLimit(c, `register:${clientIp(c)}`, 5, 60);
+  if (limited) return limited;
   const body = (await c.req.json().catch(() => null)) as
     | { email?: string; password?: string; name?: string }
     | null;
@@ -37,11 +41,13 @@ userAuthRoutes.post('/auth/register', async (c) => {
   }
   const password_hash = await bcrypt.hash(body.password, SALT_ROUNDS);
   const user = await users.insert({ email: body.email, password_hash, name: body.name });
-  const token = await signToken(user.id, c.env.JWT_SECRET);
+  const token = await signToken(user.id, c.env.JWT_SECRET, user.token_version ?? 0);
   return c.json({ token, user: { id: user.id, email: user.email, name: user.name } }, 201);
 });
 
 userAuthRoutes.post('/auth/login', async (c) => {
+  const limited = await rateLimit(c, `login:${clientIp(c)}`, 10, 60);
+  if (limited) return limited;
   const body = (await c.req.json().catch(() => null)) as
     | { email?: string; password?: string }
     | null;
@@ -53,20 +59,9 @@ userAuthRoutes.post('/auth/login', async (c) => {
   const hash = user ? await users.getPasswordHash(user.id) : null;
   const valid = await bcrypt.compare(body.password, hash ?? getDummyHash());
   if (!user || !valid) return c.json({ error: 'Invalid email or password' }, 401);
-  const token = await signToken(user.id, c.env.JWT_SECRET);
+  const token = await signToken(user.id, c.env.JWT_SECRET, user.token_version ?? 0);
   return c.json({ token, user: { id: user.id, email: user.email, name: user.name } });
 });
-
-/** Bearer JWT → userId, or null. */
-async function bearerUserId(c: { req: { header: (n: string) => string | undefined }; env: Env }): Promise<string | null> {
-  const h = c.req.header('authorization');
-  if (!h?.startsWith('Bearer ')) return null;
-  try {
-    return await verifyToken(h.slice(7), c.env.JWT_SECRET);
-  } catch {
-    return null;
-  }
-}
 
 userAuthRoutes.get('/auth/me', async (c) => {
   const userId = await bearerUserId(c);
@@ -99,8 +94,11 @@ userAuthRoutes.post('/auth/change-password', async (c) => {
   const body = (await c.req.json().catch(() => null)) as
     | { current_password?: string; new_password?: string }
     | null;
-  if (!body?.current_password || !body.new_password || body.new_password.length < 6) {
-    return c.json({ error: 'Invalid request' }, 400);
+  if (!body?.current_password || !body.new_password) {
+    return c.json({ error: 'Missing current_password or new_password' }, 400);
+  }
+  if (body.new_password.length < 8 || !/[a-zA-Z]/.test(body.new_password) || !/\d/.test(body.new_password)) {
+    return c.json({ error: 'Password must be at least 8 characters with a letter and a number' }, 400);
   }
   const users = new UsersRepo(c.env.DB);
   const hash = await users.getPasswordHash(userId);
@@ -108,5 +106,17 @@ userAuthRoutes.post('/auth/change-password', async (c) => {
     return c.json({ error: 'Current password is incorrect' }, 400);
   }
   await users.updatePasswordHash(userId, await bcrypt.hash(body.new_password, SALT_ROUNDS));
+  // Password change revokes every other session — the bearer that made this
+  // call needs a fresh token too, so issue one for the new version.
+  const tv = await users.bumpTokenVersion(userId);
+  const token = await signToken(userId, c.env.JWT_SECRET, tv);
+  return c.json({ success: true, token });
+});
+
+/** Revoke every outstanding JWT — "sign out everywhere". */
+userAuthRoutes.post('/auth/logout-all', async (c) => {
+  const userId = await bearerUserId(c);
+  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+  await new UsersRepo(c.env.DB).bumpTokenVersion(userId);
   return c.json({ success: true });
 });

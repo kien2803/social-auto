@@ -5,6 +5,7 @@ export interface User {
   email: string;
   name: string;
   created_at: number;
+  token_version?: number;
 }
 
 export class UsersRepo {
@@ -22,16 +23,25 @@ export class UsersRepo {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.db
-      .prepare('SELECT id, email, name, created_at FROM users WHERE email = ?')
+      .prepare('SELECT id, email, name, created_at, token_version FROM users WHERE email = ?')
       .bind(email)
       .first<User>();
   }
 
   async findById(id: string): Promise<User | null> {
     return this.db
-      .prepare('SELECT id, email, name, created_at FROM users WHERE id = ?')
+      .prepare('SELECT id, email, name, created_at, token_version FROM users WHERE id = ?')
       .bind(id)
       .first<User>();
+  }
+
+  /** Revoke every outstanding JWT for this user. */
+  async bumpTokenVersion(id: string): Promise<number> {
+    const row = await this.db
+      .prepare('UPDATE users SET token_version = token_version + 1 WHERE id = ? RETURNING token_version')
+      .bind(id)
+      .first<{ token_version: number }>();
+    return row?.token_version ?? 0;
   }
 
   async getPasswordHash(id: string): Promise<string | null> {

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { AccountsRepo } from '../repos/accounts';
-import { verifyToken } from '../lib/jwt';
+import { userIdFromToken } from '../lib/auth';
 import { encrypt, decrypt } from '../lib/crypto';
 import { generatePKCE } from '../lib/pkce';
 import type { Env } from '../env';
@@ -18,7 +18,7 @@ function cookieOpts(env: Env) {
 async function cookieUserId(c: { req: { raw: Request }; env: Env }): Promise<string | null> {
   const t = getCookie({ req: c.req } as never, 'oauth_token');
   if (!t) return null;
-  try { return await verifyToken(t, c.env.JWT_SECRET); } catch { return null; }
+  return userIdFromToken(c, t);
 }
 
 oauthRoutes.get('/auth/youtube/start', (c) => {
@@ -122,7 +122,7 @@ oauthRoutes.get('/auth/youtube/status', async (c) => {
   const h = c.req.header('authorization');
   if (!h?.startsWith('Bearer ')) return c.json({ connected: false }, 401);
   let userId: string;
-  try { userId = await verifyToken(h.slice(7), c.env.JWT_SECRET); } catch { return c.json({ connected: false }, 401); }
+  userId = (await userIdFromToken(c, h.slice(7))) ?? ''; if (!userId) return c.json({ connected: false }, 401);
   const list = await new AccountsRepo(c.env.DB).listByPlatform('youtube', userId);
   return c.json({ connected: list.length > 0, configured: !!c.env.GOOGLE_CLIENT_ID, accounts: list });
 });
@@ -393,7 +393,7 @@ oauthRoutes.get('/auth/meta/callback', async (c) => {
 async function statusUserId(c: { req: { header: (n: string) => string | undefined }; env: Env }): Promise<string | null> {
   const h = c.req.header('authorization');
   if (!h?.startsWith('Bearer ')) return null;
-  try { return await verifyToken(h.slice(7), c.env.JWT_SECRET); } catch { return null; }
+  return userIdFromToken(c, h.slice(7));
 }
 
 oauthRoutes.get('/auth/tiktok/status', async (c) => {

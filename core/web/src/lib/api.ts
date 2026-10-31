@@ -522,11 +522,16 @@ export const authApi = {
   getCurrentUser: () => req<User>('/auth/me'),
   updateProfile: (name: string) =>
     req<User>('/auth/me', { method: 'PATCH', body: JSON.stringify({ name }) }),
-  changePassword: (current_password: string, new_password: string) =>
-    req<{ success: boolean }>('/auth/change-password', {
+  changePassword: async (current_password: string, new_password: string) => {
+    // The server revokes all tokens on password change and returns a fresh
+    // one — store it or the user is silently logged out.
+    const r = await req<{ success: boolean; token?: string }>('/auth/change-password', {
       method: 'POST',
       body: JSON.stringify({ current_password, new_password }),
-    }),
+    });
+    if (r.token) setToken(r.token);
+    return r;
+  },
   deleteAccount: () => req<{ success: boolean }>('/auth/me', { method: 'DELETE' }),
 };
 
