@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { api } from '../lib/api.js';
 import { useAccounts } from '../lib/accounts.js';
 import { useToast } from '../components/ui/Toast.js';
+import { PostsNav } from '../components/PostsNav.js';
 import { EmptyState } from '../components/ui/EmptyState.js';
 import { Skeleton } from '../components/ui/Skeleton.js';
 import { Button } from '../components/ui/Button.js';
@@ -156,6 +157,7 @@ export function PipelinePage() {
 
   return (
     <div className="space-y-4">
+      <PostsNav />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] text-ink-subtle dark:text-stone-500">post flow · live</p>

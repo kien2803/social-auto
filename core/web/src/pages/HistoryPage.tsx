@@ -1,4 +1,5 @@
 import { IconHistory } from '../components/icons.js';
+import { PostsNav } from '../components/PostsNav.js';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -54,6 +55,7 @@ export function HistoryPage() {
 
   return (
     <div className="space-y-6">
+      <PostsNav />
       <header className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink dark:text-stone-100">History</h1>

@@ -4,7 +4,6 @@ import {
   IconDashboard,
   IconUpload,
   IconSchedule,
-  IconHistory,
   IconAnalytics,
   IconAccounts,
   IconSettings,
@@ -18,16 +17,16 @@ interface DockItem {
   icon: IconComponent;
 }
 
+// Mobile bottom nav — 5 destinations + More. Desktop uses the left sidebar.
 const PRIMARY: DockItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: IconDashboard },
-  { to: '/upload', label: 'Upload', icon: IconUpload },
-  { to: '/calendar', label: 'Calendar', icon: IconSchedule },
-  { to: '/pipeline', label: 'Pipeline', icon: IconTimeline as unknown as IconComponent },
-  { to: '/history', label: 'History', icon: IconHistory },
+  { to: '/dashboard', label: 'Overview', icon: IconDashboard },
+  { to: '/library', label: 'Library', icon: IconUpload },
+  { to: '/posts/new', label: 'Create', icon: IconSchedule },
+  { to: '/posts/calendar', label: 'Posts', icon: IconTimeline as unknown as IconComponent },
+  { to: '/accounts', label: 'Accounts', icon: IconAccounts },
 ];
 
 const SECONDARY: DockItem[] = [
-  { to: '/accounts', label: 'Accounts', icon: IconAccounts },
   { to: '/analytics', label: 'Analytics', icon: IconAnalytics },
   { to: '/settings', label: 'Settings', icon: IconSettings },
 ];
@@ -68,7 +67,7 @@ export function Dock() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-end gap-1.5 rounded-2xl border border-stone-200 bg-surface/90 p-2.5 shadow-float backdrop-blur-md dark:border-stone-800 dark:bg-[#1e1a15]/90"
+      className="fixed bottom-4 left-1/2 z-40 md:hidden flex -translate-x-1/2 items-end gap-1.5 rounded-2xl border border-stone-200 bg-surface/90 p-2.5 shadow-float backdrop-blur-md dark:border-stone-800 dark:bg-[#1e1a15]/90"
     >
       {PRIMARY.map((item) => (
         <DockEntry key={item.to} {...item} />

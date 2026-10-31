@@ -62,6 +62,7 @@ export interface VideoRow {
 }
 
 export type ScheduledPostStatus =
+  | 'draft'
   | 'pending'
   | 'uploading'
   | 'published'
@@ -85,6 +86,7 @@ export interface ScheduledPostRow {
   retry_count: number;
   next_retry_at: number | null;
   is_dead: boolean;
+  notes: string | null;
   created_at: number;
   updated_at: number;
 }

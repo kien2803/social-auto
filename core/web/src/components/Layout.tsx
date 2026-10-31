@@ -39,6 +39,12 @@ export function Layout({ children }: { children: ReactNode }) {
         <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <Sidebar collapsed={false} onNavigate={() => setDrawerOpen(false)} />
         </Drawer>
+        {/* Desktop sidebar — fixed left rail, hidden on mobile (dock handles it) */}
+        <aside className="hidden w-56 shrink-0 border-r border-stone-200 bg-surface md:block dark:border-stone-800 dark:bg-[#1c1917]">
+          <div className="sticky top-0 h-screen overflow-y-auto">
+            <Sidebar collapsed={false} />
+          </div>
+        </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar
             onMenuToggle={() => setDrawerOpen(true)}

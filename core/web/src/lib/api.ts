@@ -414,6 +414,8 @@ export interface CreateScheduleInput {
   per_platform_caption?: Record<string, string>;
   scheduled_at: number;
   visibility?: 'public' | 'unlisted' | 'private';
+  draft?: boolean;
+  notes?: string;
   account_ids: string[];
 }
 
@@ -421,6 +423,9 @@ export interface UpdateScheduleInput {
   caption?: string;
   scheduled_at?: number;
   visibility?: 'public' | 'unlisted' | 'private';
+  notes?: string | null;
+  /** Promote a draft to pending — requires scheduled_at. */
+  schedule?: boolean;
 }
 
 export interface DashboardCounts {

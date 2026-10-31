@@ -10,7 +10,7 @@ import type { Env } from '../env';
 const CAPTION_MAX = 5000;
 const SCHEDULE_LEAD_MS = 60_000;
 const MAX_ACCOUNTS_PER_SCHEDULE = 50;
-const STATUSES: ReadonlySet<string> = new Set(['pending', 'uploading', 'published', 'failed', 'dead']);
+const STATUSES: ReadonlySet<string> = new Set(['draft', 'pending', 'uploading', 'published', 'failed', 'dead']);
 const VISIBILITIES: ReadonlySet<string> = new Set(['public', 'unlisted', 'private']);
 
 interface ScheduleBody {
@@ -19,6 +19,8 @@ interface ScheduleBody {
   per_platform_caption?: Record<string, string>;
   scheduled_at: number;
   visibility?: Visibility;
+  draft?: boolean;
+  notes?: string;
   account_ids?: string[];
   /** Legacy single-account form — normalized into account_ids. */
   account_id?: string;
@@ -42,8 +44,12 @@ scheduleRoutes.post('/schedule', async (c) => {
   if (accountIds.length > MAX_ACCOUNTS_PER_SCHEDULE) {
     return c.json({ error: `too_many_accounts: maximum ${MAX_ACCOUNTS_PER_SCHEDULE}` }, 400);
   }
-  if (typeof body.scheduled_at !== 'number') return c.json({ error: 'scheduled_at required (ms epoch)' }, 400);
-  if (body.scheduled_at < Date.now() + SCHEDULE_LEAD_MS) {
+  const draft = body.draft === true;
+  // Drafts carry a placeholder timestamp (creation time) — they only gain a
+  // real air time when promoted to pending via PATCH.
+  const scheduledAt = typeof body.scheduled_at === 'number' ? body.scheduled_at : draft ? Date.now() : NaN;
+  if (Number.isNaN(scheduledAt)) return c.json({ error: 'scheduled_at required (ms epoch)' }, 400);
+  if (!draft && scheduledAt < Date.now() + SCHEDULE_LEAD_MS) {
     return c.json({ error: `scheduled_at must be at least ${SCHEDULE_LEAD_MS / 1000}s in the future` }, 400);
   }
   if (!body.caption || body.caption.length > CAPTION_MAX) {
@@ -79,7 +85,9 @@ scheduleRoutes.post('/schedule', async (c) => {
         user_id: userId,
         video_id: body.video_id,
         account_id: accId,
-        scheduled_at: body.scheduled_at,
+        scheduled_at: scheduledAt,
+        status: draft ? 'draft' : 'pending',
+        notes: body.notes ?? null,
         caption: perPlatform[accId] ?? body.caption,
         per_platform_caption: perPlatform[accId] ?? null,
         visibility: body.visibility ?? 'private',
@@ -129,11 +137,12 @@ scheduleRoutes.get('/schedule/:id', async (c) => {
 scheduleRoutes.patch('/schedule/:id', async (c) => {
   const r = await ownedPost(c, c.req.param('id'));
   if ('error' in r) return r.error;
-  if (r.post.status !== 'pending') {
+  const editable = r.post.status === 'pending' || r.post.status === 'draft';
+  if (!editable) {
     return c.json({ error: `cannot_edit_post_in_status_${r.post.status}` }, 400);
   }
   const body = (await c.req.json().catch(() => null)) as
-    | { caption?: string; scheduled_at?: number; visibility?: Visibility }
+    | { caption?: string; scheduled_at?: number; visibility?: Visibility; notes?: string | null; schedule?: boolean }
     | null;
   if (!body) return c.json({ error: 'invalid_body' }, 400);
   if (body.caption !== undefined && body.caption.length > CAPTION_MAX) {
@@ -145,10 +154,18 @@ scheduleRoutes.patch('/schedule/:id', async (c) => {
   if (body.scheduled_at !== undefined && body.scheduled_at < Date.now() + SCHEDULE_LEAD_MS) {
     return c.json({ error: 'scheduled_at_too_soon' }, 400);
   }
+  // Draft promotion: a draft becomes pending when the client gives it a
+  // time (schedule=true) — drafts may also be edited freely without that.
+  const promote = r.post.status === 'draft' && (body.schedule === true || body.scheduled_at !== undefined);
+  if (promote && body.scheduled_at === undefined) {
+    return c.json({ error: 'scheduled_at required to schedule a draft' }, 400);
+  }
   await r.posts.update(r.post.id, {
     caption: body.caption,
     scheduled_at: body.scheduled_at,
     visibility: body.visibility,
+    notes: body.notes,
+    status: promote ? 'pending' : undefined,
   });
   return c.json(await r.posts.findById(r.post.id));
 });
@@ -180,7 +197,7 @@ scheduleRoutes.get('/dashboard/counts', async (c) => {
   const posts = await new ScheduledPostsRepo(c.env.DB).list({ userId });
   const now = Date.now();
   const since = now - 7 * 24 * 60 * 60 * 1000;
-  const byStatus = { pending: 0, uploading: 0, published: 0, failed: 0, dead: 0 };
+  const byStatus: Record<ScheduledPostStatus, number> = { draft: 0, pending: 0, uploading: 0, published: 0, failed: 0, dead: 0 };
   let publishedLast7d = 0;
   for (const p of posts) {
     byStatus[p.status]++;

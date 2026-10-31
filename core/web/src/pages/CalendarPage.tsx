@@ -9,6 +9,7 @@ import {
 import type { Platform, ScheduledPostRow } from '@social-auto/shared';
 import { useAccounts, type AccountInfo } from '../lib/accounts.js';
 import { Button } from '../components/ui/Button.js';
+import { PostsNav } from '../components/PostsNav.js';
 import { Field, Select, TextArea } from '../components/ui/Field.js';
 import { EmptyState } from '../components/ui/EmptyState.js';
 import { Skeleton } from '../components/ui/Skeleton.js';
@@ -376,6 +377,7 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-4">
+      <PostsNav />
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-200 pb-4 dark:border-stone-800">
         <div>
           <p className="font-mono text-[11px] text-ink-subtle dark:text-stone-500">content schedule</p>

@@ -10,9 +10,11 @@ export interface NewScheduledPost {
   caption: string;
   per_platform_caption?: string | null;
   visibility?: Visibility;
+  status?: 'pending' | 'draft';
+  notes?: string | null;
 }
 
-const STATUSES: readonly ScheduledPostStatus[] = ['pending', 'uploading', 'published', 'failed', 'dead'];
+const STATUSES: readonly ScheduledPostStatus[] = ['draft', 'pending', 'uploading', 'published', 'failed', 'dead'];
 
 export class ScheduledPostsRepo {
   constructor(private db: D1Database) {}
@@ -23,11 +25,12 @@ export class ScheduledPostsRepo {
     await this.db
       .prepare(
         `INSERT INTO scheduled_posts
-         (id, user_id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL, NULL, 0, NULL, 0, ?, ?)`,
+         (id, user_id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, NULL, 0, ?, ?, ?)`,
       )
       .bind(id, input.user_id, input.video_id, input.account_id, input.scheduled_at,
-        input.caption, input.per_platform_caption ?? null, input.visibility ?? 'private', now, now)
+        input.caption, input.per_platform_caption ?? null, input.visibility ?? 'private',
+        input.status ?? 'pending', input.notes ?? null, now, now)
       .run();
     return (await this.findById(id))!;
   }
@@ -140,12 +143,14 @@ export class ScheduledPostsRepo {
       .run();
   }
 
-  async update(id: string, patch: { caption?: string; scheduled_at?: number; visibility?: Visibility }): Promise<void> {
+  async update(id: string, patch: { caption?: string; scheduled_at?: number; visibility?: Visibility; notes?: string | null; status?: 'pending' | 'draft' }): Promise<void> {
     const sets: string[] = [];
     const params: unknown[] = [];
     if (patch.caption !== undefined) { sets.push('caption = ?'); params.push(patch.caption); }
     if (patch.scheduled_at !== undefined) { sets.push('scheduled_at = ?'); params.push(patch.scheduled_at); }
     if (patch.visibility !== undefined) { sets.push('visibility = ?'); params.push(patch.visibility); }
+    if (patch.notes !== undefined) { sets.push('notes = ?'); params.push(patch.notes); }
+    if (patch.status !== undefined) { sets.push('status = ?'); params.push(patch.status); }
     if (!sets.length) return;
     sets.push('updated_at = ?');
     params.push(Date.now(), id);

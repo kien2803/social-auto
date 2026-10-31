@@ -2,7 +2,7 @@
 export type Platform = 'youtube' | 'tiktok' | 'instagram' | 'facebook';
 export type Visibility = 'public' | 'unlisted' | 'private';
 export type AccountStatus = 'active' | 'expired' | 'revoked';
-export type ScheduledPostStatus = 'pending' | 'uploading' | 'published' | 'failed' | 'dead';
+export type ScheduledPostStatus = 'draft' | 'pending' | 'uploading' | 'published' | 'failed' | 'dead';
 
 export interface AccountRow {
   id: string;
@@ -56,6 +56,7 @@ export interface ScheduledPostRow {
   last_error: string | null;
   retry_count: number;
   next_retry_at: number | null;
+  notes: string | null;
   is_dead: number;
   created_at: number;
   updated_at: number;
