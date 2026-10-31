@@ -67,7 +67,7 @@ export function Dock() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-4 left-1/2 z-40 md:hidden flex -translate-x-1/2 items-end gap-1.5 rounded-2xl border border-stone-200 bg-surface/90 p-2.5 shadow-float backdrop-blur-md dark:border-stone-800 dark:bg-[#1e1a15]/90"
+      className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-end gap-1.5 rounded-2xl border border-stone-200 bg-surface/90 p-2.5 shadow-float backdrop-blur-md dark:border-stone-800 dark:bg-[#1e1a15]/90"
     >
       {PRIMARY.map((item) => (
         <DockEntry key={item.to} {...item} />

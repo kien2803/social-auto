@@ -1,9 +1,6 @@
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
-import { Sidebar } from './Sidebar.js';
 import { Topbar } from './Topbar.js';
-import { Drawer } from './Drawer.js';
 import { Dock } from './Dock.js';
-import { DockRail } from './DockRail.js';
 import { Skeleton } from './ui/Skeleton.js';
 
 function detectEnv(): { label: string; tone: 'mock' | 'live' } {
@@ -24,32 +21,13 @@ export function PageFallback() {
 }
 
 export function Layout({ children }: { children: ReactNode }) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const env = detectEnv();
-
-  useEffect(() => {
-    document.body.style.overflow = drawerOpen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [drawerOpen]);
 
   return (
     <div className="min-h-screen bg-surface-muted text-ink dark:bg-[#1c1917] dark:text-stone-100">
       <div className="flex min-h-screen">
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <Sidebar collapsed={false} onNavigate={() => setDrawerOpen(false)} />
-        </Drawer>
-        {/* Desktop nav — floating dock rail on the left */}
-        <aside className="hidden shrink-0 md:block">
-          <DockRail />
-        </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar
-            onMenuToggle={() => setDrawerOpen(true)}
-            envLabel={env.label}
-            envTone={env.tone}
-          />
+          <Topbar envLabel={env.label} envTone={env.tone} />
           {/* pb-24 keeps content clear of the fixed bottom dock */}
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 md:px-8">
             <Suspense fallback={<PageFallback />}>{children}</Suspense>

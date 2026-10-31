@@ -1,4 +1,4 @@
-import { IconMenu, IconMoon, IconSun } from './icons.js';
+import { IconMoon, IconSun } from './icons.js';
 import { useTheme } from '../lib/useTheme.js';
 import { useAuth } from '../contexts/AuthContext.js';
 import { Link, useLocation } from 'react-router-dom';
@@ -22,11 +22,9 @@ const TITLES: Record<string, string> = {
 };
 
 export function Topbar({
-  onMenuToggle,
   envLabel,
   envTone,
 }: {
-  onMenuToggle: () => void;
   envLabel: string;
   envTone: 'mock' | 'live';
 }) {
@@ -42,14 +40,6 @@ export function Topbar({
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-stone-200 bg-surface/90 px-4 backdrop-blur dark:border-stone-800 dark:bg-[#1c1917]/85">
       <div className="flex min-w-0 items-center gap-3">
-        <button
-          type="button"
-          aria-label="Open menu"
-          onClick={onMenuToggle}
-          className="rounded-md p-1.5 text-ink-muted hover:bg-stone-100 md:hidden dark:text-stone-400 dark:hover:bg-stone-800"
-        >
-          <IconMenu className="h-5 w-5" />
-        </button>
         <div className="flex items-center gap-2 md:hidden">
           <img src="/logo.svg" alt="" className="h-6 w-6" />
           <span className="font-display text-sm font-semibold text-ink dark:text-stone-100">Omnicast</span>
