@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar.js';
 import { Topbar } from './Topbar.js';
 import { Drawer } from './Drawer.js';
 import { Dock } from './Dock.js';
+import { DockRail } from './DockRail.js';
 import { Skeleton } from './ui/Skeleton.js';
 
 function detectEnv(): { label: string; tone: 'mock' | 'live' } {
@@ -39,11 +40,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <Sidebar collapsed={false} onNavigate={() => setDrawerOpen(false)} />
         </Drawer>
-        {/* Desktop sidebar — fixed left rail, hidden on mobile (dock handles it) */}
-        <aside className="hidden w-56 shrink-0 border-r border-stone-200 bg-surface md:block dark:border-stone-800 dark:bg-[#1c1917]">
-          <div className="sticky top-0 h-screen overflow-y-auto">
-            <Sidebar collapsed={false} />
-          </div>
+        {/* Desktop nav — macOS-dock style icon rail on the left */}
+        <aside className="sticky top-0 hidden h-screen shrink-0 md:block">
+          <DockRail />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar
