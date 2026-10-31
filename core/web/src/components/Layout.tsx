@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { Topbar } from './Topbar.js';
 import { Dock } from './Dock.js';
 import { Skeleton } from './ui/Skeleton.js';
