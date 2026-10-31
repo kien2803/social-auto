@@ -28,7 +28,7 @@ function Item({ to, label, icon: IconC, collapsed, onNavigate, end }: {
   return (
     <NavLink to={to} end={end} onClick={onNavigate} title={collapsed ? label : undefined}
       className={({ isActive }) => linkClass(isActive, collapsed)}>
-      <IconC className="h-4.5 w-4.5 h-[18px] w-[18px] shrink-0" />
+      <IconC className="h-[18px] w-[18px] shrink-0" />
       {!collapsed && <span>{label}</span>}
     </NavLink>
   );

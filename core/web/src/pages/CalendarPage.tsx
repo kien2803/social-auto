@@ -330,7 +330,9 @@ export function CalendarPage() {
   // Platform filter happens client-side — the API filters by account_id and
   // status; mapping platform → account ids keeps it one indexed query.
   const posts = useMemo(() => {
-    const all = scheduleQuery.data?.posts ?? [];
+    // Drafts have no real air time (placeholder timestamp) — keep them
+    // out of the calendar; they live in the pipeline drafts lane.
+    const all = (scheduleQuery.data?.posts ?? []).filter((p) => p.status !== 'draft');
     if (!filters.platform) return all;
     return all.filter((p) => accountById.get(p.account_id)?.platform === filters.platform);
   }, [scheduleQuery.data, filters.platform, accountById]);

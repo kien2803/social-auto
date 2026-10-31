@@ -13,6 +13,7 @@ import type { ScheduledPostRow } from '@social-auto/shared';
 
 /** Kanban over post lifecycle — simple words, matching scheduled_posts.status. */
 const LANES: { id: string; label: string; statuses: ScheduledPostRow['status'][] }[] = [
+  { id: 'draft', label: 'drafts', statuses: ['draft'] },
   { id: 'queued', label: 'scheduled', statuses: ['pending'] },
   { id: 'airing', label: 'publishing', statuses: ['uploading'] },
   { id: 'aired', label: 'published', statuses: ['published'] },
@@ -194,7 +195,7 @@ export function PipelinePage() {
       )}
 
       {posts.isLoading ? (
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
           {LANES.map((l) => <Skeleton key={l.id} className="h-64" />)}
         </div>
       ) : posts.isError ? (
@@ -204,7 +205,7 @@ export function PipelinePage() {
           action={<Button size="sm" onClick={() => void posts.refetch()}>Retry</Button>}
         />
       ) : (
-        <div className="grid items-start gap-3 md:grid-cols-4">
+        <div className="grid items-start gap-3 md:grid-cols-3 lg:grid-cols-5">
           {LANES.map((lane) => {
             const items = byLane.get(lane.id) ?? [];
             return (

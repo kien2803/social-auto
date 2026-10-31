@@ -10,11 +10,12 @@ import { Field, Select, TextArea } from './ui/Field.js';
 import type { ScheduledPostRow } from '@social-auto/shared';
 
 const STATUS_TONES: Record<string, 'success' | 'warn' | 'danger' | 'neutral'> = {
+  draft: 'neutral',
   pending: 'warn',
   uploading: 'neutral',
   published: 'success',
   failed: 'danger',
-  dead: 'neutral',
+  dead: 'danger',
 };
 
 export function PostDetailDrawer({
