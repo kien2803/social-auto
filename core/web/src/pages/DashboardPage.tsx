@@ -134,24 +134,45 @@ function ChannelLineup() {
     </Card>
   );
 }
- function QuickActions() {
-   return (
-   <Card>
-      <CardBody className="flex flex-wrap items-center gap-2">
+function QuickActions() {
+  return (
+    <Card>
+      <CardHeader title="Station controls" description="Common routes." />
+      <CardBody className="p-0">
         <Link
-          to="/upload"
-          className="btn-primary"
+          to="/posts/new"
+          className="flex items-center justify-between gap-3 border-b border-stone-200 px-4 py-3 text-sm transition-colors hover:bg-surface-muted/60 dark:border-stone-800 dark:hover:bg-stone-800/40"
         >
-          ↑ New upload
+          <span className="flex items-center gap-2.5 font-medium text-ink dark:text-stone-100">
+            <IconUpload className="h-4 w-4 text-brand-600 dark:text-brand-100" />
+            New upload
+          </span>
+          <span className="font-mono text-[10px] text-ink-subtle dark:text-stone-500">tx → queue</span>
         </Link>
-        <Link to="/schedule" className="btn-secondary">
-          <IconSchedule className="h-4 w-4" /> Schedule list
-        </Link>
-        <Link to="/history" className="btn-secondary">
-          <IconHistory className="h-4 w-4" /> History
-        </Link>
-        <Link to="/accounts" className="btn-ghost ml-auto">
-          Manage accounts →
+        {[
+          { to: '/posts/calendar', icon: IconSchedule, label: 'Schedule', hint: 'week grid' },
+          { to: '/posts/history', icon: IconHistory, label: 'History', hint: 'tx log' },
+        ].map((r) => (
+          <Link
+            key={r.to}
+            to={r.to}
+            className="flex items-center justify-between gap-3 border-b border-stone-200 px-4 py-3 text-sm transition-colors last:border-b-0 hover:bg-surface-muted/60 dark:border-stone-800 dark:hover:bg-stone-800/40"
+          >
+            <span className="flex items-center gap-2.5 text-ink-muted dark:text-stone-300">
+              <r.icon className="h-4 w-4" />
+              {r.label}
+            </span>
+            <span className="font-mono text-[10px] text-ink-subtle dark:text-stone-500">{r.hint}</span>
+          </Link>
+        ))}
+        <Link
+          to="/accounts"
+          className="flex items-center justify-between gap-3 px-4 py-3 text-sm transition-colors hover:bg-surface-muted/60 dark:hover:bg-stone-800/40"
+        >
+          <span className="flex items-center gap-2.5 text-ink-muted dark:text-stone-300">
+            Manage accounts
+          </span>
+          <span className="font-mono text-[10px] text-ink-subtle dark:text-stone-500">CH lineup →</span>
         </Link>
       </CardBody>
     </Card>
@@ -316,15 +337,15 @@ export function DashboardPage() {
 
       <ChannelLineup />
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid items-start gap-6 lg:grid-cols-2">
         <QuotaSection />
-        <QuickActions />
+        <div className="flex flex-col gap-6">
+          <QuickActions />
+          <FailureList />
+        </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <UpcomingList />
-        <FailureList />
-      </section>
+      <UpcomingList />
     </div>
   );
 }

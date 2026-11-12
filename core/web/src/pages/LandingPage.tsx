@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.js';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
+import { CustomEase } from 'gsap/CustomEase';
 import {
   IconCheck,
   IconFacebook,
@@ -9,6 +14,11 @@ import {
   IconUpload,
   IconYouTube,
 } from '../components/icons.js';
+
+gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin, CustomEase);
+
+// One curve for the whole page (unslop motion token).
+const SOFT = CustomEase.create('soft-out', '0.22, 1, 0.36, 1');
 
 const STATIONS = [
   { name: 'YouTube', freq: 'CH-01', scope: 'upload + read', Icon: IconYouTube },
@@ -78,18 +88,13 @@ const CAPABILITIES = [
 
 type RevealVariant = 'up' | 'left' | 'pop';
 
-const HIDDEN: Record<RevealVariant, string> = {
-  up: 'translate-y-6 opacity-0 blur-[3px]',
-  left: '-translate-x-6 opacity-0 blur-[2px]',
-  pop: 'scale-90 opacity-0 blur-[2px]',
+const REVEAL_FROM: Record<RevealVariant, gsap.TweenVars> = {
+  up: { y: 12 },
+  left: { x: -12 },
+  pop: { scale: 0.96 },
 };
 
-const EASE: Record<RevealVariant, string> = {
-  up: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  left: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  pop: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-};
-
+/** Scroll-driven entrance — one fade+rise, transform/opacity only. */
 function Reveal({
   children,
   delay = 0,
@@ -102,32 +107,34 @@ function Reveal({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [seen, setSeen] = useState(false);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setSeen(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  useGSAP(
+    () => {
+      const el = ref.current;
+      if (!el) return;
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(
+          el,
+          { autoAlpha: 0, ...REVEAL_FROM[variant] },
+          {
+            autoAlpha: 1,
+            x: 0,
+            y: 0,
+            scale: 1,
+            duration: 0.55,
+            delay: delay / 1000,
+            ease: SOFT,
+            scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+          },
+        );
+      });
+    },
+    { scope: ref },
+  );
 
   return (
-    <div
-      ref={ref}
-      style={{ transitionDelay: `${delay}ms`, transitionTimingFunction: EASE[variant] }}
-      className={`${className} transition-all duration-[900ms] ${
-        seen ? 'translate-x-0 translate-y-0 scale-100 opacity-100 blur-0' : HIDDEN[variant]
-      }`}
-    >
+    <div ref={ref} className={className}>
       {children}
     </div>
   );
@@ -285,31 +292,33 @@ function PlatformCard({ name, i }: { name: string; i: number }) {
 }
 
 /** The card that sits at center and cycles all four platform skins while
- *  the same video keeps playing inside — scene 4 of the storyboard. */
+ *  the same video keeps playing inside — scene 4 of the storyboard. The
+ *  timeline flips it edge-on (rotationY) and swaps ring + header mid-flip. */
 function MorphCard() {
   return (
-    <span className="relative block w-40 rounded-md border border-stone-200 bg-surface shadow-lift dark:border-stone-600 dark:bg-[#2a251f]">
-      {/* tinted rings — one per platform skin */}
-      {SCENE.map(({ name, tint }, i) => (
+    <span
+      data-morph
+      className="relative block w-40 rounded-md border border-stone-200 bg-surface shadow-lift dark:border-stone-600 dark:bg-[#2a251f]"
+    >
+      {/* tinted rings — one per platform skin, the timeline picks one */}
+      {SCENE.map(({ name, tint }) => (
         <span
           key={name}
-          className="bc-anim absolute -inset-px rounded-md border-2 opacity-0 animate-bc-skin"
-          style={{ borderColor: tint, animationDelay: `${i * 0.65}s` }}
+          data-ring
+          className="absolute -inset-px rounded-md border-2 opacity-0"
+          style={{ borderColor: tint }}
         />
       ))}
-      {/* header chrome — swaps platform every ~0.65s */}
+      {/* header chrome — swaps platform at each flip */}
       <span className="relative flex h-7 items-center border-b border-stone-200 dark:border-stone-700">
-        {SCENE.map(({ name, Icon, tint }, i) => (
+        {SCENE.map(({ name, Icon, tint }) => (
           <span
             key={name}
-            className="bc-anim absolute inset-0 flex items-center gap-1.5 rounded-t-md bg-surface px-2.5 opacity-0 animate-bc-skin dark:bg-[#2a251f]"
-            style={{ animationDelay: `${i * 0.65}s` }}
+            data-head
+            className="absolute inset-0 flex items-center gap-1.5 rounded-t-md bg-surface px-2.5 opacity-0 dark:bg-[#2a251f]"
           >
             <Icon className="h-3.5 w-3.5" style={{ color: tint }} />
-            <span
-              className="truncate font-mono text-[9px] uppercase tracking-wider"
-              style={{ color: tint }}
-            >
+            <span className="truncate font-mono text-[9px] uppercase tracking-wider" style={{ color: tint }}>
               {name}
             </span>
           </span>
@@ -329,14 +338,241 @@ function MorphCard() {
   );
 }
 
-/** Looped 15s storyboard in the hero — five scenes, each owning the whole
- *  stage alone: (1) cursor drags the clip in + clicks transmit, (3) lines
- *  ignite to the platforms, (4) one card cycles all platform skins with
- *  the same video, (5) it splits into four platform cards, (6) logo.
- *  Pure CSS/SVG; freezes on the logo scene under prefers-reduced-motion. */
+/** Looped 15s storyboard in the hero — a GSAP master timeline. Five scene
+ *  layers each own the stage alone: (1) cursor drags the clip in + clicks
+ *  transmit, (3) lines ignite to the platforms, (4) one card cycles all
+ *  platform skins with the same video, (5) it splits into four platform
+ *  cards, (6) logo sign-off. Positions are %-anchored in CSS; every motion
+ *  is a transform measured in px from the live stage size, so the cursor
+ *  tip lands exactly under each element's edge. Reduced-motion shows the
+ *  static sign-off frame. */
 function BroadcastScene() {
+  const stage = useRef<HTMLElement | null>(null);
+
+  useGSAP(
+    () => {
+      const el = stage.current;
+      if (!el) return;
+      const q = gsap.utils.selector(el);
+      // %-of-stage → px, re-evaluated whenever the timeline invalidates.
+      const pxX = (pct: number) => () => (pct / 100) * el.clientWidth;
+      const pxY = (pct: number) => () => (pct / 100) * el.clientHeight;
+      // world point → transform target for an element anchored at (ax, ay)%
+      const at = (x: number, y: number, ax: number, ay: number) => ({
+        x: pxX(x - ax),
+        y: pxY(y - ay),
+      });
+      // MotionPath needs concrete points — bake px from the live stage size
+      // (cursor-tip world points; cursor svg anchored at 12%,72%)
+      const cp = (x: number, y: number) => ({
+        x: ((x - 12) / 100) * el.clientWidth,
+        y: ((y - 72) / 100) * el.clientHeight,
+      });
+      // clip/tracker centers — both anchored at 18%,60%
+      const lp = (x: number, y: number) => ({
+        x: ((x - 18) / 100) * el.clientWidth,
+        y: ((y - 60) / 100) * el.clientHeight,
+      });
+
+      // GSAP owns every transform on these; they were centered with CSS
+      // translate before, which GSAP would overwrite.
+      gsap.set(q('[data-center]'), { xPercent: -50, yPercent: -50 });
+      gsap.set(q('[data-morph]'), { transformPerspective: 600 });
+
+      let master: gsap.core.Timeline | undefined;
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: reduce)', () => {
+        gsap.set(q('[data-scene="s6"]'), { autoAlpha: 1 });
+      });
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        const cursor = q('[data-cursor]');
+        const clip = q('[data-clip]');
+        const track = q('[data-track]');
+        const dz = q('[data-dz]');
+        const btn = q('[data-btn]');
+        const node = q('[data-node]');
+        const lines = q('[data-line]');
+        const sparks = q('[data-spark]');
+        const recvs = q('[data-recv]');
+        const morph = q('[data-morph]');
+        const rings = q('[data-ring]');
+        const heads = q('[data-head]');
+        const copies = q('[data-copy]');
+        const checks = q('[data-check]');
+        const burst = q('[data-burst]');
+        const dots = q('[data-dot]');
+        const sign = q('[data-sign]');
+        const s6rings = q('[data-s6ring]');
+
+        const tl = gsap.timeline({ repeat: -1, defaults: { ease: SOFT } });
+        master = tl;
+
+        // scene layers — each beat owns the stage alone -------------------
+        const bounds: [string, number, number][] = [
+          ['s1', 0, 4.7],
+          ['s3', 5.0, 6.8],
+          ['s4', 7.0, 9.75],
+          ['s5', 10.0, 13.75],
+          ['s6', 13.9, 14.78],
+        ];
+        bounds.forEach(([n, tIn, tOut], i) => {
+          tl.fromTo(
+            q(`[data-scene="${n}"]`),
+            { autoAlpha: 0, scale: 0.97 },
+            { autoAlpha: 1, scale: 1, duration: 0.4, immediateRender: false },
+            tIn,
+          ).to(q(`[data-scene="${n}"]`), { autoAlpha: 0, scale: 0.97, duration: 0.35 }, tOut);
+          if (dots[i]) tl.set(dots[i], { autoAlpha: 1 }, tIn).set(dots[i], { autoAlpha: 0 }, tOut);
+        });
+
+        // scene 1 — grab the clip, drag it in, click transmit (0–5s)
+        // resets first: on loops 2+ elements keep their end-of-loop state
+        // until their tween runs, so each beat restores its start state.
+        tl.set(cursor, { x: 0, y: 0, scale: 1, autoAlpha: 0 }, 0)
+          .set(clip, { x: 0, y: 0, scale: 1, rotation: -5, autoAlpha: 1 }, 0)
+          .set(track, { x: 0, y: 0, scale: 1.15, autoAlpha: 0 }, 0)
+          .set(dz, { scale: 1 }, 0);
+
+        tl.fromTo(cursor, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, immediateRender: false }, 0.3)
+          .to(cursor, { ...at(18, 66, 12, 72), duration: 0.6, ease: 'power2.out' }, 0.5)
+          .to(
+            cursor,
+            {
+              motionPath: { path: [cp(30, 56), cp(42, 50), cp(50, 48)], curviness: 1.3 },
+              duration: 1.5,
+              ease: 'power1.inOut',
+            },
+            1.05,
+          )
+          .to(cursor, { scale: 0.8, duration: 0.12 }, 2.5)
+          .to(cursor, { scale: 1, duration: 0.14 }, 2.68)
+          .to(cursor, { ...at(44, 69, 12, 72), duration: 0.65, ease: 'power2.inOut' }, 3.15)
+          .to(cursor, { scale: 0.78, duration: 0.12 }, 4.1)
+          .to(cursor, { scale: 1, duration: 0.16 }, 4.28)
+          .to(cursor, { autoAlpha: 0, duration: 0.25 }, 4.55);
+
+        tl.to(
+            clip,
+            {
+              motionPath: { path: [lp(30, 48), lp(42, 40), lp(50, 38)], curviness: 1.3 },
+              duration: 1.5,
+              ease: 'power1.inOut',
+            },
+            1.05,
+          )
+          .to(clip, { rotation: 3, duration: 1.5, ease: 'power1.inOut' }, 1.05)
+          .to(clip, { scale: 0.12, autoAlpha: 0, rotation: 0, duration: 0.3, ease: 'power2.in' }, 2.55);
+
+        tl.to(track, { autoAlpha: 1, duration: 0.3 }, 0.9)
+          .to(
+            track,
+            {
+              motionPath: { path: [lp(30, 48), lp(42, 40), lp(50, 38)], curviness: 1.3 },
+              duration: 1.5,
+              ease: 'power1.inOut',
+            },
+            1.05,
+          )
+          .to(track, { scale: 0.3, autoAlpha: 0, duration: 0.25, ease: 'power2.in' }, 2.5);
+
+        tl.to(dz, { scale: 1.06, duration: 0.14 }, 2.55)
+          .to(dz, { scale: 1, duration: 0.22 }, 2.72)
+          .to(dz, { scale: 0.95, duration: 0.1 }, 4.15)
+          .to(dz, { scale: 1, duration: 0.22 }, 4.3);
+
+        tl.fromTo(btn, { autoAlpha: 0, scale: 0.7 }, { autoAlpha: 1, scale: 1, duration: 0.35, immediateRender: false }, 3.0)
+          .to(btn, { scale: 0.86, duration: 0.1 }, 4.1)
+          .to(btn, { scale: 1, duration: 0.18 }, 4.28)
+          .to(btn, { autoAlpha: 0, duration: 0.2 }, 4.55);
+
+        // scene 3 — conductors ignite, sparks ride to the platforms (5–7s)
+        tl.set(lines, { autoAlpha: 0, strokeDashoffset: 100 }, 5.01)
+          .set(sparks, { autoAlpha: 0, strokeDashoffset: 100 }, 5.01)
+          .set(recvs, { autoAlpha: 0, scale: 0.8 }, 5.01)
+          .fromTo(node, { scale: 0.85 }, { scale: 1, duration: 0.5, immediateRender: false }, 5.1)
+          .fromTo(
+            lines,
+            { strokeDashoffset: 100, autoAlpha: 0 },
+            { strokeDashoffset: 0, autoAlpha: 1, duration: 1.0, stagger: 0.12, ease: 'power2.inOut', immediateRender: false },
+            5.25,
+          )
+          .fromTo(
+            sparks,
+            { strokeDashoffset: 100, autoAlpha: 0 },
+            { strokeDashoffset: 0, autoAlpha: 1, duration: 0.8, stagger: 0.12, ease: 'power1.in', immediateRender: false },
+            5.8,
+          )
+          .fromTo(
+            recvs,
+            { autoAlpha: 0, scale: 0.8 },
+            { autoAlpha: 1, scale: 1, duration: 0.4, stagger: 0.12, immediateRender: false },
+            6.05,
+          );
+
+        // scene 4 — one card flips through every platform skin (7–10s)
+        SCENE.forEach((_, i) => tl.set([rings[i], heads[i]], { autoAlpha: i === 0 ? 1 : 0 }, 7.05));
+        SCENE.slice(1).forEach((_, k) => {
+          const i = k + 1;
+          const t = 7.1 + i * 0.68;
+          tl.to(morph, { rotationY: 90, duration: 0.2, ease: 'power1.in' }, t)
+            .set([rings[k], heads[k]], { autoAlpha: 0 }, t + 0.2)
+            .set([rings[i], heads[i]], { autoAlpha: 1 }, t + 0.2)
+            .set(morph, { rotationY: -90 }, t + 0.2)
+            .to(morph, { rotationY: 0, duration: 0.2, ease: 'power1.out' }, t + 0.2);
+        });
+
+        // scene 5 — the card splits into four platform cards (10–14s)
+        tl.set(copies, { autoAlpha: 0 }, 10.02)
+          .set(checks, { autoAlpha: 0 }, 10.02)
+          .fromTo(
+          burst,
+          { autoAlpha: 0.6, scale: 0.2 },
+          { autoAlpha: 0, scale: 2.4, duration: 0.7, ease: 'power2.out', immediateRender: false },
+          10.05,
+        );
+        copies.forEach((copy, i) => {
+          const rx = parseFloat((copy as HTMLElement).dataset.rx ?? '50');
+          tl.fromTo(
+            copy,
+            { x: pxX(50 - rx), y: pxY(-2), scale: 1.1, rotation: (i - 1.5) * 7, autoAlpha: 0 },
+            { x: 0, y: 0, scale: 1, rotation: 0, autoAlpha: 1, duration: 0.85, immediateRender: false },
+            10.1 + i * 0.16,
+          );
+        });
+        tl.fromTo(
+          checks,
+          { autoAlpha: 0, scale: 0.4 },
+          { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.16, immediateRender: false },
+          11.15,
+        );
+
+        // scene 6 — sign-off (14–15s)
+        tl.set(sign, { autoAlpha: 0 }, 13.9)
+          .set(s6rings, { autoAlpha: 0 }, 13.9)
+          .fromTo(
+          sign,
+          { autoAlpha: 0, y: 12, scale: 0.9 },
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.55, immediateRender: false },
+          13.95,
+        ).fromTo(
+          s6rings,
+          { autoAlpha: 0.5, scale: 0.5 },
+          { autoAlpha: 0, scale: 1.5, duration: 0.9, stagger: 0.12, ease: 'power2.out', immediateRender: false },
+          14.0,
+        );
+      });
+
+      // Stage is %-positioned; re-derive px targets if it ever resizes.
+      const ro = new ResizeObserver(() => master?.invalidate());
+      ro.observe(el);
+      return () => ro.disconnect();
+    },
+    { scope: stage },
+  );
+
   return (
     <figure
+      ref={stage}
       aria-hidden="true"
       className="relative aspect-[6/5] animate-hero-in select-none overflow-hidden rounded-md border border-stone-200 bg-ink/[0.03] shadow-inlay dark:border-stone-700 dark:bg-black/30"
       style={{
@@ -354,19 +590,16 @@ function BroadcastScene() {
           <LiveDot /> rec
         </span>
       </span>
-      {/* scene progress dots — each lights while its scene owns the stage */}
+      {/* scene progress dots — the timeline lights each while its scene owns the stage */}
       <span className="absolute bottom-2.5 right-3 z-10 flex items-center gap-1.5">
-        {['animate-bc-s1', 'animate-bc-s3', 'animate-bc-s4', 'animate-bc-s5', 'animate-bc-s6'].map((c, i) => (
-          <span
-            key={c}
-            className={`bc-anim h-1.5 w-1.5 rounded-full bg-brand-500 ${i < 4 ? 'opacity-0' : ''} ${c}`}
-          />
+        {Array.from({ length: 5 }, (_, i) => (
+          <span key={i} data-dot className="h-1.5 w-1.5 rounded-full bg-brand-500 opacity-0" />
         ))}
       </span>
 
       {/* Scene 1 — drag the clip into the dropzone, click transmit (0–5s) */}
-      <span className="bc-anim absolute inset-0 opacity-0 animate-bc-s1">
-        <span className="bc-anim absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 animate-bc-dz">
+      <span data-scene="s1" className="absolute inset-0 opacity-0">
+        <span data-dz className="absolute left-1/2 top-[38%]">
           <span className="flex h-16 w-24 flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-brand-400/80 bg-surface dark:bg-[#2a251f]">
             <IconUpload className="h-5 w-5 text-brand-600 dark:text-brand-500" />
             <span className="font-mono text-[8px] uppercase tracking-widest text-ink-subtle dark:text-stone-500">
@@ -374,21 +607,24 @@ function BroadcastScene() {
             </span>
           </span>
         </span>
-        <span className="bc-anim absolute animate-bc-clip" style={{ left: '18%', top: '60%' }}>
+        <span data-clip data-center className="absolute" style={{ left: '18%', top: '60%' }}>
           <ClipCard />
         </span>
         <span
-          className="bc-anim absolute h-10 w-20 rounded-sm border-2 border-dashed border-brand-400/80 animate-bc-track"
+          data-track
+          data-center
+          className="absolute h-10 w-20 rounded-sm border-2 border-dashed border-brand-400/80 opacity-0"
           style={{ left: '18%', top: '60%' }}
         />
-        <span className="bc-anim absolute left-1/2 top-[64%] animate-bc-btn">
+        <span data-btn data-center className="absolute left-1/2 top-[64%] opacity-0">
           <span className="flex items-center gap-1.5 whitespace-nowrap rounded-sm bg-brand-500 px-4 py-2 font-display text-xs font-semibold text-white shadow-press">
             Transmit
           </span>
         </span>
         <svg
+          data-cursor
           viewBox="0 0 16 16"
-          className="bc-anim absolute h-4 w-4 -translate-x-[2px] -translate-y-[2px] animate-bc-cursor text-ink drop-shadow-md dark:text-stone-100"
+          className="absolute h-4 w-4 text-ink opacity-0 drop-shadow-md dark:text-stone-100"
           style={{ left: '12%', top: '72%' }}
         >
           <path d="M1 0 L1 12 L4.5 9.5 L7 14 L9 13 L6.5 8.5 L11 8 Z" fill="currentColor" stroke="white" strokeWidth="0.8" />
@@ -399,43 +635,40 @@ function BroadcastScene() {
       </span>
 
       {/* Scene 3 — lines ignite, sparks ride them to the platforms (5–7s) */}
-      <span className="bc-anim absolute inset-0 opacity-0 animate-bc-s3">
+      <span data-scene="s3" className="absolute inset-0 opacity-0">
         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 360 300" preserveAspectRatio="none" fill="none">
-          {SCENE.map(({ name, d }, i) => (
+          {SCENE.map(({ name, d }) => (
             <g key={name}>
               <path d={d} pathLength={100} stroke="currentColor" strokeWidth="1" strokeDasharray="2 6" className="text-stone-300 dark:text-stone-600" opacity="0.6" />
               <path
+                data-line
                 d={d}
                 pathLength={100}
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeDasharray="100"
-                className="bc-anim animate-bc-line text-brand-500"
-                style={{ animationDelay: `${i * -0.15}s`, filter: 'drop-shadow(0 0 4px rgba(224,78,20,0.55))' }}
+                className="text-brand-500 opacity-0"
+                style={{ filter: 'drop-shadow(0 0 3px rgba(224,78,20,0.4))' }}
               />
               <path
+                data-spark
                 d={d}
                 pathLength={100}
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeDasharray="4 96"
-                className="bc-anim animate-bc-spark text-brand-300"
-                style={{ animationDelay: `${i * -0.25}s` }}
+                className="text-brand-300 opacity-0"
               />
             </g>
           ))}
         </svg>
-        <span className="absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2">
+        <span data-node data-center className="absolute left-1/2 top-[58%]">
           <span className="flex h-12 w-12 items-center justify-center rounded-md border border-stone-200 bg-surface shadow-lift dark:border-stone-600 dark:bg-[#2a251f]">
             <img src="/logo.svg" alt="" className="h-7 w-7" />
           </span>
         </span>
         {SCENE.map(({ name, Icon, lx, ly, tint }) => (
-          <span
-            key={`recv-${name}`}
-            className="bc-anim absolute -translate-x-1/2 -translate-y-1/2 animate-bc-recv"
-            style={{ left: lx, top: ly }}
-          >
+          <span key={`recv-${name}`} data-recv data-center className="absolute opacity-0" style={{ left: lx, top: ly }}>
             <span className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-surface shadow-soft dark:border-stone-600 dark:bg-[#2a251f]">
               <Icon className="h-4 w-4" style={{ color: tint }} />
             </span>
@@ -447,7 +680,7 @@ function BroadcastScene() {
       </span>
 
       {/* Scene 4 — one card cycles every platform skin, same video (7–10s) */}
-      <span className="bc-anim absolute inset-0 flex items-center justify-center opacity-0 animate-bc-s4">
+      <span data-scene="s4" className="absolute inset-0 flex items-center justify-center opacity-0">
         <MorphCard />
         <span className="absolute bottom-2.5 left-3 font-mono text-[9px] uppercase tracking-widest text-ink-subtle dark:text-stone-500">
           preview
@@ -455,15 +688,23 @@ function BroadcastScene() {
       </span>
 
       {/* Scene 5 — the card splits into four platform cards (10–14s) */}
-      <span className="bc-anim absolute inset-0 opacity-0 animate-bc-s5">
-        {SCENE.map(({ name, Icon, rx }, i) => (
+      <span data-scene="s5" className="absolute inset-0 opacity-0">
+        <span
+          data-burst
+          data-center
+          className="absolute left-1/2 top-[46%] h-24 w-24 rounded-full border-2 border-brand-400/70 opacity-0"
+        />
+        {SCENE.map(({ name, rx }, i) => (
           <span
             key={`copy-${name}`}
-            className="bc-anim absolute animate-bc-copy"
-            style={{ left: rx, top: '48%', '--fx': rx, '--fy': '48%' } as React.CSSProperties}
+            data-copy
+            data-center
+            data-rx={parseFloat(rx)}
+            className="absolute opacity-0"
+            style={{ left: rx, top: '48%' }}
           >
             <PlatformCard name={name} i={i} />
-            <span className="bc-anim absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 animate-bc-check items-center justify-center rounded-full bg-success-500 text-white">
+            <span data-check className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-success-500 text-white opacity-0">
               <IconCheck className="h-2 w-2" />
             </span>
           </span>
@@ -473,14 +714,14 @@ function BroadcastScene() {
         </span>
       </span>
 
-      {/* Scene 6 — sign-off (14–15s) */}
-      <span className="bc-anim absolute inset-0 flex items-center justify-center animate-bc-s6">
+      {/* Scene 6 — sign-off (14–15s); also the reduced-motion resting frame */}
+      <span data-scene="s6" className="absolute inset-0 flex items-center justify-center opacity-0">
         <span className="absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2">
-          <span className="absolute inset-0 animate-ring rounded-full border border-brand-500/40 dark:border-brand-500/30" />
-          <span className="absolute inset-0 animate-ring rounded-full border border-brand-500/40 [animation-delay:1.4s] dark:border-brand-500/30" />
-          <span className="absolute inset-0 animate-ring rounded-full border border-brand-500/40 [animation-delay:2.8s] dark:border-brand-500/30" />
+          {[0, 1, 2].map((i) => (
+            <span key={i} data-s6ring className="absolute inset-0 rounded-full border border-brand-500/40 opacity-0 dark:border-brand-500/30" />
+          ))}
         </span>
-        <span className="relative flex flex-col items-center gap-2.5">
+        <span data-sign className="relative flex flex-col items-center gap-2.5">
           <img src="/logo.svg" alt="" className="h-14 w-14" />
           <span className="font-display text-base font-semibold tracking-tight">Omnicast</span>
           <span className="font-mono text-[9px] uppercase tracking-widest text-ink-subtle dark:text-stone-500">
@@ -568,7 +809,7 @@ export function LandingPage() {
               className="mt-4 max-w-2xl animate-hero-in font-display text-4xl font-semibold leading-[1.06] tracking-tight md:text-6xl"
               style={{ animationDelay: '120ms' }}
             >
-              One upload. Every channel, on schedule.
+              One upload. Every channel, on schedule
             </h1>
             <p
               className="mt-6 max-w-xl animate-hero-in text-base leading-relaxed text-ink-muted dark:text-stone-400"
@@ -612,7 +853,7 @@ export function LandingPage() {
               delay={i * 90}
               className="group flex items-center gap-3.5 border-stone-200 py-6 transition-colors hover:bg-surface sm:-mx-3 sm:border-l sm:pl-9 sm:pr-3 sm:first:border-l-0 sm:first:pl-3 dark:border-stone-800 dark:hover:bg-[#221e19]"
             >
-              <Icon className="h-6 w-6 shrink-0 text-ink-subtle transition-all duration-300 group-hover:-translate-y-0.5 group-hover:text-brand-600 dark:text-stone-500 dark:group-hover:text-brand-500" />
+              <Icon className="h-6 w-6 shrink-0 text-ink-subtle transition-[transform,color] duration-300 group-hover:-translate-y-0.5 group-hover:text-brand-600 dark:text-stone-500 dark:group-hover:text-brand-500" />
               <span className="flex min-w-0 flex-col">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-ink-subtle dark:text-stone-500">
                   {freq} · {scope}
@@ -658,7 +899,7 @@ export function LandingPage() {
               the relay → the broadcast
             </p>
             <h2 className="mt-3 max-w-2xl font-display text-2xl font-semibold tracking-tight md:text-3xl">
-              Same video, four uploads — or one click.
+              Same video, four uploads — or one click
             </h2>
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink-muted dark:text-stone-400">
               Cross-posting by hand means signing in and uploading to every
@@ -805,12 +1046,15 @@ export function LandingPage() {
               <Eq className="h-5 text-brand-500/80" bars={5} />
             </div>
           </Reveal>
-          <div className="mt-8 grid gap-px overflow-hidden rounded-md border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-3 dark:border-stone-800 dark:bg-stone-800">
+          {/* zigzag rhythm — 4+2 / 2+4 / 3+3 instead of six equal cells */}
+          <div className="mt-8 grid gap-px overflow-hidden rounded-md border border-stone-200 bg-stone-200 sm:grid-cols-2 lg:grid-cols-6 dark:border-stone-800 dark:bg-stone-800">
             {CAPABILITIES.map(([title, body], i) => (
               <Reveal
                 key={title}
                 delay={i * 60}
-                className="group bg-surface-muted px-5 py-5 transition-colors hover:bg-surface dark:bg-[#1c1917] dark:hover:bg-[#221e19]"
+                className={`group bg-surface-muted px-5 py-5 transition-colors hover:bg-surface dark:bg-[#1c1917] dark:hover:bg-[#221e19] ${
+                  ['lg:col-span-4', 'lg:col-span-2', 'lg:col-span-2', 'lg:col-span-4', 'lg:col-span-3', 'lg:col-span-3'][i]
+                }`}
               >
                 <h3 className="font-display text-sm font-semibold transition-colors group-hover:text-brand-600 dark:group-hover:text-brand-500">{title}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-ink-muted dark:text-stone-400">{body}</p>

@@ -24,11 +24,6 @@
     .motion-hide {
       display: none;
     }
-    /* Broadcast-scene loops would strobe at 0.01ms — freeze them so the
-       resting styles (the "published" end state) show instead. */
-    .bc-anim {
-      animation: none !important;
-    }
   }
   body {
     @apply bg-surface-muted text-ink antialiased font-sans;
@@ -101,6 +96,32 @@
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-sm border border-stone-200 px-2 py-0.5 font-mono text-[11px];
+  }
+  /* Segmented control — active option is a quiet surface step, not an
+   * accent fill. One accent means it stays reserved for primary actions. */
+  .seg {
+    @apply inline-flex rounded-sm border border-stone-300 bg-surface shadow-inlay;
+  }
+  .dark .seg {
+    @apply border-stone-700 bg-[#211d18];
+  }
+  .seg-btn {
+    @apply px-2.5 py-1.5 text-xs font-medium text-ink-muted transition-[background-color,color] hover:text-ink disabled:cursor-not-allowed;
+  }
+  .dark .seg-btn {
+    @apply text-stone-400 hover:text-stone-100;
+  }
+  .seg-btn + .seg-btn {
+    @apply border-l border-stone-300;
+  }
+  .dark .seg-btn + .seg-btn {
+    @apply border-stone-700;
+  }
+  .seg-btn[aria-pressed='true'] {
+    @apply bg-surface-subtle text-ink;
+  }
+  .dark .seg-btn[aria-pressed='true'] {
+    @apply bg-stone-800 text-stone-100;
   }
 }
 

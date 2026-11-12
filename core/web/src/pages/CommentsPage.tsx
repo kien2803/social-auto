@@ -146,7 +146,7 @@ export function CommentsPage(): JSX.Element {
   const replyable = (accounts.data?.accounts ?? []).filter((a) => a.platform !== 'tiktok');
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-4 pb-24 pt-6">
+    <div className="space-y-6">
       <PostsNav />
       <header>
         <h1 className="text-2xl font-semibold">Comments</h1>
@@ -177,25 +177,25 @@ export function CommentsPage(): JSX.Element {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {[
-          { v: '', label: 'All' },
-          { v: 'none', label: 'Unanswered' },
-          { v: 'auto', label: 'Auto-replied' },
-          { v: 'manual', label: 'Replied' },
-          { v: 'failed', label: 'Failed' },
-        ].map((c) => (
-          <button
-            key={c.v}
-            onClick={() => setStatus(c.v)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-              status === c.v
-                ? 'bg-brand-600 text-white'
-                : 'bg-stone-100 text-ink-muted hover:text-ink dark:bg-stone-800 dark:text-stone-300'
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
+        <div className="seg" role="group" aria-label="Reply status">
+          {[
+            { v: '', label: 'All' },
+            { v: 'none', label: 'Unanswered' },
+            { v: 'auto', label: 'Auto-replied' },
+            { v: 'manual', label: 'Replied' },
+            { v: 'failed', label: 'Failed' },
+          ].map((c) => (
+            <button
+              key={c.v}
+              type="button"
+              aria-pressed={status === c.v}
+              onClick={() => setStatus(c.v)}
+              className="seg-btn"
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
         <Select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="!w-auto">
           <option value="">All accounts</option>
           {(accounts.data?.accounts ?? []).map((a) => (
@@ -204,7 +204,7 @@ export function CommentsPage(): JSX.Element {
             </option>
           ))}
         </Select>
-        <TextInput placeholder="Search comments…" value={q} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQ(e.target.value)} />
+        <TextInput placeholder="Search comments…" value={q} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQ(e.target.value)} className="!w-56" />
       </div>
 
       {comments.isLoading ? (

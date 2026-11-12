@@ -22,7 +22,7 @@ function Section({ n, title, children }: { n: number; title: string; children: R
   return (
     <section className="border border-stone-200 bg-surface dark:border-stone-800 dark:bg-[#211d18]">
       <header className="flex items-center gap-2.5 border-b border-stone-200 px-4 py-2.5 dark:border-stone-800">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 font-mono text-[10px] font-semibold text-white">{n}</span>
+        <span className="font-mono text-[11px] text-brand-600 dark:text-brand-100">{String(n).padStart(2, '0')}</span>
         <h2 className="text-sm font-semibold text-ink dark:text-stone-100">{title}</h2>
       </header>
       <div className="p-4">{children}</div>

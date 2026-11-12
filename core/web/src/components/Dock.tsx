@@ -43,7 +43,7 @@ function DockEntry({ to, label, icon: Icon, match }: DockItem) {
       aria-label={label}
       className={({ isActive }) => {
         const active = match ? customActive : isActive;
-        return `group relative flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] hover:-translate-y-2 hover:scale-[1.15] sm:h-12 sm:w-12 sm:hover:-translate-y-2.5 sm:hover:scale-[1.18] ${
+        return `group relative flex h-10 w-10 items-center justify-center rounded-lg border transition-[transform,background-color,border-color,color] duration-150 ease-[cubic-bezier(.22,1,.36,1)] hover:-translate-y-0.5 sm:h-12 sm:w-12 ${
           active
             ? 'border-brand-200 bg-brand-50 text-brand-600 dark:border-brand-500/40 dark:bg-brand-950/40 dark:text-brand-100'
             : 'border-stone-200 bg-paper text-ink-muted hover:bg-surface dark:border-stone-700 dark:bg-[#16130f] dark:text-stone-400 dark:hover:bg-stone-800'
@@ -74,7 +74,7 @@ export function Dock() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-end gap-1 rounded-2xl border border-stone-200 bg-surface/90 p-2 shadow-float backdrop-blur-md sm:gap-1.5 sm:p-2.5 dark:border-stone-800 dark:bg-[#1e1a15]/90"
+      className="fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-end gap-1 rounded-xl border border-stone-200 bg-surface/90 p-2 shadow-float backdrop-blur-md sm:gap-1.5 sm:p-2.5 dark:border-stone-800 dark:bg-[#1e1a15]/90"
     >
       {PRIMARY.map((item) => (
         <DockEntry key={item.to} {...item} />

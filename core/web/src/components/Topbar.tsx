@@ -34,8 +34,8 @@ export function Topbar({
   const title = TITLES[pathname] ?? '';
   const envClass =
     envTone === 'mock'
-      ? 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300'
-      : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300';
+      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300'
+      : 'border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-500/40 dark:bg-brand-950/40 dark:text-brand-100';
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-stone-200 bg-surface/90 px-4 backdrop-blur dark:border-stone-800 dark:bg-[#1c1917]/85">
@@ -52,6 +52,7 @@ export function Topbar({
       </div>
       <div className="flex items-center gap-2">
         <span title={`API mode: ${envLabel}`} className={`chip ${envClass} font-mono`}>
+          <span className="inline-block h-1 w-1 rounded-full bg-current" aria-hidden="true" />
           {envLabel}
         </span>
         <Link to="/posts/new" className="hidden sm:block">

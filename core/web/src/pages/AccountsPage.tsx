@@ -746,35 +746,18 @@ export function AccountsPage() {
       </header>
 
       <div className="flex justify-end">
-        <div
-          role="group"
-          aria-label="View density"
-          className="inline-flex rounded border border-stone-300 dark:border-stone-700"
-        >
-          <button
-            type="button"
-            className={`px-2.5 py-1.5 text-xs font-medium ${
-              view === 'cards'
-                ? 'bg-brand-600 text-white'
-                : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
-            }`}
-            aria-pressed={view === 'cards'}
-            onClick={() => setView('cards')}
-          >
-            Cards
-          </button>
-          <button
-            type="button"
-            className={`border-l border-stone-300 px-2.5 py-1.5 text-xs font-medium dark:border-stone-700 ${
-              view === 'table'
-                ? 'bg-brand-600 text-white'
-                : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
-            }`}
-            aria-pressed={view === 'table'}
-            onClick={() => setView('table')}
-          >
-            Table
-          </button>
+        <div role="group" aria-label="View density" className="seg">
+          {(['cards', 'table'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              className="seg-btn"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+            >
+              {v === 'cards' ? 'Cards' : 'Table'}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -250,7 +250,7 @@ function QuickScheduleModal({
                   }
                   className={`rounded border px-2.5 py-1 text-xs font-medium capitalize ${
                     on
-                      ? 'border-brand-600 bg-brand-600 text-white'
+                      ? 'border-brand-500 bg-brand-50 text-brand-700 dark:border-brand-500/60 dark:bg-brand-950/40 dark:text-brand-100'
                       : 'border-stone-300 text-ink-muted hover:bg-surface-muted dark:border-stone-700 dark:text-stone-400'
                   }`}
                 >
@@ -399,20 +399,16 @@ export function CalendarPage() {
           <Button size="sm" variant="ghost" onClick={() => step(1)} aria-label="Next">
             →
           </Button>
-          <div role="group" aria-label="View" className="inline-flex rounded border border-stone-300 dark:border-stone-700">
+          <div role="group" aria-label="View" className="seg">
             {(['week', 'month'] as const).map((v) => (
               <button
                 key={v}
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => setView(v)}
-                className={`px-2.5 py-1.5 text-xs font-medium capitalize ${
-                  view === v
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-surface text-ink-muted hover:bg-surface-muted dark:bg-[#211d18] dark:text-stone-400'
-                } ${v === 'month' ? 'border-l border-stone-300 dark:border-stone-700' : ''}`}
+                className="seg-btn"
               >
-                {v}
+                {v === 'week' ? 'Week' : 'Month'}
               </button>
             ))}
           </div>
@@ -424,6 +420,7 @@ export function CalendarPage() {
           value={filters.platform}
           onChange={(e) => setFilters((f) => ({ ...f, platform: e.target.value as Filters['platform'] }))}
           aria-label="Filter by platform"
+          className="!w-auto"
         >
           <option value="">All platforms</option>
           <option value="youtube">YouTube</option>
@@ -435,6 +432,7 @@ export function CalendarPage() {
           value={filters.account_id}
           onChange={(e) => setFilters((f) => ({ ...f, account_id: e.target.value }))}
           aria-label="Filter by account"
+          className="!w-auto"
         >
           <option value="">All accounts</option>
           {(accounts.data ?? []).map((a) => (
@@ -447,6 +445,7 @@ export function CalendarPage() {
           value={filters.status}
           onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
           aria-label="Filter by status"
+          className="!w-auto"
         >
           <option value="">All statuses</option>
           {Object.keys(STATUS_TONES).map((s) => (

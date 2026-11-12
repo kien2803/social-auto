@@ -85,15 +85,16 @@ export function LibraryPage() {
             aria-label="Search videos"
             className="w-48 rounded-sm border border-stone-300 bg-surface px-3 py-1.5 text-sm placeholder:text-ink-subtle focus:border-brand-500 focus:outline-none dark:border-stone-700 dark:bg-[#211d18] dark:text-stone-100 dark:placeholder:text-stone-500"
           />
-          <div className="flex rounded-sm border border-stone-300 dark:border-stone-700" role="group" aria-label="View">
+          <div className="seg" role="group" aria-label="View">
             {(['grid', 'list'] as const).map((v) => (
               <button
                 key={v}
                 type="button"
+                aria-pressed={(v === 'grid') === gridView}
                 onClick={() => setGridView(v === 'grid')}
-                className={`px-2.5 py-1.5 text-xs font-medium capitalize ${((v === 'grid') === gridView) ? 'bg-brand-600 text-white' : 'text-ink-muted dark:text-stone-400'}`}
+                className="seg-btn"
               >
-                {v}
+                {v === 'grid' ? 'Grid' : 'List'}
               </button>
             ))}
           </div>
