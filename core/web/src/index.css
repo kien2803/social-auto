@@ -24,6 +24,11 @@
     .motion-hide {
       display: none;
     }
+    /* Broadcast-scene loops would strobe at 0.01ms — freeze them so the
+       resting styles (the "published" end state) show instead. */
+    .bc-anim {
+      animation: none !important;
+    }
   }
   body {
     @apply bg-surface-muted text-ink antialiased font-sans;
