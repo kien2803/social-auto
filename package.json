@@ -18,7 +18,10 @@
     "core:dev:web": "pnpm -F @social-auto/web dev",
     "core:build": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run build",
     "core:test": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run test",
-    "core:typecheck": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run typecheck"
+    "core:typecheck": "pnpm -F @social-auto/shared -F @social-auto/api -F @social-auto/worker -F @social-auto/web run typecheck",
+    "deploy:web": "pnpm -F @social-auto/shared -F @social-auto/web run build",
+    "deploy:migrate": "pnpm -F @social-auto/cloudflare db:migrate",
+    "deploy:cf": "pnpm deploy:web && pnpm deploy:migrate && pnpm -F @social-auto/cloudflare run deploy"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
