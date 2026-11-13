@@ -64,3 +64,8 @@ META_REDIRECT_URI = "https://omnicast.trunkynw2803.workers.dev/auth/meta/callbac
 # derives it) — SECURE_COOKIES was dead config here and has been removed.
 STORAGE_QUOTA_GB = "10"
 META_API_VERSION = "v24.0"
+# Requested TikTok scopes — every scope must be enabled in the TikTok app's
+# console or /auth/authorize fails with a generic client_key error. Comment
+# out the override to drop video.list for apps that don't hold it
+# (channel library sync then fails; the rest still works).
+# TIKTOK_SCOPES = "user.info.basic,video.upload,video.publish"

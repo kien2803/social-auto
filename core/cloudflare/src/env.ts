@@ -20,6 +20,7 @@ export interface Env {
   TIKTOK_CLIENT_KEY?: string;
   TIKTOK_CLIENT_SECRET?: string;
   TIKTOK_REDIRECT_URI?: string;
+  TIKTOK_SCOPES?: string;
   META_APP_ID?: string;
   META_APP_SECRET?: string;
   META_REDIRECT_URI?: string;

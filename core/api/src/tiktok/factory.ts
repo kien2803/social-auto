@@ -29,6 +29,9 @@ export function createTiktokClient(config: TiktokClientConfig): TiktokOAuthClien
     clientSecret: config.clientSecret!,
     redirectUri: config.redirectUri!,
   };
+  // Apps without video.list enabled must shrink the requested scope set —
+  // TikTok rejects authorize when any scope isn't enabled for the app.
+  if (process.env['TIKTOK_SCOPES']) real.scopes = process.env['TIKTOK_SCOPES'];
   if (config.fetchImpl) real.fetchImpl = config.fetchImpl;
   return createRealTiktokClient(real);
 }

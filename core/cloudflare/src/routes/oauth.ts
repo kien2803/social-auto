@@ -133,7 +133,11 @@ oauthRoutes.get('/auth/youtube/status', async (c) => {
 
 // video.list powers the per-account video library (GET /accounts/:id/videos).
 // Accounts connected before this scope was added must re-auth to grant it.
-const TIKTOK_SCOPES = 'user.info.basic,video.upload,video.publish,video.list';
+// The TikTok app must have every scope enabled in its console — a scope the
+// app doesn't hold makes TikTok reject /auth/authorize entirely (its generic
+// "client_key" error). TIKTOK_SCOPES env var overrides the default for apps
+// that don't enable video.list (channel library sync then fails, the rest works).
+const DEFAULT_TIKTOK_SCOPES = 'user.info.basic,video.upload,video.publish,video.list';
 const TIKTOK_AUTHORIZE = 'https://www.tiktok.com/v2/auth/authorize/';
 const TIKTOK_TOKEN = 'https://open.tiktokapis.com/v2/oauth/token/';
 const TIKTOK_USERINFO = 'https://open.tiktokapis.com/v2/user/info/';
@@ -149,7 +153,7 @@ oauthRoutes.get('/auth/tiktok/start', async (c) => {
   setCookie(c, 'tiktok_code_verifier', verifier, opts);
   const url = new URL(TIKTOK_AUTHORIZE);
   url.searchParams.set('client_key', c.env.TIKTOK_CLIENT_KEY);
-  url.searchParams.set('scope', TIKTOK_SCOPES);
+  url.searchParams.set('scope', c.env.TIKTOK_SCOPES ?? DEFAULT_TIKTOK_SCOPES);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('redirect_uri', c.env.TIKTOK_REDIRECT_URI);
   url.searchParams.set('state', state);
