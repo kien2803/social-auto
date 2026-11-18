@@ -252,7 +252,13 @@ function metaDialogUrl(c: { env: Env }, state: string): string {
   url.searchParams.set('client_id', c.env.META_APP_ID!);
   url.searchParams.set('redirect_uri', c.env.META_REDIRECT_URI!);
   url.searchParams.set('state', state);
-  url.searchParams.set('scope', META_SCOPES);
+  if (c.env.META_CONFIG_ID) {
+    // Facebook Login for Business: permissions come from the dashboard
+    // configuration, not the scope param (scope= is rejected).
+    url.searchParams.set('config_id', c.env.META_CONFIG_ID);
+  } else {
+    url.searchParams.set('scope', META_SCOPES);
+  }
   url.searchParams.set('response_type', 'code');
   return url.toString();
 }

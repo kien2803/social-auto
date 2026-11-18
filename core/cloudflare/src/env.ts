@@ -22,6 +22,7 @@ export interface Env {
   TIKTOK_REDIRECT_URI?: string;
   TIKTOK_SCOPES?: string;
   META_APP_ID?: string;
+  META_CONFIG_ID?: string;
   META_APP_SECRET?: string;
   META_REDIRECT_URI?: string;
 }
