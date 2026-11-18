@@ -26,9 +26,11 @@ migrations_dir = "migrations"
 # Requires R2 enabled in the CF dashboard (free tier: 10 GB) + the bucket
 # created once: `wrangler r2 bucket create social-auto-videos`.
 # `wrangler dev` emulates R2 locally — no dashboard step needed for dev.
-[[r2_buckets]]
-binding = "STORAGE"
-bucket_name = "social-auto-videos"
+# TODO: uncomment when R2 is enabled on the account — deploy fails binding
+# validation while the bucket can't exist. Upload/publish endpoints need it.
+# [[r2_buckets]]
+# binding = "STORAGE"
+# bucket_name = "social-auto-videos"
 
 # ── Queue: publish jobs (with dead-letter) ──────────────────────────
 [[queues.producers]]
