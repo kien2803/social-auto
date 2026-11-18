@@ -241,8 +241,10 @@ oauthRoutes.get('/auth/tiktok/callback', async (c) => {
 // Meta OAuth (Facebook Pages + linked Instagram business accounts)
 // ──────────────────────────────────────────────────────────────────────────
 
+// 'email' is intentionally absent: business-type apps reject it as an invalid
+// scope, and the callback only reads Pages/IG accounts — no email needed.
 const META_SCOPES = [
-  'public_profile', 'email', 'pages_show_list', 'pages_manage_posts',
+  'public_profile', 'pages_show_list', 'pages_manage_posts',
   'pages_read_engagement', 'instagram_basic', 'instagram_content_publish',
 ].join(',');
 
@@ -330,6 +332,20 @@ oauthRoutes.get('/auth/meta/callback', async (c) => {
     /* short-lived fallback is fine */
   }
 
+  // Diagnostic: what did this token actually get granted, and what does
+  // /me/accounts return? (temporary — remove once Meta connect is verified)
+  try {
+    const dbgRes = await fetch(
+      metaGraph(c, '/debug_token', {
+        input_token: durable,
+        access_token: `${c.env.META_APP_ID}|${c.env.META_APP_SECRET}`,
+      }),
+    );
+    console.log('meta debug_token:', JSON.stringify(await dbgRes.json()));
+  } catch (e) {
+    console.log('meta debug_token failed:', String(e));
+  }
+
   const pagesRes = await fetch(
     metaGraph(c, '/me/accounts', {
       access_token: durable,
@@ -345,6 +361,7 @@ oauthRoutes.get('/auth/meta/callback', async (c) => {
       instagram_business_account?: { id: string; username?: string; profile_picture_url?: string };
     }>;
   };
+  console.log('meta /me/accounts:', JSON.stringify(pagesJson));
   const pages = (pagesJson.data ?? []).filter((p) => p.id && p.access_token);
   if (!pages.length) return c.redirect(`${origin}/accounts?error=no_pages`);
 
