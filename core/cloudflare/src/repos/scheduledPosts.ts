@@ -12,6 +12,8 @@ export interface NewScheduledPost {
   visibility?: Visibility;
   status?: 'pending' | 'draft';
   notes?: string | null;
+  /** Per-platform publish overrides (title/tags/visibility) — JSON. */
+  platform_params?: Record<string, unknown> | null;
 }
 
 const STATUSES: readonly ScheduledPostStatus[] = ['draft', 'pending', 'uploading', 'published', 'failed', 'dead'];
@@ -25,12 +27,13 @@ export class ScheduledPostsRepo {
     await this.db
       .prepare(
         `INSERT INTO scheduled_posts
-         (id, user_id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, NULL, 0, ?, ?, ?)`,
+         (id, user_id, video_id, account_id, scheduled_at, caption, per_platform_caption, visibility, status, external_post_id, last_error, retry_count, next_retry_at, is_dead, notes, platform_params, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, NULL, 0, ?, ?, ?, ?)`,
       )
       .bind(id, input.user_id, input.video_id, input.account_id, input.scheduled_at,
         input.caption, input.per_platform_caption ?? null, input.visibility ?? 'private',
-        input.status ?? 'pending', input.notes ?? null, now, now)
+        input.status ?? 'pending', input.notes ?? null,
+        input.platform_params ? JSON.stringify(input.platform_params) : null, now, now)
       .run();
     return (await this.findById(id))!;
   }
@@ -101,37 +104,49 @@ export class ScheduledPostsRepo {
 
   async markPublished(id: string, externalPostId: string): Promise<void> {
     await this.db
-      .prepare(`UPDATE scheduled_posts SET status = 'published', external_post_id = ?, last_error = NULL, updated_at = ? WHERE id = ?`)
+      .prepare(`UPDATE scheduled_posts SET status = 'published', external_post_id = ?, last_error = NULL, error_class = NULL, platform_state = NULL, updated_at = ? WHERE id = ?`)
       .bind(externalPostId, Date.now(), id)
       .run();
   }
 
-  async markFailed(id: string, error: string): Promise<void> {
+  async markFailed(id: string, error: string, errorClass?: string): Promise<void> {
     await this.db
-      .prepare(`UPDATE scheduled_posts SET status = 'failed', last_error = ?, updated_at = ? WHERE id = ?`)
-      .bind(error.slice(0, 1000), Date.now(), id)
+      .prepare(`UPDATE scheduled_posts SET status = 'failed', last_error = ?, error_class = ?, updated_at = ? WHERE id = ?`)
+      .bind(error.slice(0, 1000), errorClass ?? null, Date.now(), id)
       .run();
   }
 
-  async markDead(id: string, error: string): Promise<void> {
+  async markDead(id: string, error: string, errorClass?: string): Promise<void> {
     await this.db
-      .prepare(`UPDATE scheduled_posts SET status = 'dead', is_dead = 1, last_error = ?, updated_at = ? WHERE id = ?`)
-      .bind(error.slice(0, 1000), Date.now(), id)
+      .prepare(`UPDATE scheduled_posts SET status = 'dead', is_dead = 1, last_error = ?, error_class = ?, updated_at = ? WHERE id = ?`)
+      .bind(error.slice(0, 1000), errorClass ?? null, Date.now(), id)
       .run();
   }
 
-  /** Back to pending when a queue message is retried (queue handles backoff). */
-  async releaseToPending(id: string, error: string, retryCount: number): Promise<void> {
+  /** Persist resumable-upload state between attempts — the retry resumes
+   *  the same remote session instead of creating a duplicate post. */
+  async savePlatformState(id: string, state: Record<string, unknown>): Promise<void> {
     await this.db
-      .prepare(`UPDATE scheduled_posts SET status = 'pending', last_error = ?, retry_count = ?, updated_at = ? WHERE id = ?`)
-      .bind(error.slice(0, 1000), retryCount, Date.now(), id)
+      .prepare(`UPDATE scheduled_posts SET platform_state = ?, updated_at = ? WHERE id = ?`)
+      .bind(JSON.stringify(state), Date.now(), id)
       .run();
   }
 
-  /** User-initiated retry: failed/dead post back to pending, flags cleared. */
+  /** Back to pending after a retryable failure. nextRetryAt gates the
+   *  cron claim — exponential backoff lives here, not on the queue. */
+  async releaseToPending(id: string, error: string, retryCount: number, nextRetryAt?: number, errorClass?: string): Promise<void> {
+    await this.db
+      .prepare(`UPDATE scheduled_posts SET status = 'pending', last_error = ?, error_class = ?, retry_count = ?, next_retry_at = ?, updated_at = ? WHERE id = ?`)
+      .bind(error.slice(0, 1000), errorClass ?? null, retryCount, nextRetryAt ?? null, Date.now(), id)
+      .run();
+  }
+
+  /** User-initiated retry: failed/dead post back to pending, flags cleared.
+   *  platform_state is kept — a YouTube/FB session resumes where it left
+   *  off instead of duplicating the upload. */
   async retry(id: string): Promise<void> {
     await this.db
-      .prepare(`UPDATE scheduled_posts SET status = 'pending', is_dead = 0, last_error = NULL, next_retry_at = NULL, retry_count = 0, updated_at = ? WHERE id = ? AND status IN ('failed', 'dead')`)
+      .prepare(`UPDATE scheduled_posts SET status = 'pending', is_dead = 0, last_error = NULL, error_class = NULL, next_retry_at = NULL, retry_count = 0, updated_at = ? WHERE id = ? AND status IN ('failed', 'dead')`)
       .bind(Date.now(), id)
       .run();
   }

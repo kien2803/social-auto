@@ -13,10 +13,19 @@ const MAX_ACCOUNTS_PER_SCHEDULE = 50;
 const STATUSES: ReadonlySet<string> = new Set(['draft', 'pending', 'uploading', 'published', 'failed', 'dead']);
 const VISIBILITIES: ReadonlySet<string> = new Set(['public', 'unlisted', 'private']);
 
+/** Per-account publish overrides — title/tags/visibility (caption lives
+ *  in per_platform_caption). Mirrors platform_params on the post row. */
+interface PlatformParams extends Record<string, unknown> {
+  title?: string;
+  tags?: string[];
+  visibility?: Visibility;
+}
+
 interface ScheduleBody {
   video_id: string;
   caption: string;
   per_platform_caption?: Record<string, string>;
+  platform_params?: Record<string, PlatformParams>;
   scheduled_at: number;
   visibility?: Visibility;
   draft?: boolean;
@@ -65,6 +74,7 @@ scheduleRoutes.post('/schedule', async (c) => {
 
   const accounts = new AccountsRepo(c.env.DB);
   const perPlatform = body.per_platform_caption ?? {};
+  const platformParams = body.platform_params ?? {};
   // Validate every account before inserting anything — otherwise a late
   // failure leaves partial rows and a client retry silently duplicates.
   for (const accId of accountIds) {
@@ -75,8 +85,19 @@ scheduleRoutes.post('/schedule', async (c) => {
     if ((perPlatform[accId] ?? body.caption).length > CAPTION_MAX) {
       return c.json({ error: `caption_too_long: ${accId}` }, 400);
     }
+    const pp = platformParams[accId];
+    if (pp) {
+      if (pp.title !== undefined && (typeof pp.title !== 'string' || pp.title.length > 150)) {
+        return c.json({ error: `platform_params.title_too_long: ${accId}` }, 400);
+      }
+      if (pp.visibility !== undefined && !VISIBILITIES.has(pp.visibility)) {
+        return c.json({ error: `platform_params.invalid_visibility: ${accId}` }, 400);
+      }
+      if (pp.tags !== undefined && (!Array.isArray(pp.tags) || pp.tags.some((t) => typeof t !== 'string' || t.length > 100) || pp.tags.length > 30)) {
+        return c.json({ error: `platform_params.invalid_tags: ${accId}` }, 400);
+      }
+    }
   }
-
   const posts = new ScheduledPostsRepo(c.env.DB);
   const created = [];
   for (const accId of accountIds) {
@@ -91,6 +112,7 @@ scheduleRoutes.post('/schedule', async (c) => {
         caption: perPlatform[accId] ?? body.caption,
         per_platform_caption: perPlatform[accId] ?? null,
         visibility: body.visibility ?? 'private',
+        platform_params: platformParams[accId] ?? null,
       }),
     );
   }
@@ -237,22 +259,6 @@ scheduleRoutes.get('/history', async (c) => {
   return c.json({ posts: filtered });
 });
 
-// Videos list — the schedule modal's video picker. Wire shape strips the
-// storage path down to a basename; full keys never leave the server.
-scheduleRoutes.get('/videos', async (c) => {
-  const userId = await bearerUserId(c);
-  if (!userId) return c.json({ error: 'Unauthorized' }, 401);
-  const rows = await new VideosRepo(c.env.DB).list(userId, 200);
-  return c.json({
-    videos: rows.map((v) => ({
-      id: v.id,
-      sha256: v.sha256,
-      size_bytes: v.size_bytes,
-      duration_sec: v.duration_sec,
-      mime: v.mime,
-      filename: v.file_path.split('/').pop() ?? v.file_path,
-      has_thumbnail: !!v.thumbnail_path,
-      created_at: v.created_at,
-    })),
-  });
-});
+// /videos routes live in routes/videos.ts — mounted alongside these in
+// index.ts. (The picker's list moved there when upload/stream/thumbnail
+// endpoints landed.)

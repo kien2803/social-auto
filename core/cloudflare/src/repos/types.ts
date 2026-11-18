@@ -54,6 +54,12 @@ export interface ScheduledPostRow {
   status: ScheduledPostStatus;
   external_post_id: string | null;
   last_error: string | null;
+  /** Classified failure category — see publishErrors.ts categories. */
+  error_class: string | null;
+  /** Resumable-upload state (JSON) — retries resume, not duplicate. */
+  platform_state: string | null;
+  /** Per-platform publish params (JSON) — title/hashtags/visibility. */
+  platform_params: string | null;
   retry_count: number;
   next_retry_at: number | null;
   notes: string | null;

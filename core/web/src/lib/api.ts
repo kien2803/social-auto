@@ -86,6 +86,31 @@ export interface ChannelVideoSyncResponse {
   synced: number;
   synced_at: number;
 }
+
+/** Publishing Control Center — one video → N per-account publish jobs. */
+export interface PublishingJobPost {
+  id: string;
+  account_id: string;
+  platform: Platform;
+  account_name: string;
+  channel_handle: string;
+  account_status: string;
+  status: ScheduledPostRow['status'];
+  error_class: string | null;
+  last_error: string | null;
+  retry_count: number;
+  next_retry_at: number | null;
+  scheduled_at: number;
+  updated_at: number;
+  external_post_id: string | null;
+}
+
+export interface PublishingJob {
+  video: { id: string; filename: string; has_thumbnail: boolean; duration_sec: number | null; size_bytes: number };
+  counts: Record<ScheduledPostRow['status'], number>;
+  last_activity_at: number;
+  posts: PublishingJobPost[];
+}
 export interface AccountRow {
   id: string;
   platform: Platform;
@@ -275,10 +300,14 @@ export const api = {
   listVideos: () => req<{ videos: VideoWire[] }>('/videos'),
   getVideo: (id: string) => req<VideoWire>(`/videos/${id}`),
   deleteVideo: (id: string) => req<{ success: boolean; message: string }>(`/videos/${id}`, { method: 'DELETE' }),
-  uploadVideo: (file: File, onProgress?: (bytes: number) => void, uploadId?: string) =>
-    uploadFile('/videos', file, onProgress, uploadId),
-  cancelUpload: (uploadId: string) =>
-    req<{ success: boolean }>(`/videos/${uploadId}/cancel`, { method: 'POST' }),
+  uploadVideo: (file: File, onProgress?: (bytes: number) => void, meta?: { duration_sec?: number | null }) =>
+    uploadFile<UploadResult>('/videos', file, onProgress, meta),
+  putVideoThumbnail: (id: string, jpeg: Blob) =>
+    req<{ ok: true }>(`/videos/${id}/thumbnail`, {
+      method: 'PUT',
+      body: jpeg,
+      headers: { 'content-type': 'image/jpeg' },
+    }),
   listSchedule: (q?: { status?: string; account_id?: string; from?: number; to?: number; q?: string }) => {
     const params = new URLSearchParams();
     if (q?.status) params.set('status', q.status);
@@ -302,6 +331,7 @@ export const api = {
     }),
   deleteSchedule: (id: string) => req<{ ok: true }>(`/schedule/${id}`, { method: 'DELETE' }),
   retrySchedule: (id: string) => req<ScheduledPostRow>(`/schedule/${id}/retry`, { method: 'POST', body: '' }),
+  publishingJobs: () => req<{ jobs: PublishingJob[] }>('/publishing/jobs'),
   dashboardCounts: () => req<DashboardCounts>('/dashboard/counts'),
   health: () => req<HealthResponse>('/health'),
   quota: () => req<QuotaResponse>('/quota'),
@@ -321,9 +351,6 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ enabled, template }),
     }),
-  getUploadProgress: (videoId: string) => req<UploadProgress>(`/videos/${videoId}/progress`),
-  uploadVideoBulk: (files: FileList, onProgress?: (current: number, total: number) => void) =>
-    uploadFilesBulk('/videos/bulk', files, onProgress),
 
   // Account list — server-side filtered, paged, and inclusive of
   // metadata + channel snapshot for the AccountsPage UI.
@@ -368,16 +395,24 @@ export const api = {
   },
 };
 
+/** Raw-body streamed upload — the worker streams request.body straight
+ *  into R2 (no multipart parsing), so a big file never sits in isolate
+ *  memory. XHR keeps granular upload progress that fetch lacks. */
 async function uploadFile<T>(
   path: string,
   file: File,
   onProgress?: (bytes: number) => void,
-  uploadId?: string,
+  meta?: { duration_sec?: number | null },
 ): Promise<T> {
   const { promise, resolve, reject } = Promise.withResolvers<T>();
+  const params = new URLSearchParams({ filename: file.name });
+  if (meta?.duration_sec) params.set('duration_sec', String(Math.round(meta.duration_sec)));
   const xhr = new XMLHttpRequest();
-  xhr.open('POST', `${BASE}${path}`);
+  xhr.open('POST', `${BASE}${path}?${params.toString()}`);
   xhr.withCredentials = true;
+  xhr.setRequestHeader('content-type', file.type || 'application/octet-stream');
+  const token = getToken();
+  if (token) xhr.setRequestHeader('authorization', `Bearer ${token}`);
   xhr.upload.onprogress = (e) => onProgress?.(e.loaded);
   xhr.onload = () => {
     if (xhr.status >= 200 && xhr.status < 300) {
@@ -397,61 +432,22 @@ async function uploadFile<T>(
     }
   };
   xhr.onerror = () => reject(new ApiError(0, 'network_error'));
-  const fd = new FormData();
-  if (uploadId) fd.append('upload_id', uploadId);
-  fd.append('file', file);
-  xhr.send(fd);
+  xhr.send(file);
   return promise;
 }
-async function uploadFilesBulk<T>(
-  path: string,
-  files: FileList,
-  onProgress?: (current: number, total: number) => void,
-): Promise<T> {
-  const { promise, resolve, reject } = Promise.withResolvers<T>();
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', `${BASE}${path}`);
-  xhr.withCredentials = true;
-  
-  let loaded = 0;
-  xhr.upload.onprogress = () => {
-    loaded++;
-    onProgress?.(loaded, files.length);
-  };
-  
-  xhr.onload = () => {
-    if (xhr.status >= 200 && xhr.status < 300) {
-      try {
-        resolve(JSON.parse(xhr.responseText) as T);
-      } catch (err) {
-        reject(err);
-      }
-    } else {
-      let msg = xhr.statusText;
-      try {
-        msg = JSON.parse(xhr.responseText).error ?? msg;
-      } catch {
-        // ignore
-      }
-      reject(new ApiError(xhr.status, msg));
-    }
-  };
-  xhr.onerror = () => reject(new ApiError(0, 'network_error'));
-  
-  const fd = new FormData();
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    if (file) {
-      fd.append(`file${i}`, file);
-    }
-  }
-  return promise;
+
+/** Per-platform overrides keyed by account id (platform_params column). */
+export interface PlatformParams {
+  title?: string;
+  tags?: string[];
+  visibility?: 'public' | 'unlisted' | 'private';
 }
 
 export interface CreateScheduleInput {
   video_id: string;
   caption: string;
   per_platform_caption?: Record<string, string>;
+  platform_params?: Record<string, PlatformParams>;
   scheduled_at: number;
   visibility?: 'public' | 'unlisted' | 'private';
   draft?: boolean;
@@ -516,10 +512,9 @@ export interface YouTubeQuotaResponse {
   uploads_remaining: number;
 }
 
-export interface UploadProgress {
-  videoId: string;
-  progress: number;
-  timestamp: number;
+export interface UploadResult {
+  video: VideoWire;
+  deduped: boolean;
 }
 
 // ────────────────────────────────────────────────────────────────────────────

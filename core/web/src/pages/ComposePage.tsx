@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { api, type VideoWire } from '../lib/api.js';
+import { uploadVideoAsset } from '../lib/videoMeta.js';
 import { useAccounts, type AccountInfo } from '../lib/accounts.js';
 import { useToast } from '../components/ui/Toast.js';
 import { Button } from '../components/ui/Button.js';
@@ -16,6 +17,14 @@ const PLATFORM_ICON: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
   tiktok: IconTikTok,
   instagram: IconInstagram,
   facebook: IconFacebook,
+};
+
+/** Which per-platform overrides each API actually honors. */
+const PARAM_FIELDS: Record<string, { title?: boolean; tags?: boolean; visibility?: boolean }> = {
+  youtube: { title: true, tags: true, visibility: true },
+  facebook: { title: true },
+  tiktok: { tags: true },
+  instagram: {},
 };
 
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
@@ -48,6 +57,7 @@ export function ComposePage() {
   const [caption, setCaption] = useState('');
   const [perPlatform, setPerPlatform] = useState(false);
   const [perCaptions, setPerCaptions] = useState<Record<string, string>>({});
+  const [perParams, setPerParams] = useState<Record<string, { title?: string; tags?: string; visibility?: string }>>({});
   const [time, setTime] = useState(dayjs().add(1, 'hour').minute(0).format('YYYY-MM-DDTHH:mm'));
   const [visibility, setVisibility] = useState<'public' | 'unlisted' | 'private'>('private');
   const [notes, setNotes] = useState('');
@@ -71,17 +81,39 @@ export function ComposePage() {
   if (!caption.trim()) errors.push('Caption is required');
 
   const submit = useMutation({
-    mutationFn: (draft: boolean) =>
-      api.createSchedule({
+    mutationFn: (draft: boolean) => {
+      // platform_params only ships for accounts that actually overrode
+      // something — empty maps would just bloat the column.
+      const platform_params = perPlatform
+        ? Object.fromEntries(
+            selectedAccounts
+              .map((a) => {
+                const p = perParams[a.id] ?? {};
+                const tags = (p.tags ?? '')
+                  .split(/[,\s]+/)
+                  .map((t) => t.replace(/^#/, '').trim())
+                  .filter(Boolean);
+                const out: Record<string, unknown> = {};
+                if (p.title?.trim()) out['title'] = p.title.trim();
+                if (tags.length) out['tags'] = tags;
+                if (p.visibility) out['visibility'] = p.visibility;
+                return [a.id, out] as const;
+              })
+              .filter(([, v]) => Object.keys(v).length > 0),
+          )
+        : undefined;
+      return api.createSchedule({
         video_id: videoId,
         account_ids: accountIds,
         caption,
         per_platform_caption: perPlatform ? perCaptions : undefined,
+        platform_params: platform_params && Object.keys(platform_params).length ? (platform_params as Record<string, { title?: string; tags?: string[]; visibility?: 'public' | 'unlisted' | 'private' }>) : undefined,
         scheduled_at: new Date(time).getTime(),
         visibility,
         draft,
         notes: notes || undefined,
-      }),
+      });
+    },
     onSuccess: (_d, draft) => {
       localStorage.setItem('omnicast.lastAccounts', JSON.stringify(accountIds));
       void qc.invalidateQueries({ queryKey: ['schedule'] });
@@ -139,15 +171,11 @@ export function ComposePage() {
                   const f = e.target.files?.[0];
                   if (f) {
                     setUploading(0);
-                    void api.uploadVideo(f, (n) => setUploading(n))
+                    void uploadVideoAsset(f, (n) => setUploading(n))
                       .then((r) => {
                         toast.push({ tone: 'success', title: 'Uploaded' });
                         void qc.invalidateQueries({ queryKey: ['videos'] });
-                        // Upload responses differ across backends — read the
-                        // first available id shape instead of assuming one.
-                        const resp = r as { video?: { id?: string }; video_id?: string; id?: string };
-                        const vid = resp.video?.id ?? resp.video_id ?? resp.id;
-                        if (vid) setVideoId(vid);
+                        setVideoId(r.video.id);
                       })
                       .catch((err) => toast.push({ tone: 'error', title: 'Upload failed', description: err instanceof Error ? err.message : 'unknown_error' }))
                       .finally(() => setUploading(null));
@@ -217,18 +245,63 @@ export function ComposePage() {
           {perPlatform ? '− Hide per-platform captions' : '+ Customize per platform'}
         </button>
         {perPlatform && selectedAccounts.length > 0 && (
-          <div className="mt-3 space-y-3 border-t border-stone-200 pt-3 dark:border-stone-800">
-            {selectedAccounts.map((a) => (
-              <Field key={a.id} label={`${a.display_name} (${a.platform})`}>
-                <TextArea
-                  value={perCaptions[a.id] ?? ''}
-                  onChange={(e) => setPerCaptions((p) => ({ ...p, [a.id]: e.target.value }))}
-                  rows={2}
-                  maxLength={5000}
-                  placeholder={caption || 'Platform-specific caption…'}
-                />
-              </Field>
-            ))}
+          <div className="mt-3 space-y-4 border-t border-stone-200 pt-3 dark:border-stone-800">
+            {selectedAccounts.map((a) => {
+              const fields = PARAM_FIELDS[a.platform] ?? {};
+              const pp = perParams[a.id] ?? {};
+              const setP = (patch: Partial<typeof pp>) =>
+                setPerParams((prev) => ({ ...prev, [a.id]: { ...prev[a.id], ...patch } }));
+              return (
+                <div key={a.id} className="space-y-2">
+                  <Field label={`${a.display_name} (${a.platform})`}>
+                    <TextArea
+                      value={perCaptions[a.id] ?? ''}
+                      onChange={(e) => setPerCaptions((p) => ({ ...p, [a.id]: e.target.value }))}
+                      rows={2}
+                      maxLength={5000}
+                      placeholder={caption || 'Platform-specific caption…'}
+                    />
+                  </Field>
+                  {(fields.title || fields.tags || fields.visibility) && (
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      {fields.title && (
+                        <input
+                          type="text"
+                          value={pp.title ?? ''}
+                          onChange={(e) => setP({ title: e.target.value })}
+                          maxLength={150}
+                          placeholder="Custom title"
+                          className="input"
+                          aria-label={`${a.display_name} title`}
+                        />
+                      )}
+                      {fields.tags && (
+                        <input
+                          type="text"
+                          value={pp.tags ?? ''}
+                          onChange={(e) => setP({ tags: e.target.value })}
+                          placeholder="#hashtags, comma separated"
+                          className="input"
+                          aria-label={`${a.display_name} hashtags`}
+                        />
+                      )}
+                      {fields.visibility && (
+                        <Select
+                          value={pp.visibility ?? ''}
+                          onChange={(e) => setP({ visibility: e.target.value })}
+                          aria-label={`${a.display_name} visibility`}
+                        >
+                          <option value="">Visibility: default</option>
+                          <option value="private">Private</option>
+                          <option value="unlisted">Unlisted</option>
+                          <option value="public">Public</option>
+                        </Select>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </Section>

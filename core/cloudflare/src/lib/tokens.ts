@@ -38,7 +38,14 @@ export async function usableAccessToken(env: Env, accounts: AccountsRepo, row: A
       /* fall through */
     }
   }
-  const refresh = await decrypt(row.oauth_refresh_token, env.TOKEN_ENCRYPTION_KEY);
+  // A refresh token we can't decrypt is a broken grant — same outcome as a
+  // revoked one: the account must be reconnected.
+  let refresh: string;
+  try {
+    refresh = await decrypt(row.oauth_refresh_token, env.TOKEN_ENCRYPTION_KEY);
+  } catch {
+    throw new Error('token_refresh_failed: stored refresh token unreadable — reconnect account');
+  }
   let tokens: { access_token: string; expires_at: number; refresh_token?: string };
   if (row.platform === 'youtube') {
     tokens = await refreshAccessToken(env, refresh).catch((e) => {

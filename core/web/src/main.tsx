@@ -29,6 +29,9 @@ const CalendarPage = lazy(() =>
 const PipelinePage = lazy(() =>
   import('./pages/PipelinePage.js').then((m) => ({ default: m.PipelinePage })),
 );
+const ControlCenterPage = lazy(() =>
+  import('./pages/ControlCenterPage.js').then((m) => ({ default: m.ControlCenterPage })),
+);
 const HistoryPage = lazy(() =>
   import('./pages/HistoryPage.js').then((m) => ({ default: m.HistoryPage })),
 );
@@ -91,8 +94,9 @@ ReactDOM.createRoot(root).render(
                   <Route element={<ProtectedShell />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/library" element={<LibraryPage />} />
-                    <Route path="/posts" element={<Navigate to="/posts/calendar" replace />} />
+                    <Route path="/posts" element={<Navigate to="/posts/control" replace />} />
                     <Route path="/posts/new" element={<ComposePage />} />
+                    <Route path="/posts/control" element={<ControlCenterPage />} />
                     <Route path="/posts/calendar" element={<CalendarPage />} />
                     <Route path="/posts/pipeline" element={<PipelinePage />} />
                     <Route path="/posts/history" element={<HistoryPage />} />

@@ -1,6 +1,9 @@
 import type { VideoRow } from './types';
 
 export interface NewVideo {
+  /** Pre-generated id — upload routes need it before insert to name the
+   *  R2 key (videos/<user>/<id>/<filename>). */
+  id?: string;
   user_id: string;
   file_path: string; // R2 object key in the CF deployment
   sha256: string;
@@ -14,7 +17,7 @@ export class VideosRepo {
   constructor(private db: D1Database) {}
 
   async insert(input: NewVideo): Promise<VideoRow> {
-    const id = crypto.randomUUID();
+    const id = input.id ?? crypto.randomUUID();
     const now = Date.now();
     await this.db
       .prepare(
@@ -36,6 +39,33 @@ export class VideosRepo {
       .prepare('SELECT * FROM videos WHERE user_id = ? AND sha256 = ?')
       .bind(userId, sha256)
       .first<VideoRow>();
+  }
+
+  /** Global count — deduped rows share one R2 object, so the object may
+   *  only be deleted when this is the last row referencing it. */
+  async countBySha256(sha256: string): Promise<number> {
+    const r = await this.db
+      .prepare('SELECT COUNT(*) AS n FROM videos WHERE sha256 = ?')
+      .bind(sha256)
+      .first<{ n: number }>();
+    return r?.n ?? 0;
+  }
+
+  async setThumbnail(id: string, thumbnailPath: string): Promise<void> {
+    await this.db
+      .prepare('UPDATE videos SET thumbnail_path = ? WHERE id = ?')
+      .bind(thumbnailPath, id)
+      .run();
+  }
+
+  /** Sum of stored bytes for the storage-quota check. Deduped rows share
+   *  bytes but still count — keeps the cap conservative and simple. */
+  async storageUsedBytes(userId: string): Promise<number> {
+    const r = await this.db
+      .prepare('SELECT COALESCE(SUM(size_bytes), 0) AS n FROM videos WHERE user_id = ?')
+      .bind(userId)
+      .first<{ n: number }>();
+    return r?.n ?? 0;
   }
 
   async list(userId?: string, limit = 100, offset = 0): Promise<VideoRow[]> {

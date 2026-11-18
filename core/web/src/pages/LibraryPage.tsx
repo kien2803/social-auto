@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { api, fetchVideoThumbnail, type VideoWire } from '../lib/api.js';
+import { api, fetchVideoThumbnail, fetchVideoStream, type VideoWire } from '../lib/api.js';
+import { uploadVideoAsset } from '../lib/videoMeta.js';
 import { useToast } from '../components/ui/Toast.js';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button.js';
@@ -37,6 +38,51 @@ function Thumb({ video }: { video: VideoWire }) {
   );
 }
 
+/** Lazy <video> preview — the Bearer-protected /stream route can't feed a
+ *  media element directly, so fetch the bytes as a blob only on demand
+ *  (large files stay untouched until the user asks). */
+function PreviewPlayer({ video }: { video: VideoWire }) {
+  const [src, setSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => () => { if (src) URL.revokeObjectURL(src); }, [src]);
+
+  if (src) {
+    return <video src={src} controls autoPlay className="aspect-video w-full bg-black" />;
+  }
+  return (
+    <button
+      type="button"
+      disabled={loading}
+      onClick={() => {
+        setLoading(true);
+        void fetchVideoStream(video.id)
+          .then((s) => (s ? setSrc(s) : setFailed(true)))
+          .catch(() => setFailed(true))
+          .finally(() => setLoading(false));
+      }}
+      className="group relative block aspect-video w-full overflow-hidden bg-stone-100 dark:bg-stone-800/60"
+    >
+      <Thumb video={video} />
+      <span className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-90 transition-opacity group-hover:bg-black/35">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface/90 text-ink shadow-lift">
+          {loading ? (
+            <span className="font-mono text-[10px]">…</span>
+          ) : (
+            <svg viewBox="0 0 24 24" className="ml-0.5 h-5 w-5" fill="currentColor" aria-hidden="true">
+              <path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l11-6.86a1.03 1.03 0 0 0 0-1.76l-11-6.86A1.04 1.04 0 0 0 8 5.14Z" />
+            </svg>
+          )}
+        </span>
+      </span>
+      <span className="absolute bottom-2 right-2 font-mono text-[10px] text-white/85 drop-shadow">
+        {failed ? 'preview failed' : loading ? 'loading…' : fmtSize(video.size_bytes)}
+      </span>
+    </button>
+  );
+}
+
 export function LibraryPage() {
   const qc = useQueryClient();
   const toast = useToast();
@@ -63,7 +109,7 @@ export function LibraryPage() {
 
   const doUpload = (file: File) => {
     setUploading(0);
-    void api.uploadVideo(file, (n) => setUploading(n))
+    void uploadVideoAsset(file, (n) => setUploading(n))
       .then(() => { toast.push({ tone: 'success', title: 'Video uploaded' }); void qc.invalidateQueries({ queryKey: ['videos'] }); })
       .catch((e) => toast.push({ tone: 'error', title: 'Upload failed', description: e instanceof Error ? e.message : 'unknown_error' }))
       .finally(() => setUploading(null));
@@ -161,7 +207,7 @@ export function LibraryPage() {
       {preview && (
         <Modal open onClose={() => setPreview(null)} title={preview.filename} size="lg">
           <dl className="space-y-2 text-sm">
-            <div className="aspect-video overflow-hidden bg-stone-100 dark:bg-stone-800/60"><Thumb video={preview} /></div>
+            <PreviewPlayer key={preview.id} video={preview} />
             <div className="flex justify-between"><dt className="text-ink-subtle dark:text-stone-500">Duration</dt><dd className="font-mono">{fmtDuration(preview.duration_sec)}</dd></div>
             <div className="flex justify-between"><dt className="text-ink-subtle dark:text-stone-500">Size</dt><dd className="font-mono">{fmtSize(preview.size_bytes)}</dd></div>
             <div className="flex justify-between"><dt className="text-ink-subtle dark:text-stone-500">Format</dt><dd className="font-mono">{preview.mime}</dd></div>

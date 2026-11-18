@@ -6,8 +6,8 @@ const FTYP_BRANDS = new Set(['isom', 'iso2', 'iso4', 'iso5', 'iso6', 'mp41', 'mp
 
 export type VideoFormat = 'mp4' | 'mov' | 'webm';
 
-export function sniffVideoFormat(head: ArrayBuffer): VideoFormat | null {
-  const b = new Uint8Array(head);
+export function sniffVideoFormat(head: Uint8Array): VideoFormat | null {
+  const b = head;
   if (b.length < 12) return null;
   // EBML / WebM: 1A 45 DF A3
   if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return 'webm';

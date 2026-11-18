@@ -23,9 +23,12 @@ database_id = "2a75c37f-cb5e-4f4a-982b-c7776262bbac"
 migrations_dir = "migrations"
 
 # ── R2 (video + thumbnail objects) ──────────────────────────────────
-# [[r2_buckets]]                    # TODO: uncomment after enabling R2 in dashboard
-# binding = "STORAGE"
-# bucket_name = "social-auto-videos"
+# Requires R2 enabled in the CF dashboard (free tier: 10 GB) + the bucket
+# created once: `wrangler r2 bucket create social-auto-videos`.
+# `wrangler dev` emulates R2 locally — no dashboard step needed for dev.
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "social-auto-videos"
 
 # ── Queue: publish jobs (with dead-letter) ──────────────────────────
 [[queues.producers]]

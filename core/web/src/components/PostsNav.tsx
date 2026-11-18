@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 
-/** Secondary tabs shared by the three Posts views. */
+/** Secondary tabs shared by the Posts views. */
 const TABS = [
+  { to: '/posts/control', label: 'Control' },
   { to: '/posts/calendar', label: 'Calendar' },
   { to: '/posts/pipeline', label: 'Pipeline' },
   { to: '/posts/history', label: 'History' },
