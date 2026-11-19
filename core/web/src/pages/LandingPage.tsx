@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.js';
+import { motion, useReducedMotion } from 'motion/react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -85,6 +86,31 @@ const CAPABILITIES = [
   ['Quota governor', 'Per-platform daily budgets tracked so a burst never burns your API limit.'],
   ['Broadcast log', 'Full publish history, channel stats and per-platform analytics.'],
 ] as const;
+
+/** Word-by-word headline rise — each word clipped in an overflow mask,
+ *  staggered ~55ms. Falls back to plain text under reduced-motion. */
+function RevealWords({ text, className = '' }: { text: string; className?: string }) {
+  const reduce = useReducedMotion();
+  if (reduce) return <span className={className}>{text}</span>;
+  const words = text.split(' ');
+  return (
+    <span className={className} aria-hidden="true">
+      {words.map((w, i) => (
+        <span key={i} className="inline-block overflow-hidden pb-[0.08em] align-bottom">
+          <motion.span
+            className="inline-block will-change-transform"
+            initial={{ y: '110%' }}
+            animate={{ y: '0%' }}
+            transition={{ duration: 0.7, delay: 0.15 + i * 0.055, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {w}
+            {i < words.length - 1 ? ' ' : ''}
+          </motion.span>
+        </span>
+      ))}
+    </span>
+  );
+}
 
 type RevealVariant = 'up' | 'left' | 'pop';
 
@@ -263,7 +289,7 @@ function PlatformCard({ name, i }: { name: string; i: number }) {
               Follow
             </span>
           </span>
-          <span className="truncate font-mono text-[5.5px] text-stone-400">♪ original audio</span>
+          <span className="truncate font-mono text-[5.5px] text-stone-400">original audio</span>
         </span>
       </span>
     );
@@ -574,6 +600,7 @@ function BroadcastScene() {
     <figure
       ref={stage}
       aria-hidden="true"
+      data-ui
       className="relative aspect-[6/5] animate-hero-in select-none overflow-hidden rounded-md border border-stone-200 bg-ink/[0.03] shadow-inlay dark:border-stone-700 dark:bg-black/30"
       style={{
         animationDelay: '300ms',
@@ -740,7 +767,7 @@ export function LandingPage() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-surface-muted font-sans text-ink dark:bg-[#1c1917] dark:text-stone-100">
+    <div className="min-h-svh bg-surface-muted font-sans text-ink dark:bg-[#1c1917] dark:text-stone-100">
       {/* Station header */}
       <header className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
@@ -753,8 +780,8 @@ export function LandingPage() {
               <Link to="/dashboard" className="btn-primary">Open Dashboard</Link>
             ) : (
               <>
-                <Link to="/login" className="btn-ghost">Sign in</Link>
-                <Link to="/register" className="btn-primary">Get started</Link>
+                <Link to="/login" className="btn-ghost whitespace-nowrap">Sign in</Link>
+                <Link to="/register" className="btn-primary whitespace-nowrap">Start broadcasting</Link>
               </>
             )}
           </nav>
@@ -799,25 +826,21 @@ export function LandingPage() {
           <div className="absolute inset-y-0 w-px animate-sweep bg-stone-300/50 [animation-delay:-6.5s] dark:bg-stone-600/40" />
         </div>
 
-        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 pb-14 pt-12 md:grid-cols-[1.15fr_1fr] md:items-center md:gap-14 md:pt-20">
+        <div className="relative mx-auto grid max-w-6xl gap-x-14 gap-y-10 px-6 pb-16 pt-12 md:grid-cols-[1.15fr_1fr] md:items-center md:pt-20">
+          <h1
+            className="max-w-5xl font-display font-semibold leading-[1.02] tracking-tight text-[clamp(2.15rem,6.6vw,6rem)] md:col-span-2"
+            aria-label="One upload. Every channel, on schedule"
+          >
+            <RevealWords text="One upload. Every channel, on schedule" />
+          </h1>
           <div>
-            <p className="flex animate-hero-in items-center gap-2 font-mono text-xs text-brand-600 dark:text-brand-500">
-              <LiveDot />
-              on air · multi-platform video scheduler
-            </p>
-            <h1
-              className="mt-4 max-w-2xl animate-hero-in font-display text-4xl font-semibold leading-[1.06] tracking-tight md:text-6xl"
-              style={{ animationDelay: '120ms' }}
-            >
-              One upload. Every channel, on schedule
-            </h1>
             <p
-              className="mt-6 max-w-xl animate-hero-in text-base leading-relaxed text-ink-muted dark:text-stone-400"
+              className="max-w-xl animate-hero-in text-lg leading-relaxed text-ink-muted dark:text-stone-400"
               style={{ animationDelay: '240ms' }}
             >
               Omnicast takes a single video and transmits it to YouTube, TikTok,
-              Instagram and Facebook at the times you set — retries, quotas and
-              history handled by the station, not by you.
+              Instagram and Facebook at the times you set. Retries, quotas and
+              history are handled by the station, not by you.
             </p>
             <div
               className="mt-8 flex animate-hero-in flex-wrap items-center gap-3"
@@ -827,16 +850,17 @@ export function LandingPage() {
                 <Link to="/dashboard" className="btn-primary px-6 py-3 text-base">Open Dashboard</Link>
               ) : (
                 <>
-                  <Link to="/register" className="btn-primary px-6 py-3 text-base">Create free account</Link>
+                  <Link to="/register" className="btn-primary px-6 py-3 text-base">Start broadcasting</Link>
                   <Link to="/login" className="btn-secondary px-6 py-3 text-base">Sign in</Link>
                 </>
               )}
             </div>
             <p
-              className="mt-6 animate-hero-in font-mono text-[11px] uppercase tracking-widest text-ink-subtle dark:text-stone-500"
+              className="mt-7 flex animate-hero-in items-center gap-2 text-sm text-ink-muted dark:text-stone-400"
               style={{ animationDelay: '460ms' }}
             >
-              4 platforms · exact-time scheduling · retries built in
+              <LiveDot />
+              on air — 4 platforms, exact-time scheduling, retries built in
             </p>
           </div>
           <BroadcastScene />
@@ -855,7 +879,7 @@ export function LandingPage() {
             >
               <Icon className="h-6 w-6 shrink-0 text-ink-subtle transition-[transform,color] duration-300 group-hover:-translate-y-0.5 group-hover:text-brand-600 dark:text-stone-500 dark:group-hover:text-brand-500" />
               <span className="flex min-w-0 flex-col">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-ink-subtle dark:text-stone-500">
+                <span className="truncate font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:text-stone-400">
                   {freq} · {scope}
                 </span>
                 <span className="truncate font-display text-sm font-medium">{name}</span>
@@ -870,8 +894,7 @@ export function LandingPage() {
       <section className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto max-w-6xl px-6 py-14">
           <Reveal>
-            <p className="font-mono text-xs text-brand-600 dark:text-brand-500">how it works</p>
-            <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight md:text-3xl">
+            <h2 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
               Three steps to air
             </h2>
           </Reveal>
@@ -882,8 +905,7 @@ export function LandingPage() {
                 delay={i * 110}
                 className="bg-surface-muted px-6 py-6 dark:bg-[#1c1917]"
               >
-                <p className="font-mono text-xs text-brand-600 dark:text-brand-500">{s.n}</p>
-                <h3 className="mt-2 font-display text-base font-semibold">{s.title}</h3>
+                <h3 className="font-display text-base font-semibold">{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-ink-muted dark:text-stone-400">{s.body}</p>
               </Reveal>
             ))}
@@ -895,13 +917,10 @@ export function LandingPage() {
       <section className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto max-w-6xl px-6 py-14">
           <Reveal>
-            <p className="font-mono text-xs text-brand-600 dark:text-brand-500">
-              the relay → the broadcast
-            </p>
-            <h2 className="mt-3 max-w-2xl font-display text-2xl font-semibold tracking-tight md:text-3xl">
+            <h2 className="max-w-2xl font-display text-2xl font-semibold tracking-tight md:text-3xl">
               Same video, four uploads — or one click
             </h2>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink-muted dark:text-stone-400">
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-muted dark:text-stone-400">
               Cross-posting by hand means signing in and uploading to every
               platform, one account at a time. Omnicast turns it into a single
               transmission: upload once and the station relays it to every
@@ -913,7 +932,7 @@ export function LandingPage() {
             {/* before — one upload per platform, one at a time */}
             <Reveal variant="left" delay={120}>
               <figure>
-                <figcaption className="flex items-baseline justify-between border-b border-stone-200 pb-3 font-mono text-[11px] uppercase tracking-widest text-ink-subtle dark:border-stone-800 dark:text-stone-500">
+                <figcaption className="flex items-baseline justify-between border-b border-stone-200 pb-3 font-mono text-[11px] uppercase tracking-widest text-ink-muted dark:border-stone-800 dark:text-stone-500">
                   <span>by hand</span>
                   <span>4 uploads · serial</span>
                 </figcaption>
@@ -944,7 +963,7 @@ export function LandingPage() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-6 font-mono text-[11px] text-ink-subtle dark:text-stone-500">
+                <p className="mt-6 font-mono text-[11px] text-ink-muted dark:text-stone-500">
                   elapsed — one channel at a time
                 </p>
               </figure>
@@ -953,7 +972,7 @@ export function LandingPage() {
             {/* after — one upload, relayed everywhere at once */}
             <Reveal delay={240}>
               <figure>
-                <figcaption className="flex items-baseline justify-between border-b border-stone-200 pb-3 font-mono text-[11px] uppercase tracking-widest text-ink-subtle dark:border-stone-800 dark:text-stone-500">
+                <figcaption className="flex items-baseline justify-between border-b border-stone-200 pb-3 font-mono text-[11px] uppercase tracking-widest text-ink-muted dark:border-stone-800 dark:text-stone-500">
                   <span>on omnicast</span>
                   <span>1 upload · parallel</span>
                 </figcaption>
@@ -1003,7 +1022,7 @@ export function LandingPage() {
                     <span className="font-mono text-[9px] text-ink-subtle dark:text-stone-500">clip.mp4</span>
                   </span>
                 </div>
-                <p className="mt-6 font-mono text-[11px] text-ink-subtle dark:text-stone-500">
+                <p className="mt-6 font-mono text-[11px] text-ink-muted dark:text-stone-500">
                   queued — every channel at once
                 </p>
               </figure>
@@ -1014,26 +1033,50 @@ export function LandingPage() {
 
       {/* The proof — a broadcast day, logged */}
       <section className="border-b border-stone-200 bg-surface dark:border-stone-800 dark:bg-[#211d18]">
-        <div className="mx-auto max-w-6xl px-6 py-12">
-          <Reveal>
-            <h2 className="flex items-center gap-2.5 font-display text-xl font-semibold">
-              A broadcast day
-              <LiveDot />
-            </h2>
-          </Reveal>
-          <div className="mt-4 border-t border-stone-200 font-mono text-sm dark:border-stone-800">
-            {SIGNAL.map((e, i) => (
-              <Reveal
-                key={i}
-                variant="left"
-                delay={i * 90}
-                className="grid grid-cols-[64px_1fr] gap-4 border-b border-stone-200 py-3.5 dark:border-stone-800"
-              >
-                <span className="text-ink-subtle dark:text-stone-500">{e.time}</span>
-                <span className="text-ink-muted dark:text-stone-300">{e.event}</span>
-              </Reveal>
-            ))}
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 md:grid-cols-[1.4fr_1fr] md:items-start">
+          <div>
+            <Reveal>
+              <h2 className="flex items-center gap-2.5 font-display text-2xl font-semibold tracking-tight md:text-3xl">
+                A broadcast day
+                <LiveDot />
+              </h2>
+            </Reveal>
+            <div className="mt-6 border-t border-stone-200 font-mono text-sm dark:border-stone-800" data-ui>
+              {SIGNAL.map((e, i) => (
+                <Reveal
+                  key={i}
+                  variant="left"
+                  delay={i * 90}
+                  className="grid grid-cols-[64px_1fr] gap-4 border-b border-stone-200 py-3.5 dark:border-stone-800"
+                >
+                  <span className="text-ink-subtle dark:text-stone-500">{e.time}</span>
+                  <span className="text-ink-muted dark:text-stone-300">{e.event}</span>
+                </Reveal>
+              ))}
+            </div>
           </div>
+          {/* console summary — the same day as the control center sees it */}
+          <Reveal delay={200}>
+            <figure data-ui className="rounded-md border border-stone-200 bg-surface-muted dark:border-stone-700 dark:bg-[#1c1917]">
+              <figcaption className="flex items-center justify-between border-b border-stone-200 px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-ink-muted dark:border-stone-700 dark:text-stone-400">
+                <span>day summary</span>
+                <span className="flex items-center gap-1.5 text-brand-600 dark:text-brand-500"><LiveDot /> live</span>
+              </figcaption>
+              <div className="divide-y divide-stone-200 px-4 font-mono text-xs dark:divide-stone-700">
+                {[
+                  ['videos ingested', '1', 'text-ink dark:text-stone-200'],
+                  ['channels reached', '4 / 4', 'text-ink dark:text-stone-200'],
+                  ['transient retries', '1', 'text-warn-500'],
+                  ['manual interventions', '0', 'text-success-500'],
+                ].map(([k, v, cls]) => (
+                  <div key={k} className="flex items-center justify-between py-3">
+                    <span className="text-ink-muted dark:text-stone-400">{k}</span>
+                    <span className={`font-semibold ${cls}`}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </figure>
+          </Reveal>
         </div>
       </section>
 
@@ -1064,6 +1107,42 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* The console, as shipped — real interface, not a mock */}
+      <section className="border-b border-stone-200 dark:border-stone-800">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <Reveal>
+            <h2 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
+              One video, every platform, one console
+            </h2>
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-muted dark:text-stone-400">
+              The control center tracks each broadcast per channel: what went
+              out, what failed and why, and which retries are already queued.
+            </p>
+          </Reveal>
+          <Reveal delay={140}>
+            <figure
+              data-ui
+              className="mt-10 overflow-hidden rounded-md border border-stone-200 bg-surface dark:border-stone-700 dark:bg-[#262019]"
+            >
+              <figcaption className="flex items-center gap-2 border-b border-stone-200 px-4 py-2.5 dark:border-stone-700">
+                <span className="h-2.5 w-2.5 rounded-full bg-stone-300 dark:bg-stone-600" />
+                <span className="h-2.5 w-2.5 rounded-full bg-stone-300 dark:bg-stone-600" />
+                <span className="h-2.5 w-2.5 rounded-full bg-brand-400" />
+                <span className="ml-3 font-mono text-[11px] text-ink-subtle dark:text-stone-500">
+                  omnicast · /posts/control
+                </span>
+              </figcaption>
+              <img
+                src="/assets/console.png"
+                alt="OmniCast control center showing product-demo.mp4 published to YouTube and Instagram, Facebook rate-limited, and TikTok flagged for reconnect"
+                className="block w-full"
+                loading="lazy"
+              />
+            </figure>
+          </Reveal>
+        </div>
+      </section>
+
       {/* Sign off */}
       {!isAuthenticated && (
         <section className="relative overflow-hidden border-b border-stone-200 dark:border-stone-800">
@@ -1091,8 +1170,7 @@ export function LandingPage() {
           </div>
           <div className="relative mx-auto max-w-6xl px-6 py-16 md:py-20">
             <Reveal>
-              <p className="font-mono text-xs text-brand-600 dark:text-brand-500">sign off</p>
-              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight md:text-4xl">Go on air</h2>
+              <h2 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">Go on air</h2>
               <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-muted dark:text-stone-400">
                 Create an account, connect a channel, and schedule your first
                 broadcast in minutes.
