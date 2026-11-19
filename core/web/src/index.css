@@ -17,7 +17,9 @@
     *,
     *::before,
     *::after {
-      animation-duration: 0.01ms !important;
+      /* Kill animations outright — infinite keyframes looping at 0.01ms
+         leave elements at arbitrary mid-cycle states (e.g. invisible). */
+      animation: none !important;
       transition-duration: 0.01ms !important;
     }
     /* SMIL (animateMotion) ignores animation-duration — hide those dots. */
@@ -137,3 +139,6 @@
 .dark ::-webkit-scrollbar-thumb {
   background: #44403a;
 }
+
+/* channel EQ tunes faster under the pointer */
+.group:hover .animate-eq { animation-duration: 0.5s; }

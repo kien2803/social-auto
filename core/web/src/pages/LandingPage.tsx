@@ -112,12 +112,13 @@ function RevealWords({ text, className = '' }: { text: string; className?: strin
   );
 }
 
-type RevealVariant = 'up' | 'left' | 'pop';
+type RevealVariant = 'up' | 'left' | 'pop' | 'lock';
 
 const REVEAL_FROM: Record<RevealVariant, gsap.TweenVars> = {
   up: { y: 12 },
   left: { x: -12 },
   pop: { scale: 0.96 },
+  lock: {},
 };
 
 /** Scroll-driven entrance — one fade+rise, transform/opacity only. */
@@ -140,6 +141,23 @@ function Reveal({
       if (!el) return;
       const mm = gsap.matchMedia();
       mm.add('(prefers-reduced-motion: no-preference)', () => {
+        const st = { trigger: el, start: 'top 88%', once: true };
+        if (variant === 'lock') {
+          // channel locking onto signal — two weak blips, then solid
+          gsap.fromTo(el, { autoAlpha: 0 }, {
+            keyframes: [
+              { autoAlpha: 0.5, duration: 0.08 },
+              { autoAlpha: 0.12, duration: 0.06 },
+              { autoAlpha: 0.8, duration: 0.07 },
+              { autoAlpha: 0.3, duration: 0.06 },
+              { autoAlpha: 1, duration: 0.15 },
+            ],
+            delay: delay / 1000,
+            ease: 'none',
+            scrollTrigger: st,
+          });
+          return;
+        }
         gsap.fromTo(
           el,
           { autoAlpha: 0, ...REVEAL_FROM[variant] },
@@ -151,7 +169,7 @@ function Reveal({
             duration: 0.55,
             delay: delay / 1000,
             ease: SOFT,
-            scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+            scrollTrigger: st,
           },
         );
       });
@@ -162,6 +180,120 @@ function Reveal({
   return (
     <div ref={ref} className={className}>
       {children}
+    </div>
+  );
+}
+
+/** Scroll-scrubbed drift — subtle depth cue, reduced-motion safe. */
+function Drift({
+  children,
+  y = 24,
+  className = '',
+}: {
+  children: React.ReactNode;
+  y?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useGSAP(
+    () => {
+      const el = ref.current;
+      if (!el) return;
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(el, { y }, {
+          y: -y,
+          ease: 'none',
+          scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 0.5 },
+        });
+      });
+    },
+    { scope: ref },
+  );
+  return <div ref={ref} className={className}>{children}</div>;
+}
+
+/** Text that flickers on like a channel locking onto signal — one shot. */
+function FlickerText({
+  children,
+  delay = 0,
+  className = '',
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  useGSAP(
+    () => {
+      const el = ref.current;
+      if (!el) return;
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(el, { autoAlpha: 0 }, {
+          keyframes: [
+            { autoAlpha: 0.6, duration: 0.07 },
+            { autoAlpha: 0.15, duration: 0.06 },
+            { autoAlpha: 1, duration: 0.14 },
+          ],
+          delay: delay / 1000,
+          ease: 'none',
+          scrollTrigger: { trigger: el, start: 'top 92%', once: true },
+        });
+      });
+    },
+    { scope: ref },
+  );
+  return <span ref={ref} className={className}>{children}</span>;
+}
+
+/** The signal log — a scanline travels down while rows lock on behind it. */
+function SignalLog({ events }: { events: readonly { time: string; event: string }[] }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useGSAP(
+    () => {
+      const el = ref.current;
+      if (!el) return;
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        const rows = el.querySelectorAll<HTMLElement>('[data-row]');
+        const beam = el.querySelector<HTMLElement>('[data-beam]');
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: el, start: 'top 80%', once: true },
+        });
+        if (beam) {
+          tl.fromTo(beam, { top: '0%', autoAlpha: 0 }, {
+            top: '100%', autoAlpha: 1,
+            duration: events.length * 0.22 + 0.35, ease: 'none',
+          }, 0.1).to(beam, { autoAlpha: 0, duration: 0.3 });
+        }
+        rows.forEach((row, i) => {
+          tl.fromTo(row, { autoAlpha: 0, x: -8 }, {
+            keyframes: [
+              { autoAlpha: 0.55, x: 0, duration: 0.09 },
+              { autoAlpha: 0.15, duration: 0.07 },
+              { autoAlpha: 1, duration: 0.18 },
+            ],
+            ease: 'none',
+          }, 0.2 + i * 0.22);
+        });
+      });
+    },
+    { scope: ref },
+  );
+  return (
+    <div ref={ref} className="relative border-t border-stone-200 font-mono text-sm dark:border-stone-800" data-ui>
+      <span
+        data-beam
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 h-px w-full bg-brand-500/70 shadow-[0_0_8px_1px_rgba(224,78,20,0.5)]"
+      />
+      {events.map((e, i) => (
+        <div key={i} data-row className="grid grid-cols-[64px_1fr] gap-4 border-b border-stone-200 py-3.5 dark:border-stone-800">
+          <span className="text-ink-subtle dark:text-stone-500">{e.time}</span>
+          <span className="text-ink-muted dark:text-stone-300">{e.event}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -863,7 +995,9 @@ export function LandingPage() {
               on air — 4 platforms, exact-time scheduling, retries built in
             </p>
           </div>
-          <BroadcastScene />
+          <Drift y={26} className="min-w-0">
+            <BroadcastScene />
+          </Drift>
         </div>
       </section>
 
@@ -873,8 +1007,8 @@ export function LandingPage() {
           {STATIONS.map(({ name, freq, scope, Icon }, i) => (
             <Reveal
               key={name}
-              variant="pop"
-              delay={i * 90}
+              variant="lock"
+              delay={i * 130}
               className="group flex items-center gap-3.5 border-stone-200 py-6 transition-colors hover:bg-surface sm:-mx-3 sm:border-l sm:pl-9 sm:pr-3 sm:first:border-l-0 sm:first:pl-3 dark:border-stone-800 dark:hover:bg-[#221e19]"
             >
               <Icon className="h-6 w-6 shrink-0 text-ink-subtle transition-[transform,color] duration-300 group-hover:-translate-y-0.5 group-hover:text-brand-600 dark:text-stone-500 dark:group-hover:text-brand-500" />
@@ -1041,18 +1175,8 @@ export function LandingPage() {
                 <LiveDot />
               </h2>
             </Reveal>
-            <div className="mt-6 border-t border-stone-200 font-mono text-sm dark:border-stone-800" data-ui>
-              {SIGNAL.map((e, i) => (
-                <Reveal
-                  key={i}
-                  variant="left"
-                  delay={i * 90}
-                  className="grid grid-cols-[64px_1fr] gap-4 border-b border-stone-200 py-3.5 dark:border-stone-800"
-                >
-                  <span className="text-ink-subtle dark:text-stone-500">{e.time}</span>
-                  <span className="text-ink-muted dark:text-stone-300">{e.event}</span>
-                </Reveal>
-              ))}
+            <div className="mt-6">
+              <SignalLog events={SIGNAL} />
             </div>
           </div>
           {/* console summary — the same day as the control center sees it */}
@@ -1068,10 +1192,10 @@ export function LandingPage() {
                   ['channels reached', '4 / 4', 'text-ink dark:text-stone-200'],
                   ['transient retries', '1', 'text-warn-500'],
                   ['manual interventions', '0', 'text-success-500'],
-                ].map(([k, v, cls]) => (
+                ].map(([k, v, cls], i) => (
                   <div key={k} className="flex items-center justify-between py-3">
                     <span className="text-ink-muted dark:text-stone-400">{k}</span>
-                    <span className={`font-semibold ${cls}`}>{v}</span>
+                    <FlickerText delay={300 + i * 160} className={`font-semibold ${cls}`}>{v}</FlickerText>
                   </div>
                 ))}
               </div>
@@ -1132,12 +1256,14 @@ export function LandingPage() {
                   omnicast · /posts/control
                 </span>
               </figcaption>
-              <img
-                src="/assets/console.png"
-                alt="OmniCast control center showing product-demo.mp4 published to YouTube and Instagram, Facebook rate-limited, and TikTok flagged for reconnect"
-                className="block w-full"
-                loading="lazy"
-              />
+              <Drift y={12}>
+                <img
+                  src="/assets/console.png"
+                  alt="OmniCast control center showing product-demo.mp4 published to YouTube and Instagram, Facebook rate-limited, and TikTok flagged for reconnect"
+                  className="block w-full scale-[1.06]"
+                  loading="lazy"
+                />
+              </Drift>
             </figure>
           </Reveal>
         </div>
@@ -1176,7 +1302,7 @@ export function LandingPage() {
                 broadcast in minutes.
               </p>
               <Link to="/register" className="btn-primary mt-7 inline-flex px-6 py-3 text-base">
-                Get started
+                Start broadcasting
               </Link>
             </Reveal>
           </div>
