@@ -332,20 +332,6 @@ oauthRoutes.get('/auth/meta/callback', async (c) => {
     /* short-lived fallback is fine */
   }
 
-  // Diagnostic: what did this token actually get granted, and what does
-  // /me/accounts return? (temporary — remove once Meta connect is verified)
-  try {
-    const dbgRes = await fetch(
-      metaGraph(c, '/debug_token', {
-        input_token: durable,
-        access_token: `${c.env.META_APP_ID}|${c.env.META_APP_SECRET}`,
-      }),
-    );
-    console.log('meta debug_token:', JSON.stringify(await dbgRes.json()));
-  } catch (e) {
-    console.log('meta debug_token failed:', String(e));
-  }
-
   const pagesRes = await fetch(
     metaGraph(c, '/me/accounts', {
       access_token: durable,
@@ -361,7 +347,6 @@ oauthRoutes.get('/auth/meta/callback', async (c) => {
       instagram_business_account?: { id: string; username?: string; profile_picture_url?: string };
     }>;
   };
-  console.log('meta /me/accounts:', JSON.stringify(pagesJson));
   const pages = (pagesJson.data ?? []).filter((p) => p.id && p.access_token);
   if (!pages.length) return c.redirect(`${origin}/accounts?error=no_pages`);
 
