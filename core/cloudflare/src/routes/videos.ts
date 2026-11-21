@@ -22,6 +22,8 @@ function toWire(v: VideoRow) {
     sha256: v.sha256,
     size_bytes: v.size_bytes,
     duration_sec: v.duration_sec,
+    width: v.width,
+    height: v.height,
     mime: v.mime,
     filename: v.file_path.split('/').pop() ?? v.file_path,
     has_thumbnail: !!v.thumbnail_path,
@@ -74,6 +76,13 @@ videoRoutes.post('/videos', async (c) => {
     const n = Number(c.req.query('duration_sec'));
     return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
   })();
+  // Client-extracted frame dims — sanity-clamped, never trusted for money.
+  const dim = (q: string) => {
+    const n = Number(c.req.query(q));
+    return Number.isFinite(n) && n > 0 && n <= 20000 ? Math.round(n) : null;
+  };
+  const width = dim('width');
+  const height = dim('height');
   const declaredLen = Number(c.req.header('content-length') ?? 0) || 0;
 
   const videos = new VideosRepo(c.env.DB);
@@ -130,6 +139,8 @@ videoRoutes.post('/videos', async (c) => {
       size_bytes: size,
       duration_sec: durationSec,
       mime: contentType,
+      width,
+      height,
     });
     return c.json({ video: toWire(row), deduped: false }, 201);
   } catch (err) {

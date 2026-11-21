@@ -8,6 +8,9 @@ export interface VideoWire {
   sha256: string;
   size_bytes: number;
   duration_sec: number | null;
+  /** Client-extracted frame dims — null on videos uploaded before 0009. */
+  width: number | null;
+  height: number | null;
   mime: string;
   /** Basename only — full storage path never leaves the server. */
   filename: string;
@@ -296,11 +299,59 @@ function accountFilterQs(f?: AccountListFilter): string {
   return qs ? `?${qs}` : '';
 }
 
+// ── Pre-publish preflight ────────────────────────────────────────────────
+export interface PreflightIssue {
+  code: string;
+  message: string;
+  fix?: string;
+}
+export interface VideoInspection {
+  mime: string;
+  format: 'mp4' | 'mov' | 'webm' | null;
+  size_bytes: number;
+  duration_sec: number | null;
+  width: number | null;
+  height: number | null;
+  aspect: string | null;
+  errors: PreflightIssue[];
+  warnings: PreflightIssue[];
+}
+export interface PublishPreview {
+  title: string;
+  description: string;
+  caption: string;
+  tags: string[];
+  visibility: 'public' | 'unlisted' | 'private';
+}
+export interface AccountPreflight {
+  account_id: string;
+  platform: string;
+  display_name: string;
+  ok: boolean;
+  errors: PreflightIssue[];
+  warnings: PreflightIssue[];
+  preview: PublishPreview;
+}
+export interface PreflightResponse {
+  ok: boolean;
+  video: VideoInspection | null;
+  accounts: AccountPreflight[];
+  generated_at: number;
+}
+export interface PreflightRequest {
+  video_id?: string;
+  account_ids?: string[];
+  caption?: string;
+  per_platform_caption?: Record<string, string>;
+  platform_params?: Record<string, unknown>;
+  visibility?: 'public' | 'unlisted' | 'private';
+}
+
 export const api = {
   listVideos: () => req<{ videos: VideoWire[] }>('/videos'),
   getVideo: (id: string) => req<VideoWire>(`/videos/${id}`),
   deleteVideo: (id: string) => req<{ success: boolean; message: string }>(`/videos/${id}`, { method: 'DELETE' }),
-  uploadVideo: (file: File, onProgress?: (bytes: number) => void, meta?: { duration_sec?: number | null }) =>
+  uploadVideo: (file: File, onProgress?: (bytes: number) => void, meta?: { duration_sec?: number | null; width?: number | null; height?: number | null }) =>
     uploadFile<UploadResult>('/videos', file, onProgress, meta),
   putVideoThumbnail: (id: string, jpeg: Blob) =>
     req<{ ok: true }>(`/videos/${id}/thumbnail`, {
@@ -319,6 +370,8 @@ export const api = {
     return req<{ posts: ScheduledPostRow[] }>(`/schedule${qs ? `?${qs}` : ''}`);
   },
   getSchedule: (id: string) => req<ScheduledPostRow>(`/schedule/${id}`),
+  preflight: (body: PreflightRequest) =>
+    req<PreflightResponse>('/preflight', { method: 'POST', body: JSON.stringify(body) }),
   createSchedule: (body: CreateScheduleInput) =>
     req<{ posts: ScheduledPostRow[] }>('/schedule', {
       method: 'POST',
@@ -402,11 +455,13 @@ async function uploadFile<T>(
   path: string,
   file: File,
   onProgress?: (bytes: number) => void,
-  meta?: { duration_sec?: number | null },
+  meta?: { duration_sec?: number | null; width?: number | null; height?: number | null },
 ): Promise<T> {
   const { promise, resolve, reject } = Promise.withResolvers<T>();
   const params = new URLSearchParams({ filename: file.name });
   if (meta?.duration_sec) params.set('duration_sec', String(Math.round(meta.duration_sec)));
+  if (meta?.width) params.set('width', String(Math.round(meta.width)));
+  if (meta?.height) params.set('height', String(Math.round(meta.height)));
   const xhr = new XMLHttpRequest();
   xhr.open('POST', `${BASE}${path}?${params.toString()}`);
   xhr.withCredentials = true;

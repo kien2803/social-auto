@@ -39,6 +39,9 @@ export interface VideoRow {
   duration_sec: number | null;
   mime: string;
   thumbnail_path: string | null;
+  /** Client-extracted frame dimensions (0009) — null on older rows. */
+  width: number | null;
+  height: number | null;
   created_at: number;
 }
 

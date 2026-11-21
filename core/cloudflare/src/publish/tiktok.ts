@@ -149,8 +149,9 @@ export class TiktokPublisher implements Publisher {
   }
 }
 
-/** Caption + tags-as-hashtags, deduped — TikTok's title field is the caption. */
-function tiktokTitle(meta: { caption: string; tags?: string[] }): string {
+/** Caption + tags-as-hashtags, deduped — TikTok's title field is the caption.
+ *  Exported so preflight previews show the exact string the init call sends. */
+export function tiktokTitle(meta: { caption: string; tags?: string[] }): string {
   const missing = (meta.tags ?? []).filter((t) => !meta.caption.includes(`#${t}`)).map((t) => `#${t}`);
   const title = missing.length ? `${meta.caption} ${missing.join(' ')}` : meta.caption;
   return title.slice(0, 2200);

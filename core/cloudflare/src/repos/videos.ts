@@ -11,6 +11,8 @@ export interface NewVideo {
   duration_sec?: number | null;
   mime: string;
   thumbnail_path?: string | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 export class VideosRepo {
@@ -21,11 +23,12 @@ export class VideosRepo {
     const now = Date.now();
     await this.db
       .prepare(
-        `INSERT INTO videos (id, user_id, file_path, sha256, size_bytes, duration_sec, mime, thumbnail_path, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO videos (id, user_id, file_path, sha256, size_bytes, duration_sec, mime, thumbnail_path, width, height, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(id, input.user_id, input.file_path, input.sha256, input.size_bytes,
-        input.duration_sec ?? null, input.mime, input.thumbnail_path ?? null, now)
+        input.duration_sec ?? null, input.mime, input.thumbnail_path ?? null,
+        input.width ?? null, input.height ?? null, now)
       .run();
     return (await this.findById(id))!;
   }

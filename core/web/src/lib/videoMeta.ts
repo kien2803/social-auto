@@ -2,6 +2,8 @@ import { api, type VideoWire } from './api.js';
 
 export interface VideoMeta {
   duration_sec: number | null;
+  width: number | null;
+  height: number | null;
   thumbnail: Blob | null;
 }
 
@@ -48,7 +50,12 @@ export async function extractVideoMeta(file: File): Promise<VideoMeta> {
       ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
       thumbnail = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', 0.75));
     }
-    return { duration_sec: durationSec ? Math.round(durationSec) : null, thumbnail };
+    return {
+      duration_sec: durationSec ? Math.round(durationSec) : null,
+      width: video.videoWidth || null,
+      height: video.videoHeight || null,
+      thumbnail,
+    };
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -62,8 +69,12 @@ export async function uploadVideoAsset(
   file: File,
   onProgress?: (bytes: number) => void,
 ): Promise<{ video: VideoWire; deduped: boolean }> {
-  const meta = await extractVideoMeta(file).catch(() => ({ duration_sec: null, thumbnail: null }));
-  const res = await api.uploadVideo(file, onProgress, { duration_sec: meta.duration_sec });
+  const meta = await extractVideoMeta(file).catch(() => ({ duration_sec: null, width: null, height: null, thumbnail: null }));
+  const res = await api.uploadVideo(file, onProgress, {
+    duration_sec: meta.duration_sec,
+    width: meta.width,
+    height: meta.height,
+  });
   if (meta.thumbnail && !res.deduped) {
     await api.putVideoThumbnail(res.video.id, meta.thumbnail).catch(() => {});
   }

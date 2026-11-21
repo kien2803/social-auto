@@ -5,6 +5,7 @@ import { oauthRoutes } from './routes/oauth';
 import { accountRoutes } from './routes/accounts';
 import { scheduleRoutes } from './routes/schedule';
 import { publishingRoutes } from './routes/publishing';
+import { preflightRoutes } from './routes/preflight';
 import { videoRoutes } from './routes/videos';
 import { quotaRoutes } from './routes/quota';
 import { commentsRoutes } from './routes/comments';
@@ -17,7 +18,7 @@ import { MAX_PUBLISH_ATTEMPTS, categorizePublishError, retryBackoffMs } from './
 import { usableAccessToken } from './lib/tokens';
 import { signMediaUrl, verifyMediaSig } from './lib/signedMedia';
 import { getPublisher } from './publish';
-import { parseCaption } from './publish/caption';
+import { buildPublishMeta } from './publish/buildMeta';
 import { PublishError, type PublishState } from './publish/types';
 import type { ClaimedPost, Visibility } from './repos/types';
 import type { Env, PublishJob } from './env';
@@ -65,6 +66,7 @@ app.route('/api', oauthRoutes); // SPA calls /api/* same-origin
 app.route('/api', accountRoutes);
 app.route('/api', scheduleRoutes);
 app.route('/api', publishingRoutes);
+app.route('/api', preflightRoutes);
 app.route('/api', videoRoutes);
 app.route('/api', quotaRoutes);
 app.route('/api', commentsRoutes);
@@ -160,22 +162,15 @@ async function processPublish(post: ClaimedPost, env: Env): Promise<void> {
     return;
   }
 
-  const meta = parseCaption(post.caption, post.visibility);
-  // Per-platform overrides from the composer — title/tags/visibility beat
-  // whatever parseCaption derived from the caption text.
-  if (post.platform_params) {
-    try {
-      const p = JSON.parse(post.platform_params) as { title?: string; tags?: string[]; visibility?: Visibility };
-      if (typeof p.title === 'string' && p.title.trim()) meta.title = p.title.trim();
-      if (Array.isArray(p.tags) && p.tags.length) meta.tags = p.tags.map((t) => t.replace(/^#/, '').trim()).filter(Boolean);
-      if (p.visibility === 'public' || p.visibility === 'unlisted' || p.visibility === 'private') meta.visibility = p.visibility;
-    } catch { /* malformed JSON — fall back to caption-derived meta */ }
-  }
-  meta.external_id = account.external_id;
-  if (platform === 'instagram') {
-    // IG pulls a public URL — mint a short-lived signed grant.
-    meta.video_url = await signMediaUrl(env, post.video.id);
-  }
+  const meta = await buildPublishMeta({
+    caption: post.caption,
+    visibility: post.visibility,
+    platformParams: post.platform_params,
+    platform,
+    externalId: account.external_id,
+    videoId: post.video.id,
+    signVideoUrl: (id) => signMediaUrl(env, id),
+  });
 
   const video = {
     key: post.video.file_path,

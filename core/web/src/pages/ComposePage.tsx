@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -75,6 +75,55 @@ export function ComposePage() {
   const toggleAccount = (id: string) =>
     setAccountIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
+  /** platform_params map — built once, shared by submit + preflight so the
+   *  checks validate the exact overrides that will ship. */
+  const platformParamsMap = useMemo(() => {
+    if (!perPlatform) return undefined;
+    const map = Object.fromEntries(
+      selectedAccounts
+        .map((a) => {
+          const p = perParams[a.id] ?? {};
+          const tags = (p.tags ?? '')
+            .split(/[,\s]+/)
+            .map((t) => t.replace(/^#/, '').trim())
+            .filter(Boolean);
+          const out: Record<string, unknown> = {};
+          if (p.title?.trim()) out['title'] = p.title.trim();
+          if (tags.length) out['tags'] = tags;
+          if (p.visibility) out['visibility'] = p.visibility;
+          return [a.id, out] as const;
+        })
+        .filter(([, v]) => Object.keys(v).length > 0),
+    );
+    return Object.keys(map).length ? map : undefined;
+  }, [perPlatform, selectedAccounts, perParams]);
+
+  // Preflight — revalidates whenever video/accounts/captions change.
+  // useDeferredValue batches caption keystrokes so we don't fire per char.
+  const deferredCaption = useDeferredValue(caption);
+  const preflightPayload = useMemo(() => ({
+    video_id: videoId,
+    account_ids: accountIds,
+    caption: deferredCaption,
+    per_platform_caption: perPlatform ? perCaptions : undefined,
+    platform_params: platformParamsMap,
+    visibility,
+  }), [videoId, accountIds, deferredCaption, perPlatform, perCaptions, platformParamsMap, visibility]);
+  const preflightQ = useQuery({
+    queryKey: ['preflight', preflightPayload],
+    queryFn: () => api.preflight(preflightPayload),
+    enabled: Boolean(videoId && accountIds.length),
+    staleTime: 5_000,
+    retry: 1,
+  });
+  const pf = preflightQ.data;
+  const pfBlocking =
+    (pf?.video?.errors.length ?? 0) +
+    (pf?.accounts ?? []).reduce((n, a) => n + a.errors.length, 0);
+  const pfWarnings =
+    (pf?.video?.warnings.length ?? 0) +
+    (pf?.accounts ?? []).reduce((n, a) => n + a.warnings.length, 0);
+
   const errors: string[] = [];
   if (!videoId) errors.push('Select a video');
   if (!accountIds.length) errors.push('Select at least one account');
@@ -82,32 +131,12 @@ export function ComposePage() {
 
   const submit = useMutation({
     mutationFn: (draft: boolean) => {
-      // platform_params only ships for accounts that actually overrode
-      // something — empty maps would just bloat the column.
-      const platform_params = perPlatform
-        ? Object.fromEntries(
-            selectedAccounts
-              .map((a) => {
-                const p = perParams[a.id] ?? {};
-                const tags = (p.tags ?? '')
-                  .split(/[,\s]+/)
-                  .map((t) => t.replace(/^#/, '').trim())
-                  .filter(Boolean);
-                const out: Record<string, unknown> = {};
-                if (p.title?.trim()) out['title'] = p.title.trim();
-                if (tags.length) out['tags'] = tags;
-                if (p.visibility) out['visibility'] = p.visibility;
-                return [a.id, out] as const;
-              })
-              .filter(([, v]) => Object.keys(v).length > 0),
-          )
-        : undefined;
       return api.createSchedule({
         video_id: videoId,
         account_ids: accountIds,
         caption,
         per_platform_caption: perPlatform ? perCaptions : undefined,
-        platform_params: platform_params && Object.keys(platform_params).length ? (platform_params as Record<string, { title?: string; tags?: string[]; visibility?: 'public' | 'unlisted' | 'private' }>) : undefined,
+        platform_params: platformParamsMap as Record<string, { title?: string; tags?: string[]; visibility?: 'public' | 'unlisted' | 'private' }> | undefined,
         scheduled_at: new Date(time).getTime(),
         visibility,
         draft,
@@ -141,7 +170,14 @@ export function ComposePage() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-ink dark:text-stone-100">{video.filename}</p>
-              <p className="font-mono text-[10px] text-ink-subtle dark:text-stone-500">{video.mime}</p>
+              <p className="font-mono text-[10px] text-ink-subtle dark:text-stone-500">
+                {[
+                  video.width && video.height ? `${video.width}×${video.height}` : null,
+                  video.duration_sec ? `${video.duration_sec}s` : null,
+                  `${(video.size_bytes / 1024 ** 2).toFixed(0)} MB`,
+                  video.mime,
+                ].filter(Boolean).join(' · ')}
+              </p>
             </div>
             <Button size="sm" variant="secondary" onClick={() => setVideoId('')}>Replace</Button>
           </div>
@@ -334,13 +370,86 @@ export function ComposePage() {
           <div className="flex justify-between"><dt className="text-ink-subtle dark:text-stone-500">Visibility</dt><dd className="capitalize text-ink dark:text-stone-100">{visibility}</dd></div>
           <div><dt className="text-ink-subtle dark:text-stone-500">Caption</dt><dd className="mt-0.5 whitespace-pre-wrap rounded-sm bg-surface-muted p-2 text-[13px] text-ink dark:bg-stone-800/50 dark:text-stone-200">{caption || '—'}</dd></div>
         </dl>
+
+        {/* pre-flight checks — same rules the publishers enforce */}
+        {(videoId && accountIds.length > 0) && (
+          <div className="mt-4 border-t border-stone-200 pt-3 dark:border-stone-800">
+            <p className="mb-2 font-mono text-[11px] text-ink-subtle dark:text-stone-500">pre-flight checks</p>
+            {preflightQ.isLoading ? (
+              <Skeleton className="h-16" />
+            ) : preflightQ.isError ? (
+              <p className="text-xs text-ink-muted dark:text-stone-400">
+                Couldn't run checks ({preflightQ.error instanceof Error ? preflightQ.error.message : 'error'}) — scheduling will validate again server-side.
+              </p>
+            ) : pf ? (
+              <div className="space-y-2.5">
+                {pf.video && [...pf.video.errors, ...pf.video.warnings].length > 0 && (
+                  <ul className="space-y-1">
+                    {pf.video.errors.map((i) => (
+                      <li key={i.code} className="text-xs text-red-600 dark:text-red-400">✕ {i.message}{i.fix && <span className="text-ink-subtle dark:text-stone-500"> — {i.fix}</span>}</li>
+                    ))}
+                    {pf.video.warnings.map((i) => (
+                      <li key={i.code} className="text-xs text-warn-700 dark:text-amber-400">⚠ {i.message}{i.fix && <span className="text-ink-subtle dark:text-stone-500"> — {i.fix}</span>}</li>
+                    ))}
+                  </ul>
+                )}
+                {pf.accounts.map((a) => {
+                  const PIcon = PLATFORM_ICON[a.platform];
+                  return (
+                    <div key={a.account_id} className="rounded-sm border border-stone-200 px-2.5 py-2 dark:border-stone-700">
+                      <div className="flex items-center gap-2">
+                        {PIcon && <PIcon className="h-3.5 w-3.5 text-ink-subtle dark:text-stone-500" />}
+                        <span className="text-xs font-medium text-ink dark:text-stone-200">{a.display_name}</span>
+                        <span className={`ml-auto font-mono text-[10px] ${a.ok ? (a.warnings.length ? 'text-warn-700 dark:text-amber-400' : 'text-success-500') : 'text-red-600 dark:text-red-400'}`}>
+                          {a.ok ? (a.warnings.length ? `${a.warnings.length} warning${a.warnings.length > 1 ? 's' : ''}` : 'ready') : `${a.errors.length} error${a.errors.length > 1 ? 's' : ''}`}
+                        </span>
+                      </div>
+                      {(a.errors.length > 0 || a.warnings.length > 0) && (
+                        <ul className="mt-1.5 space-y-1">
+                          {a.errors.map((i) => (
+                            <li key={i.code} className="text-xs text-red-600 dark:text-red-400">✕ {i.message}{i.fix && <span className="text-ink-subtle dark:text-stone-500"> — {i.fix}</span>}</li>
+                          ))}
+                          {a.warnings.map((i) => (
+                            <li key={i.code} className="text-xs text-warn-700 dark:text-amber-400">⚠ {i.message}{i.fix && <span className="text-ink-subtle dark:text-stone-500"> — {i.fix}</span>}</li>
+                          ))}
+                        </ul>
+                      )}
+                      <details className="mt-1.5">
+                        <summary className="cursor-pointer select-none font-mono text-[10px] text-ink-subtle hover:text-ink-muted dark:text-stone-500 dark:hover:text-stone-300">
+                          payload preview
+                        </summary>
+                        <dl className="mt-1.5 space-y-1 rounded-sm bg-surface-muted p-2 font-mono text-[10px] dark:bg-stone-800/50">
+                          <div className="flex gap-2"><dt className="w-20 shrink-0 text-ink-subtle dark:text-stone-500">title</dt><dd className="truncate text-ink dark:text-stone-200">{a.preview.title || '—'}</dd></div>
+                          <div className="flex gap-2"><dt className="w-20 shrink-0 text-ink-subtle dark:text-stone-500">visibility</dt><dd className="text-ink dark:text-stone-200">{a.preview.visibility}</dd></div>
+                          {a.preview.tags.length > 0 && (
+                            <div className="flex gap-2"><dt className="w-20 shrink-0 text-ink-subtle dark:text-stone-500">tags</dt><dd className="truncate text-ink dark:text-stone-200">{a.preview.tags.map((t) => `#${t}`).join(' ')}</dd></div>
+                          )}
+                          <div className="flex gap-2"><dt className="w-20 shrink-0 text-ink-subtle dark:text-stone-500">caption</dt><dd className="line-clamp-2 whitespace-pre-wrap text-ink dark:text-stone-200">{a.preview.caption || '—'}</dd></div>
+                        </dl>
+                      </details>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        )}
+
         {errors.length > 0 && (
           <ul className="mt-3 space-y-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
             {errors.map((e) => <li key={e}>• {e}</li>)}
           </ul>
         )}
         <div className="mt-4 flex flex-wrap gap-2 border-t border-stone-200 pt-4 dark:border-stone-800">
-          <Button loading={submit.isPending} disabled={errors.length > 0} onClick={() => submit.mutate(false)}>
+          <Button
+            loading={submit.isPending}
+            disabled={errors.length > 0 || pfBlocking > 0}
+            title={pfBlocking > 0 ? 'Resolve the blocking issues above first' : undefined}
+            onClick={() => {
+              if (pfWarnings > 0 && !window.confirm(`${pfWarnings} pre-flight warning${pfWarnings > 1 ? 's' : ''} — schedule anyway?`)) return;
+              submit.mutate(false);
+            }}
+          >
             Schedule post
           </Button>
           <Button variant="secondary" loading={submit.isPending} disabled={errors.length > 0} onClick={() => submit.mutate(true)}>
